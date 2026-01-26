@@ -80,136 +80,183 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       body: SafeArea(
         child: Column(
           children: [
-          // Upload Progress
-          if (uploadState.isUploading && uploadState.progress != null)
-            Card(
-              margin: const EdgeInsets.all(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Uploading Photos',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+            // Upload Progress
+            if (uploadState.isUploading && uploadState.progress != null)
+              Card(
+                margin: const EdgeInsets.all(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Uploading Photos',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    LinearProgressIndicator(
-                      value: uploadState.progress!.percentage / 100,
-                      backgroundColor: Colors.grey[300],
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.primary,
+                      const SizedBox(height: 16),
+                      LinearProgressIndicator(
+                        value: uploadState.progress!.percentage / 100,
+                        backgroundColor: Colors.grey[300],
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.primary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${uploadState.progress!.current} / ${uploadState.progress!.total} (${uploadState.progress!.percentage}%)',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Uploading: ${uploadState.progress!.currentItem}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          // Pending Samples List
-          Expanded(
-            child: _pendingSamples.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.cloud_done,
-                          size: 64,
+                      const SizedBox(height: 8),
+                      Text(
+                        '${uploadState.progress!.current} / ${uploadState.progress!.total} (${uploadState.progress!.percentage}%)',
+                        style: TextStyle(
+                          fontSize: 14,
                           color: AppColors.textSecondary,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No pending uploads',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _pendingSamples.length,
-                    itemBuilder: (context, index) {
-                      final sample = _pendingSamples[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          title: Text(sample.kode),
-                          subtitle: Text(
-                            'Status: ${sample.status}',
-                            style: TextStyle(
-                              color: sample.status == AppConstants.statusError
-                                  ? AppColors.error
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                          trailing: sample.status == AppConstants.statusError
-                              ? Icon(Icons.error, color: AppColors.error)
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
-          ),
-
-          // Upload Button
-          if (_pendingSamples.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                onPressed: uploadState.isUploading ? null : _handleUpload,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
-                child: uploadState.isUploading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
-                        ),
-                      )
-                    : Text(
-                        'Upload All (${_pendingSamples.length})',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Uploading: ${uploadState.progress!.currentItem}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
                         ),
                       ),
+                    ],
+                  ),
+                ),
               ),
+
+            // Pending Samples List
+            Expanded(
+              child: _pendingSamples.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cloud_done,
+                            size: 64,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No pending uploads',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _pendingSamples.length,
+                      itemBuilder: (context, index) {
+                        final sample = _pendingSamples[index];
+                        final isError =
+                            sample.status == AppConstants.statusError;
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        sample.kode,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isError)
+                                      Icon(
+                                        Icons.error_outline,
+                                        color: AppColors.error,
+                                        size: 22,
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Status: ${sample.status}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: isError
+                                        ? AppColors.error
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                                if (isError &&
+                                    sample.errorMessage != null &&
+                                    sample.errorMessage!.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.error.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      sample.errorMessage!,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.error,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
+
+            // Upload Button
+            if (_pendingSamples.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton(
+                  onPressed: uploadState.isUploading ? null : _handleUpload,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: uploadState.isUploading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Upload All (${_pendingSamples.length})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
           ],
         ),
       ),

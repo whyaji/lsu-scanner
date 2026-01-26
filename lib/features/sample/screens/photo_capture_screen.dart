@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/models/master_lsu.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/photo_capture_helper.dart';
 import '../../../widgets/camera_view.dart';
 import '../../../widgets/app_image_preview.dart';
+import '../../auth/providers/auth_provider.dart';
 import 'confirmation_screen.dart';
 import 'full_screen_image_preview_screen.dart';
 
-class PhotoCaptureScreen extends StatefulWidget {
+class PhotoCaptureScreen extends ConsumerStatefulWidget {
   final int dataLsuId;
   final int masterLsuId;
   final String kode;
@@ -23,10 +25,10 @@ class PhotoCaptureScreen extends StatefulWidget {
   });
 
   @override
-  State<PhotoCaptureScreen> createState() => _PhotoCaptureScreenState();
+  ConsumerState<PhotoCaptureScreen> createState() => _PhotoCaptureScreenState();
 }
 
-class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
+class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
   String? _savedImagePath;
   bool _isProcessing = false;
 
@@ -87,7 +89,13 @@ class _PhotoCaptureScreenState extends State<PhotoCaptureScreen> {
       }
 
       final dir = await PhotoCaptureHelper.getAppPicturesDirectory();
-      final fileName = PhotoCaptureHelper.newCaptureFileName();
+      final userId = ref.read(authProvider).user?.id.toString();
+      final fileName = PhotoCaptureHelper.newCaptureFileName(
+        userId: userId,
+        dataId: widget.dataLsuId.toString(),
+        sampelKode: widget.kode,
+        blok: widget.masterLsu.blok,
+      );
       final savedPath = await PhotoCaptureHelper.compressAndSave(
         sourcePath: watermarkedPath,
         outputDir: dir,

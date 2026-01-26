@@ -100,22 +100,28 @@ class UploadNotifier extends StateNotifier<UploadState> {
       final uploadData = batchResponse.data!;
 
       // Step 2: Upload photos for success items + failed items with "Status already received"
-      const statusAlreadyReceivedError = 'Status already received';
+      const statusAlreadyReceivedError =
+          'Status already received, need reupload photo';
       final statusAlreadyReceivedItems = uploadData.failed
-          .where((item) => item.error
-              .toLowerCase()
-              .contains(statusAlreadyReceivedError.toLowerCase()))
+          .where(
+            (item) =>
+                item.error.toLowerCase() ==
+                statusAlreadyReceivedError.toLowerCase(),
+          )
           .toList();
       final otherFailedItems = uploadData.failed
-          .where((item) => !item.error
-              .toLowerCase()
-              .contains(statusAlreadyReceivedError.toLowerCase()))
+          .where(
+            (item) =>
+                item.error.toLowerCase() !=
+                statusAlreadyReceivedError.toLowerCase(),
+          )
           .toList();
 
       final itemsForPhotoUpload = <UploadSuccessItem>[
         ...uploadData.success,
-        ...statusAlreadyReceivedItems
-            .map((f) => UploadSuccessItem(id: f.id, kode: f.kode)),
+        ...statusAlreadyReceivedItems.map(
+          (f) => UploadSuccessItem(id: f.id, kode: f.kode),
+        ),
       ];
       final totalPhotos = itemsForPhotoUpload.length;
       int uploadedPhotos = 0;

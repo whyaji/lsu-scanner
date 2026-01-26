@@ -11,12 +11,27 @@ import '../constants/app_constants.dart';
 class PhotoCaptureHelper {
   PhotoCaptureHelper._();
 
-  /// Returns the app pictures directory: [applicationDocumentsDirectory]/Pictures/[appName].
+  /// Returns the app pictures directory.
+  /// On Android: public Internal storage Pictures/LSU-Scanner (e.g. /storage/emulated/0/Pictures/LSU-Scanner).
+  /// On other platforms: [applicationDocumentsDirectory]/Pictures/LSU-Scanner.
   /// Creates the directory if it does not exist.
   static Future<String> getAppPicturesDirectory() async {
+    const subDir = 'LSU-Scanner';
+    if (Platform.isAndroid) {
+      final ext = await getExternalStorageDirectory();
+      if (ext != null) {
+        final parts = ext.path.split(RegExp(r'[/\\]'));
+        final idx = parts.indexWhere((e) => e == 'Android');
+        if (idx > 0) {
+          final rootPath = parts.sublist(0, idx).join('/');
+          final dir = p.join(rootPath, 'Pictures', subDir);
+          await Directory(dir).create(recursive: true);
+          return dir;
+        }
+      }
+    }
     final base = await getApplicationDocumentsDirectory();
-    final appName = AppConstants.appName;
-    final dir = p.join(base.path, 'Pictures', appName);
+    final dir = p.join(base.path, 'Pictures', subDir);
     await Directory(dir).create(recursive: true);
     return dir;
   }
@@ -145,12 +160,37 @@ class PhotoCaptureHelper {
     return sourcePath;
   }
 
-  /// Generates a unique filename for a new capture (e.g. yyyyMMdd_HHmmss.jpg).
-  static String newCaptureFileName() {
+  /// Sanitizes a string for use in a filename: replaces spaces with '_',
+  /// removes characters that are invalid in typical filesystems.
+  static String _sanitizeForFileName(String? value) {
+    if (value == null || value.isEmpty) return '';
+    return value
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '_')
+        .replaceAll(RegExp(r'[^\w\-.]'), '');
+  }
+
+  /// Generates a unique filename for a new capture.
+  /// Optional [userId], [dataId], [sampelKode], [blok] are sanitized (spaces → '_')
+  /// and included as a prefix, e.g. userId_dataId_sampelKode_blok_yyyyMMdd_HHmmss.jpg.
+  static String newCaptureFileName({
+    String? userId,
+    String? dataId,
+    String? sampelKode,
+    String? blok,
+  }) {
+    final parts = [
+      _sanitizeForFileName(userId),
+      _sanitizeForFileName(dataId),
+      _sanitizeForFileName(sampelKode),
+      _sanitizeForFileName(blok),
+    ].where((e) => e.isNotEmpty);
+    final sufix = parts.isEmpty ? '' : '_${parts.join('_')}';
+
     final now = DateTime.now();
     final part =
         '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_'
         '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-    return '$part.jpg';
+    return '$part$sufix.jpg';
   }
 }

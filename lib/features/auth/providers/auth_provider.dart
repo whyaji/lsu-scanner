@@ -5,6 +5,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/network/models/auth_models.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../core/database/database_helper.dart';
+import '../../../core/constants/app_constants.dart';
 
 class AuthState {
   final User? user;
@@ -115,6 +116,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await _storage.clearTokens();
     await _dbHelper.deletePreference('user_data');
     await _dbHelper.deletePreference('user_id');
+    await _dbHelper.deletePreference(AppConstants.keySelectedRegional);
+    await _dbHelper.deletePreference(AppConstants.keyLastSyncTime);
 
     state = AuthState();
   }

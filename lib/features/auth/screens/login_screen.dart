@@ -30,7 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .login(_usernameController.text.trim(), _passwordController.text);
 
       if (success && mounted) {
-        // Navigation will be handled by main.dart based on auth state
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

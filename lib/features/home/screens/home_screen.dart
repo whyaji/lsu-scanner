@@ -62,6 +62,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (mounted) {
+                ref.invalidate(regionalProvider);
+                ref.invalidate(syncProvider);
                 Navigator.of(context).pushReplacementNamed('/login');
               }
             },

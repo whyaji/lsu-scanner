@@ -63,8 +63,9 @@ class MyApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const AuthWrapper(),
+      initialRoute: '/',
       routes: {
+        '/': (context) => const AuthWrapper(),
         '/login': (context) => const LoginScreen(),
         '/regional': (context) => const RegionalSelectionScreen(),
         '/home': (context) => const HomeScreen(),

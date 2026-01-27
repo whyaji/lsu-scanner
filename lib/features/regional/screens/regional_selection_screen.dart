@@ -71,21 +71,15 @@ class _RegionalSelectionScreenState
                         final messenger = ScaffoldMessenger.of(context);
                         final syncNotifier = ref.read(syncProvider.notifier);
 
-                        await ref
-                            .read(regionalProvider.notifier)
-                            .selectRegional(regional);
-
-                        if (!mounted) return;
-
+                        // Sync first. Do not call selectRegional yet, or AuthWrapper
+                        // will switch to Home and unmount this screen, so sync never runs.
                         final syncSuccess = await syncNotifier.syncData(
                           regional,
                         );
 
                         if (!mounted) return;
 
-                        if (syncSuccess) {
-                          navigator.pushReplacementNamed('/home');
-                        } else {
+                        if (!syncSuccess) {
                           final errorMsg =
                               ref.read(syncProvider).error ??
                               'Failed to sync data';
@@ -95,7 +89,16 @@ class _RegionalSelectionScreenState
                               backgroundColor: AppColors.error,
                             ),
                           );
+                          return;
                         }
+
+                        await ref
+                            .read(regionalProvider.notifier)
+                            .selectRegional(regional);
+
+                        if (!mounted) return;
+
+                        navigator.pushReplacementNamed('/home');
                       },
                     ),
                   );

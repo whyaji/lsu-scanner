@@ -50,12 +50,17 @@ class SyncNotifier extends StateNotifier<SyncState> {
         final regionalStr = await _dbHelper.getPreference(
           AppConstants.keySelectedRegional,
         );
-        state = state.copyWith(
-          lastSyncTime: lastSync,
-          syncedRegional: regionalStr != null
-              ? int.tryParse(regionalStr)
-              : null,
-        );
+        // Only apply stored values when we don't already have in-memory state,
+        // so we never overwrite a fresh sync done in this session (e.g. first
+        // regional select after login).
+        if (state.lastSyncTime == null) {
+          state = state.copyWith(
+            lastSyncTime: lastSync,
+            syncedRegional: regionalStr != null
+                ? int.tryParse(regionalStr)
+                : null,
+          );
+        }
       }
     }
   }

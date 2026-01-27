@@ -52,17 +52,17 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
   String _statusLabel(String status) {
     switch (status) {
       case AppConstants.statusUploaded:
-        return 'Uploaded';
+        return 'Terdunggah';
       case AppConstants.statusError:
-        return 'Error';
+        return 'Gagal';
       default:
-        return 'Pending';
+        return 'Menunggu';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.isPending ? 'Pending' : 'Uploaded';
+    final title = widget.isPending ? 'Menunggu' : 'Terdunggah';
 
     return Scaffold(
       appBar: AppBar(
@@ -91,7 +91,7 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'No $title samples',
+                                  'Tidak ada sampel $title',
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: AppColors.textSecondary,
@@ -115,13 +115,16 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                           child: InkWell(
                             onTap: () {
                               if (s.id != null) {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => ReceivedSampleDetailScreen(
-                                      sampleId: s.id!,
-                                    ),
-                                  ),
-                                ).then((_) => _loadSamples());
+                                Navigator.of(context)
+                                    .push(
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            ReceivedSampleDetailScreen(
+                                              sampleId: s.id!,
+                                            ),
+                                      ),
+                                    )
+                                    .then((_) => _loadSamples());
                               }
                             },
                             borderRadius: BorderRadius.circular(8),
@@ -177,10 +180,12 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: _statusColor(s.status)
-                                                .withValues(alpha: 0.2),
-                                            borderRadius:
-                                                BorderRadius.circular(6),
+                                            color: _statusColor(
+                                              s.status,
+                                            ).withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                           ),
                                           child: Text(
                                             _statusLabel(s.status),

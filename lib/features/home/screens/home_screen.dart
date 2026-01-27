@@ -95,7 +95,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Welcome, ${authState.user?.nama ?? "User"}',
+                          'Selamat datang, ${authState.user?.nama ?? "Pengguna"}',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -110,7 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         if (syncState.lastSyncTime != null)
                           Text(
-                            'Last sync: ${_formatDateTime(syncState.lastSyncTime!)}',
+                            'Sinkron terakhir: ${_formatDateTime(syncState.lastSyncTime!)}',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 12,
@@ -128,17 +128,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Expanded(
                       child: InkWell(
                         onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ReceivedListScreen(
-                                isPending: true,
-                              ),
-                            ),
-                          ).then((_) => _loadCounts());
+                          Navigator.of(context)
+                              .push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const ReceivedListScreen(isPending: true),
+                                ),
+                              )
+                              .then((_) => _loadCounts());
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: _buildStatCard(
-                          'Pending',
+                          'Menunggu',
                           _pendingCount.toString(),
                           AppColors.warning,
                           Icons.pending,
@@ -149,17 +150,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Expanded(
                       child: InkWell(
                         onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => const ReceivedListScreen(
-                                isPending: false,
-                              ),
-                            ),
-                          ).then((_) => _loadCounts());
+                          Navigator.of(context)
+                              .push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ReceivedListScreen(
+                                    isPending: false,
+                                  ),
+                                ),
+                              )
+                              .then((_) => _loadCounts());
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: _buildStatCard(
-                          'Uploaded',
+                          'Terdunggah',
                           _uploadedCount.toString(),
                           AppColors.success,
                           Icons.cloud_done,
@@ -181,7 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                   icon: const Icon(Icons.qr_code_scanner, size: 28),
                   label: const Text(
-                    'Scan QR Code',
+                    'Pindai QR Code',
                     style: TextStyle(fontSize: 18),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -196,15 +199,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const UploadScreen(),
-                      ),
-                    ).then((_) => _loadCounts());
+                    Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (context) => const UploadScreen(),
+                          ),
+                        )
+                        .then((_) => _loadCounts());
                   },
                   icon: const Icon(Icons.cloud_upload, size: 28),
                   label: const Text(
-                    'Upload Samples',
+                    'Unggah Sampel',
                     style: TextStyle(fontSize: 18),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -227,7 +232,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   },
                   icon: const Icon(Icons.location_on, size: 28),
                   label: const Text(
-                    'Change Regional',
+                    'Ganti Regional',
                     style: TextStyle(fontSize: 18),
                   ),
                   style: OutlinedButton.styleFrom(

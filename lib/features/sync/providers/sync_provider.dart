@@ -99,12 +99,15 @@ class SyncNotifier extends StateNotifier<SyncState> {
       } else {
         state = state.copyWith(
           isLoading: false,
-          error: response.error?.message ?? 'Sync failed',
+          error: response.error?.message ?? 'Sinkronisasi gagal',
         );
         return false;
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Network error occurred');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Terjadi kesalahan jaringan',
+      );
       return false;
     }
   }

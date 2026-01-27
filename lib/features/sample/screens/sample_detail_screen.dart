@@ -37,8 +37,9 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
   }
 
   Future<void> _loadExistingReceived() async {
-    final existing =
-        await _dbHelper.getReceivedSampleByDataLsuId(widget.dataLsuId);
+    final existing = await _dbHelper.getReceivedSampleByDataLsuId(
+      widget.dataLsuId,
+    );
     if (mounted) {
       setState(() {
         _existingReceived = existing;
@@ -51,7 +52,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sample Details'),
+        title: const Text('Detail Sampel'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -90,8 +91,10 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                           );
                         },
                         icon: const Icon(Icons.camera_alt),
-                        label: const Text('Take Photo',
-                            style: TextStyle(fontSize: 16)),
+                        label: const Text(
+                          'Ambil Foto',
+                          style: TextStyle(fontSize: 16),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -118,7 +121,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Sample Information',
+              'Informasi Sampel',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -127,8 +130,8 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
             ),
             const SizedBox(height: 16),
             _buildInfoRow('Kode', widget.kode),
-            _buildInfoRow('Data LSU ID', widget.dataLsuId.toString()),
-            _buildInfoRow('Master LSU ID', widget.masterLsuId.toString()),
+            _buildInfoRow('ID Data LSU', widget.dataLsuId.toString()),
+            _buildInfoRow('ID Master LSU', widget.masterLsuId.toString()),
           ],
         ),
       ),
@@ -145,7 +148,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Master LSU Information',
+              'Informasi Master LSU',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -165,14 +168,15 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
             if (m.varietas != null) _buildInfoRow('Varietas', m.varietas!),
             if (m.jenisTanah != null)
               _buildInfoRow('Jenis Tanah', m.jenisTanah!),
-            if (m.topografi != null)
-              _buildInfoRow('Topografi', m.topografi!),
+            if (m.topografi != null) _buildInfoRow('Topografi', m.topografi!),
             if (m.luasHa != null) _buildInfoRow('Luas Ha', m.luasHa!),
             if (m.jmlPokok != null)
               _buildInfoRow('Jumlah Pokok', m.jmlPokok.toString()),
             if (m.jmlPokokProduktif != null)
               _buildInfoRow(
-                  'Jumlah Pokok Produktif', m.jmlPokokProduktif.toString()),
+                'Jumlah Pokok Produktif',
+                m.jmlPokokProduktif.toString(),
+              ),
             if (m.sph != null) _buildInfoRow('SPH', m.sph!.toString()),
           ],
         ),
@@ -195,7 +199,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                 Icon(Icons.check_circle, color: AppColors.success, size: 28),
                 const SizedBox(width: 8),
                 Text(
-                  'Already received',
+                  'Sudah diterima',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -212,10 +216,10 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                     MaterialPageRoute(
                       builder: (context) => FullScreenImagePreviewScreen(
                         imagePath: s.fotoPath,
-                        title: 'Already received',
+                        title: 'Sudah diterima',
                         details: {
-                          'Date received': s.tanggalTerima,
-                          'Time received': s.waktuTerima,
+                          'Tanggal diterima': s.tanggalTerima,
+                          'Waktu diterima': s.waktuTerima,
                           'Kode': s.kode,
                         },
                       ),
@@ -241,13 +245,13 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  'Photo not found',
+                  'Foto tidak ditemukan',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
             const SizedBox(height: 16),
-            _buildInfoRow('Date received', s.tanggalTerima),
-            _buildInfoRow('Time received', s.waktuTerima),
+            _buildInfoRow('Tanggal diterima', s.tanggalTerima),
+            _buildInfoRow('Waktu diterima', s.waktuTerima),
           ],
         ),
       ),

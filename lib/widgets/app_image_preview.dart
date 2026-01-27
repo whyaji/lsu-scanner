@@ -56,10 +56,14 @@ class AppImagePreview extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.broken_image_outlined, size: 48, color: AppColors.textSecondary),
+          Icon(
+            Icons.broken_image_outlined,
+            size: 48,
+            color: AppColors.textSecondary,
+          ),
           const SizedBox(height: 8),
           Text(
-            'Photo not found',
+            'Foto tidak ditemukan',
             style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
           ),
         ],

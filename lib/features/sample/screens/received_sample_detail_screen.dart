@@ -58,11 +58,11 @@ class _ReceivedSampleDetailScreenState
   String _statusLabel(String status) {
     switch (status) {
       case AppConstants.statusUploaded:
-        return 'Uploaded';
+        return 'Terdunggah';
       case AppConstants.statusError:
-        return 'Error';
+        return 'Gagal';
       default:
-        return 'Pending';
+        return 'Menunggu';
     }
   }
 
@@ -76,19 +76,19 @@ class _ReceivedSampleDetailScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete sample'),
+        title: const Text('Hapus sampel'),
         content: const Text(
-          'Are you sure you want to delete this received sample? This cannot be undone.',
+          'Yakin ingin menghapus sampel terima ini? Tindakan ini tidak dapat dibatalkan.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
+            child: const Text('Batal'),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: const Text('Hapus'),
           ),
         ],
       ),
@@ -120,7 +120,7 @@ class _ReceivedSampleDetailScreenState
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
         ),
-        body: const Center(child: Text('Sample not found')),
+        body: const Center(child: Text('Sampel tidak ditemukan')),
       );
     }
 
@@ -128,7 +128,7 @@ class _ReceivedSampleDetailScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Received sample detail'),
+        title: const Text('Detail sampel terima'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -137,7 +137,7 @@ class _ReceivedSampleDetailScreenState
               icon: const Icon(Icons.delete),
               color: AppColors.error,
               onPressed: () => _confirmAndDelete(s),
-              tooltip: 'Delete',
+              tooltip: 'Hapus',
             ),
         ],
       ),
@@ -155,8 +155,8 @@ class _ReceivedSampleDetailScreenState
                       ? () {
                           final details = <String, String>{
                             'Kode': s.kode,
-                            'Date received': s.tanggalTerima,
-                            'Time received': s.waktuTerima,
+                            'Tanggal diterima': s.tanggalTerima,
+                            'Waktu diterima': s.waktuTerima,
                             'Status': _statusLabel(s.status),
                             if (m != null && m.estate != null)
                               'Estate': m.estate!,
@@ -169,7 +169,7 @@ class _ReceivedSampleDetailScreenState
                               builder: (context) =>
                                   FullScreenImagePreviewScreen(
                                     imagePath: s.fotoPath,
-                                    title: 'Received sample',
+                                    title: 'Sampel terima',
                                     details: details,
                                   ),
                             ),
@@ -211,7 +211,7 @@ class _ReceivedSampleDetailScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Received information',
+                        'Informasi penerimaan',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -220,8 +220,8 @@ class _ReceivedSampleDetailScreenState
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow('Kode', s.kode),
-                      _buildInfoRow('Date received', s.tanggalTerima),
-                      _buildInfoRow('Time received', s.waktuTerima),
+                      _buildInfoRow('Tanggal diterima', s.tanggalTerima),
+                      _buildInfoRow('Waktu diterima', s.waktuTerima),
                       _buildInfoRow(
                         'Status',
                         _statusLabel(s.status),
@@ -229,7 +229,7 @@ class _ReceivedSampleDetailScreenState
                       ),
                       if (s.errorMessage != null && s.errorMessage!.isNotEmpty)
                         _buildInfoRow(
-                          'Error',
+                          'Kesalahan',
                           s.errorMessage!,
                           valueColor: AppColors.error,
                         ),

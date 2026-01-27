@@ -44,11 +44,13 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   }
 
   Future<void> _saveSample() async {
-    final existing = await _dbHelper.getReceivedSampleByDataLsuId(widget.dataLsuId);
+    final existing = await _dbHelper.getReceivedSampleByDataLsuId(
+      widget.dataLsuId,
+    );
     if (existing != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('This sample has already been received'),
+          content: Text('Sampel ini sudah diterima'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -90,7 +92,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
         ref.read(homeCountsRefreshProvider.notifier).state++;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Sample saved successfully'),
+            content: Text('Sampel berhasil disimpan'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -100,7 +102,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving sample: $e'),
+            content: Text('Gagal menyimpan sampel: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -118,7 +120,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Confirmation'),
+        title: const Text('Konfirmasi'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -137,15 +139,16 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                       MaterialPageRoute(
                         builder: (context) => FullScreenImagePreviewScreen(
                           imagePath: widget.photoPath,
-                          title: 'Photo Preview',
+                          title: 'Pratinjau Foto',
                           details: {
                             'Kode': widget.kode,
                             'Estate': widget.masterLsu.estate ?? '-',
                             'Afdeling': widget.masterLsu.afdeling ?? '-',
                             'Blok': widget.masterLsu.blok ?? '-',
-                            'Date Received':
-                                DateUtils.formatDate(_selectedDate),
-                            'Time Received':
+                            'Tanggal Diterima': DateUtils.formatDate(
+                              _selectedDate,
+                            ),
+                            'Waktu Diterima':
                                 '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
                           },
                         ),
@@ -175,7 +178,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Sample Information',
+                        'Informasi Sampel',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -205,7 +208,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Date & Time',
+                        'Tanggal & Waktu',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -214,11 +217,11 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Date Received',
+                        'Tanggal Diterima',
                         DateUtils.formatDate(_selectedDate),
                       ),
                       _buildInfoRow(
-                        'Time Received',
+                        'Waktu Diterima',
                         '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
                       ),
                     ],
@@ -250,7 +253,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                         ),
                       )
                     : const Text(
-                        'Save Sample',
+                        'Simpan Sampel',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

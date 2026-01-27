@@ -4,19 +4,16 @@ import 'package:permission_handler/permission_handler.dart';
 import '../core/constants/app_constants.dart';
 
 /// Flash mode for the camera: off, always on (torch), or flash when taking photo.
-enum CameraFlashMode {
-  off,
-  torch,
-  onCapture,
-}
+enum CameraFlashMode { off, torch, onCapture }
 
 /// Signature for building a custom header (e.g. back + title + flash on the right).
-typedef CameraHeaderBuilder = Widget Function(
-  BuildContext context, {
-  required CameraFlashMode flashMode,
-  required VoidCallback cycleFlash,
-  required bool flashSupported,
-});
+typedef CameraHeaderBuilder =
+    Widget Function(
+      BuildContext context, {
+      required CameraFlashMode flashMode,
+      required VoidCallback cycleFlash,
+      required bool flashSupported,
+    });
 
 /// Reusable camera widget: live preview (no watermark overlay), capture button.
 /// Caller handles watermark, compress, save, and gallery.
@@ -73,21 +70,24 @@ class _CameraViewState extends State<CameraView> {
   Future<void> _initCamera() async {
     final status = await Permission.camera.request();
     if (!status.isGranted) {
-      _setError('Camera permission is required');
+      _setError('Izin kamera diperlukan');
       return;
     }
 
     try {
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
-        _setError('No camera found');
+        _setError('Tidak ada kamera');
         return;
       }
 
       // Default to rear (back) camera; fallback to first if no back camera.
-      final backCameras =
-          _cameras.where((c) => c.lensDirection == CameraLensDirection.back);
-      final camera = backCameras.isNotEmpty ? backCameras.first : _cameras.first;
+      final backCameras = _cameras.where(
+        (c) => c.lensDirection == CameraLensDirection.back,
+      );
+      final camera = backCameras.isNotEmpty
+          ? backCameras.first
+          : _cameras.first;
 
       final controller = CameraController(
         camera,
@@ -108,7 +108,7 @@ class _CameraViewState extends State<CameraView> {
         _errorMessage = null;
       });
     } catch (e) {
-      _setError('Camera error: $e');
+      _setError('Kesalahan kamera: $e');
     }
   }
 
@@ -133,7 +133,7 @@ class _CameraViewState extends State<CameraView> {
       widget.onCaptured(file.path);
     } catch (e) {
       if (mounted) {
-        _setError('Capture failed: $e');
+        _setError('Pengambilan gagal: $e');
       }
     } finally {
       if (mounted) {
@@ -214,7 +214,7 @@ class _CameraViewState extends State<CameraView> {
               CircularProgressIndicator(color: Colors.white),
               SizedBox(height: 16),
               Text(
-                'Initializing camera…',
+                'Menginisialisasi kamera…',
                 style: TextStyle(color: Colors.white, fontSize: 16),
               ),
             ],
@@ -271,39 +271,45 @@ class _CameraViewState extends State<CameraView> {
             ),
           // Shutter button — center right
           Positioned(
-          right: 24,
-          top: 0,
-          bottom: 0,
-          child: Center(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _isCapturing ? null : _capture,
-                customBorder: const CircleBorder(),
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
-                    color: _isCapturing
-                        ? Colors.white54
-                        : Colors.white.withValues(alpha: 0.3),
-                  ),
-                  child: _isCapturing
-                      ? const Padding(
-                          padding: EdgeInsets.all(20),
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            right: 24,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _isCapturing ? null : _capture,
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      color: _isCapturing
+                          ? Colors.white54
+                          : Colors.white.withValues(alpha: 0.3),
+                    ),
+                    child: _isCapturing
+                        ? const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 36,
                           ),
-                        )
-                      : const Icon(Icons.camera_alt, color: Colors.white, size: 36),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
         ],
       ),
     );

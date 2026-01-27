@@ -41,13 +41,13 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Upload Complete'),
+          title: const Text('Unggah Selesai'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Success: $successCount'),
-              Text('Failed: $failedCount'),
+              Text('Berhasil: $successCount'),
+              Text('Gagal: $failedCount'),
             ],
           ),
           actions: [
@@ -67,7 +67,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Samples'),
+        title: const Text('Unggah Sampel'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -90,7 +90,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Uploading Photos',
+                        'Mengunggah Foto',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -115,7 +115,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Uploading: ${uploadState.progress!.currentItem}',
+                        'Mengunggah: ${uploadState.progress!.currentItem}',
                         style: TextStyle(
                           fontSize: 12,
                           color: AppColors.textSecondary,
@@ -140,7 +140,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No pending uploads',
+                            'Tidak ada unggahan tertunda',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 16,
@@ -249,7 +249,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                           ),
                         )
                       : Text(
-                          'Upload All (${_pendingSamples.length})',
+                          'Unggah Semua (${_pendingSamples.length})',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

@@ -95,12 +95,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } else {
         state = state.copyWith(
           isLoading: false,
-          error: response.error?.message ?? 'Login failed',
+          error: response.error?.message ?? 'Login gagal',
         );
         return false;
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Network error occurred');
+      state = state.copyWith(isLoading: false, error: 'Terjadi kesalahan jaringan');
       return false;
     }
   }

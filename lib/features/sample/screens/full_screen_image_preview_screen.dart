@@ -70,7 +70,7 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
           Icon(Icons.broken_image_outlined, size: 64, color: Colors.grey[600]),
           const SizedBox(height: 8),
           Text(
-            'Photo not found',
+            'Foto tidak ditemukan',
             style: TextStyle(color: Colors.grey[500], fontSize: 16),
           ),
         ],
@@ -114,7 +114,7 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              'Details',
+              'Detail',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,

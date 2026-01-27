@@ -52,9 +52,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
   }
 
   void _lockPortrait() {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   }
 
   void _unlockOrientation() {
@@ -84,7 +82,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
         watermarkText: watermarkText,
       );
       if (watermarkedPath == null || !mounted) {
-        _showError('Failed to apply watermark');
+        _showError('Gagal menerapkan watermark');
         return;
       }
 
@@ -102,7 +100,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
         outputFileName: fileName,
       );
       if (savedPath == null || !mounted) {
-        _showError('Failed to save photo');
+        _showError('Gagal menyimpan foto');
         return;
       }
 
@@ -116,7 +114,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showError('Error: $e');
+        _showError('Kesalahan: $e');
         setState(() => _isProcessing = false);
       }
     }
@@ -138,7 +136,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
     if (_savedImagePath == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please take a photo first'),
+          content: Text('Ambil foto terlebih dahulu'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -174,51 +172,61 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
           onError: (msg) {
             if (mounted) _showError(msg);
           },
-          buildHeader: (context, {required flashMode, required cycleFlash, required flashSupported}) {
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              color: Colors.black.withValues(alpha: 0.6),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+          buildHeader:
+              (
+                context, {
+                required flashMode,
+                required cycleFlash,
+                required flashSupported,
+              }) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 12,
                   ),
-                  const Expanded(
-                    child: Text(
-                      'Capture Photo',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                  color: Colors.black.withValues(alpha: 0.6),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
+                      const Expanded(
+                        child: Text(
+                          'Ambil Foto',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      if (flashSupported)
+                        IconButton(
+                          onPressed: cycleFlash,
+                          icon: Icon(
+                            switch (flashMode) {
+                              CameraFlashMode.off => Icons.flash_off,
+                              CameraFlashMode.torch => Icons.flash_on,
+                              CameraFlashMode.onCapture => Icons.flash_auto,
+                            },
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          tooltip: switch (flashMode) {
+                            CameraFlashMode.off => 'Flash mati',
+                            CameraFlashMode.torch => 'Flash selalu menyala',
+                            CameraFlashMode.onCapture =>
+                              'Flash saat ambil foto',
+                          },
+                        )
+                      else
+                        const SizedBox(width: 48),
+                    ],
                   ),
-                  if (flashSupported)
-                    IconButton(
-                      onPressed: cycleFlash,
-                      icon: Icon(
-                        switch (flashMode) {
-                          CameraFlashMode.off => Icons.flash_off,
-                          CameraFlashMode.torch => Icons.flash_on,
-                          CameraFlashMode.onCapture => Icons.flash_auto,
-                        },
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      tooltip: switch (flashMode) {
-                        CameraFlashMode.off => 'Flash off',
-                        CameraFlashMode.torch => 'Flash always on',
-                        CameraFlashMode.onCapture => 'Flash when take photo',
-                      },
-                    )
-                  else
-                    const SizedBox(width: 48),
-                ],
-              ),
-            );
-          },
+                );
+              },
         ),
         if (_isProcessing)
           Container(
@@ -230,7 +238,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
                 CircularProgressIndicator(color: Colors.white),
                 SizedBox(height: 16),
                 Text(
-                  'Saving photo…',
+                  'Menyimpan foto…',
                   style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ],
@@ -260,16 +268,16 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
             fit: BoxFit.contain,
             borderRadius: 0,
             onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (context) => FullScreenImagePreviewScreen(
-                  imagePath: path,
-                  title: 'Photo Preview',
-                  details: details,
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => FullScreenImagePreviewScreen(
+                    imagePath: path,
+                    title: 'Pratinjau Foto',
+                    details: details,
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
           ),
         ),
         // Bottom button bar overlay
@@ -288,7 +296,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
                   OutlinedButton.icon(
                     onPressed: _retake,
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text('Retake'),
+                    label: const Text('Ambil Ulang'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
                       side: const BorderSide(color: Colors.white70),
@@ -298,7 +306,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
                   ElevatedButton.icon(
                     onPressed: _proceedToConfirmation,
                     icon: const Icon(Icons.check),
-                    label: const Text('Use This Photo'),
+                    label: const Text('Gunakan Foto Ini'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,

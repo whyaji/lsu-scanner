@@ -25,7 +25,7 @@ class CustomProgressIndicator extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Uploading',
+              'Mengunggah',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -48,7 +48,7 @@ class CustomProgressIndicator extends StatelessWidget {
             if (currentItem != null) ...[
               const SizedBox(height: 8),
               Text(
-                'Current: $currentItem',
+                'Saat ini: $currentItem',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],

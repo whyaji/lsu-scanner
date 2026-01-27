@@ -36,7 +36,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Invalid QR code format'),
+            content: Text('Format QR code tidak valid'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -55,7 +55,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Master LSU data not found'),
+            content: Text('Data Master LSU tidak ditemukan'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -85,7 +85,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan QR Code'),
+        title: const Text('Pindai QR Code'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),

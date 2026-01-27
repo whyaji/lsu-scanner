@@ -21,7 +21,7 @@ class _RegionalSelectionScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Regional'),
+        title: const Text('Pilih Regional'),
         elevation: 0,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -56,7 +56,7 @@ class _RegionalSelectionScreenState
                         ),
                       ),
                       subtitle: Text(
-                        'Select to sync data for Regional $regional',
+                        'Pilih untuk sinkron data Regional $regional',
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
                       trailing: isSelected
@@ -82,7 +82,7 @@ class _RegionalSelectionScreenState
                         if (!syncSuccess) {
                           final errorMsg =
                               ref.read(syncProvider).error ??
-                              'Failed to sync data';
+                              'Gagal menyinkronkan data';
                           messenger.showSnackBar(
                             SnackBar(
                               content: Text(errorMsg),

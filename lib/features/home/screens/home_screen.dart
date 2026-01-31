@@ -30,16 +30,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _loadCounts() async {
-    final pending = await _dbHelper.getPendingUploads();
-    final all = await _dbHelper.getAllReceivedSamples();
-    final uploaded = all
+    final pendingReceived = await _dbHelper.getPendingUploads();
+    final pendingComplete = await _dbHelper.getPendingCompleteUploads();
+    final allReceived = await _dbHelper.getAllReceivedSamples();
+    final allCompleted = await _dbHelper.getAllCompletedSamples();
+    final uploadedReceived = allReceived
+        .where((s) => s.status == AppConstants.statusUploaded)
+        .length;
+    final uploadedComplete = allCompleted
         .where((s) => s.status == AppConstants.statusUploaded)
         .length;
 
     setState(() {
-      _pendingCount = pending.length;
-      _uploadedCount = uploaded;
+      _pendingCount = pendingReceived.length + pendingComplete.length;
+      _uploadedCount = uploadedReceived + uploadedComplete;
     });
+  }
+
+  Future<void> _showLogoutConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Konfirmasi Logout'),
+        content: const Text(
+          'Apakah Anda yakin ingin keluar dari akun ini?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Ya, Logout'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await ref.read(authProvider.notifier).logout();
+      if (mounted) {
+        ref.invalidate(regionalProvider);
+        ref.invalidate(syncProvider);
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    }
   }
 
   @override
@@ -59,14 +94,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (mounted) {
-                ref.invalidate(regionalProvider);
-                ref.invalidate(syncProvider);
-                Navigator.of(context).pushReplacementNamed('/login');
-              }
-            },
+            onPressed: () => _showLogoutConfirmation(context),
           ),
         ],
       ),
@@ -162,7 +190,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: _buildStatCard(
-                          'Terdunggah',
+                          'Terunggah',
                           _uploadedCount.toString(),
                           AppColors.success,
                           Icons.cloud_done,
@@ -173,30 +201,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Action Buttons
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const QRScannerScreen(),
+                // Action Buttons — Pindai QR Terima only for non-admin
+                if (authState.user?.isAdmin != true)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const QRScannerScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner, size: 28),
+                    label: const Text(
+                      'Pindai QR Terima',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.qr_code_scanner, size: 28),
-                  label: const Text(
-                    'Pindai QR Code',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                if (authState.user?.isAdmin != true) const SizedBox(height: 12),
+                // Pindai QR Selesai only for admin
+                if (authState.user?.isAdmin == true)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const QRScannerScreen(isCompleteSample: true),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.qr_code_scanner, size: 28),
+                    label: const Text(
+                      'Pindai QR Selesai',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                if (authState.user?.isAdmin == true) const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context)

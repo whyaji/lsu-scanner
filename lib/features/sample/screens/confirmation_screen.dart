@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide DateUtils;
 import 'dart:io';
 import '../../../core/database/models/master_lsu.dart';
 import '../../../core/database/models/received_sample.dart';
+import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/constants/app_constants.dart';
@@ -16,6 +17,7 @@ class ConfirmationScreen extends ConsumerStatefulWidget {
   final String kode;
   final MasterLsu masterLsu;
   final String photoPath;
+  final bool isCompleteSample;
 
   const ConfirmationScreen({
     super.key,
@@ -24,6 +26,7 @@ class ConfirmationScreen extends ConsumerStatefulWidget {
     required this.kode,
     required this.masterLsu,
     required this.photoPath,
+    this.isCompleteSample = false,
   });
 
   @override
@@ -44,55 +47,89 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   }
 
   Future<void> _saveSample() async {
-    final existing = await _dbHelper.getReceivedSampleByDataLsuId(
-      widget.dataLsuId,
-    );
-    if (existing != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sampel ini sudah diterima'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-    });
-
     try {
+      if (widget.isCompleteSample) {
+        final existing = await _dbHelper.getCompletedSampleByDataLsuId(
+          widget.dataLsuId,
+        );
+        if (existing != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sampel ini sudah selesai'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          return;
+        }
+      } else {
+        final existing = await _dbHelper.getReceivedSampleByDataLsuId(
+          widget.dataLsuId,
+        );
+        if (existing != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sampel ini sudah diterima'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+          return;
+        }
+      }
+
+      if (mounted) setState(() => _isSaving = true);
+
       final authState = ref.read(authProvider);
       final userId = authState.user?.id;
-
-      final sample = ReceivedSample(
-        dataLsuId: widget.dataLsuId,
-        masterLsuId: widget.masterLsuId,
-        kode: widget.kode,
-        tanggalTerima: DateUtils.formatDate(_selectedDate),
-        waktuTerima: DateUtils.formatTime(
-          DateTime(
-            _selectedDate.year,
-            _selectedDate.month,
-            _selectedDate.day,
-            _selectedTime.hour,
-            _selectedTime.minute,
-          ),
+      final dateStr = DateUtils.formatDate(_selectedDate);
+      final timeStr = DateUtils.formatTime(
+        DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          _selectedTime.hour,
+          _selectedTime.minute,
         ),
-        fotoPath: widget.photoPath,
-        status: AppConstants.statusNotUploaded,
-        userId: userId,
-        createdAt: DateTime.now().toIso8601String(),
-        masterLsu: widget.masterLsu,
       );
 
-      await _dbHelper.insertReceivedSample(sample);
+      if (widget.isCompleteSample) {
+        final sample = CompletedSample(
+          dataLsuId: widget.dataLsuId,
+          masterLsuId: widget.masterLsuId,
+          kode: widget.kode,
+          tanggalSelesai: dateStr,
+          waktuSelesai: timeStr,
+          fotoPath: widget.photoPath,
+          status: AppConstants.statusNotUploaded,
+          userId: userId,
+          createdAt: DateTime.now().toIso8601String(),
+          masterLsu: widget.masterLsu,
+        );
+        await _dbHelper.insertCompletedSample(sample);
+      } else {
+        final sample = ReceivedSample(
+          dataLsuId: widget.dataLsuId,
+          masterLsuId: widget.masterLsuId,
+          kode: widget.kode,
+          tanggalTerima: dateStr,
+          waktuTerima: timeStr,
+          fotoPath: widget.photoPath,
+          status: AppConstants.statusNotUploaded,
+          userId: userId,
+          createdAt: DateTime.now().toIso8601String(),
+          masterLsu: widget.masterLsu,
+        );
+        await _dbHelper.insertReceivedSample(sample);
+      }
 
       if (mounted) {
         ref.read(homeCountsRefreshProvider.notifier).state++;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sampel berhasil disimpan'),
+          SnackBar(
+            content: Text(
+              widget.isCompleteSample
+                  ? 'Sampel selesai berhasil disimpan'
+                  : 'Sampel berhasil disimpan',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -109,10 +146,43 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isSaving = false;
-        });
+        setState(() => _isSaving = false);
       }
+    }
+  }
+
+  Future<void> _showSaveConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          widget.isCompleteSample ? 'Simpan Sampel Selesai?' : 'Simpan Sampel?',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
+        content: Text(
+          widget.isCompleteSample
+              ? 'Anda yakin ingin menyimpan data sampel selesai ini?'
+              : 'Anda yakin ingin menyimpan data sampel diterima ini?',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Batal',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Ya, Simpan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _saveSample();
     }
   }
 
@@ -120,7 +190,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Konfirmasi'),
+        title: Text(
+          widget.isCompleteSample ? 'Konfirmasi Selesai' : 'Konfirmasi',
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -135,6 +207,12 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                 elevation: 2,
                 child: InkWell(
                   onTap: () {
+                    final dateLabel = widget.isCompleteSample
+                        ? 'Tanggal Selesai'
+                        : 'Tanggal Diterima';
+                    final timeLabel = widget.isCompleteSample
+                        ? 'Waktu Selesai'
+                        : 'Waktu Diterima';
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => FullScreenImagePreviewScreen(
@@ -145,10 +223,8 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                             'Estate': widget.masterLsu.estate ?? '-',
                             'Afdeling': widget.masterLsu.afdeling ?? '-',
                             'Blok': widget.masterLsu.blok ?? '-',
-                            'Tanggal Diterima': DateUtils.formatDate(
-                              _selectedDate,
-                            ),
-                            'Waktu Diterima':
+                            dateLabel: DateUtils.formatDate(_selectedDate),
+                            timeLabel:
                                 '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
                           },
                         ),
@@ -217,11 +293,15 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
-                        'Tanggal Diterima',
+                        widget.isCompleteSample
+                            ? 'Tanggal Selesai'
+                            : 'Tanggal Diterima',
                         DateUtils.formatDate(_selectedDate),
                       ),
                       _buildInfoRow(
-                        'Waktu Diterima',
+                        widget.isCompleteSample
+                            ? 'Waktu Selesai'
+                            : 'Waktu Diterima',
                         '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
                       ),
                     ],
@@ -232,7 +312,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
 
               // Save Button
               ElevatedButton(
-                onPressed: _isSaving ? null : _saveSample,
+                onPressed: _isSaving ? null : _showSaveConfirmation,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -252,9 +332,11 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                           ),
                         ),
                       )
-                    : const Text(
-                        'Simpan Sampel',
-                        style: TextStyle(
+                    : Text(
+                        widget.isCompleteSample
+                            ? 'Simpan Sampel Selesai'
+                            : 'Simpan Sampel',
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),

@@ -101,10 +101,29 @@ class ApiService {
     }
   }
 
+  Future<ApiResponse<UploadResponse>> batchUploadComplete(
+    List<CompleteUploadItem> items,
+  ) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.batchUploadComplete,
+        data: items.map((e) => e.toJson()).toList(),
+      );
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => UploadResponse.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  /// [type] optional: 'terima' (default) or 'selesai'. Backend uses it to update the correct Data LSU field.
   Future<ApiResponse<PhotoUploadResponse>> uploadPhoto({
     required String filePath,
     required int dataLsuId,
     required String kode,
+    String? type,
     ProgressCallback? onSendProgress,
   }) async {
     try {
@@ -112,6 +131,7 @@ class ApiService {
         'file': await MultipartFile.fromFile(filePath),
         'dataLsuId': dataLsuId,
         'kode': kode,
+        if (type != null && type.isNotEmpty) 'type': type,
       });
 
       final response = await _dio.post(

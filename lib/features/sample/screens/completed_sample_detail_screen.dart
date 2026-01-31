@@ -2,29 +2,29 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
-import '../../../core/database/models/received_sample.dart';
+import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/models/master_lsu.dart';
 import 'full_screen_image_preview_screen.dart';
 
-class ReceivedSampleDetailScreen extends StatefulWidget {
+class CompletedSampleDetailScreen extends StatefulWidget {
   final int sampleId;
 
-  const ReceivedSampleDetailScreen({super.key, required this.sampleId});
+  const CompletedSampleDetailScreen({super.key, required this.sampleId});
 
   @override
-  State<ReceivedSampleDetailScreen> createState() =>
-      _ReceivedSampleDetailScreenState();
+  State<CompletedSampleDetailScreen> createState() =>
+      _CompletedSampleDetailScreenState();
 }
 
-class _ReceivedSampleDetailScreenState
-    extends State<ReceivedSampleDetailScreen> {
+class _CompletedSampleDetailScreenState
+    extends State<CompletedSampleDetailScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-  ReceivedSample? _sample;
+  CompletedSample? _sample;
   MasterLsu? _masterLsu;
   bool _loading = true;
 
   Future<void> _load() async {
-    final sample = await _dbHelper.getReceivedSampleById(widget.sampleId);
+    final sample = await _dbHelper.getCompletedSampleById(widget.sampleId);
     MasterLsu? master;
     if (sample != null) {
       master = await _dbHelper.getMasterLsuById(sample.masterLsuId);
@@ -72,13 +72,13 @@ class _ReceivedSampleDetailScreenState
         status == AppConstants.statusError;
   }
 
-  Future<void> _confirmAndDelete(ReceivedSample s) async {
+  Future<void> _confirmAndDelete(CompletedSample s) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Hapus sampel'),
         content: const Text(
-          'Yakin ingin menghapus sampel terima ini? Tindakan ini tidak dapat dibatalkan.',
+          'Yakin ingin menghapus sampel selesai ini? Tindakan ini tidak dapat dibatalkan.',
         ),
         actions: [
           TextButton(
@@ -95,7 +95,7 @@ class _ReceivedSampleDetailScreenState
     );
     if (confirmed != true || !mounted) return;
     if (s.id == null) return;
-    await _dbHelper.deleteReceivedSample(s.id!);
+    await _dbHelper.deleteCompletedSample(s.id!);
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -128,7 +128,7 @@ class _ReceivedSampleDetailScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail sampel terima'),
+        title: const Text('Detail sampel selesai'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -147,7 +147,6 @@ class _ReceivedSampleDetailScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Photo — tap for full screen with details
               Card(
                 elevation: 2,
                 child: InkWell(
@@ -155,8 +154,8 @@ class _ReceivedSampleDetailScreenState
                       ? () {
                           final details = <String, String>{
                             'Kode': s.kode,
-                            'Tanggal diterima': s.tanggalTerima,
-                            'Waktu diterima': s.waktuTerima,
+                            'Tanggal selesai': s.tanggalSelesai,
+                            'Waktu selesai': s.waktuSelesai,
                             'Status': _statusLabel(s.status),
                             if (m != null && m.estate != null)
                               'Estate': m.estate!,
@@ -169,7 +168,7 @@ class _ReceivedSampleDetailScreenState
                               builder: (context) =>
                                   FullScreenImagePreviewScreen(
                                     imagePath: s.fotoPath,
-                                    title: 'Sampel terima',
+                                    title: 'Sampel selesai',
                                     details: details,
                                   ),
                             ),
@@ -201,8 +200,6 @@ class _ReceivedSampleDetailScreenState
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Received info
               Card(
                 elevation: 2,
                 child: Padding(
@@ -211,7 +208,7 @@ class _ReceivedSampleDetailScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Informasi penerimaan',
+                        'Informasi penyelesaian',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -220,8 +217,8 @@ class _ReceivedSampleDetailScreenState
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow('Kode', s.kode),
-                      _buildInfoRow('Tanggal diterima', s.tanggalTerima),
-                      _buildInfoRow('Waktu diterima', s.waktuTerima),
+                      _buildInfoRow('Tanggal selesai', s.tanggalSelesai),
+                      _buildInfoRow('Waktu selesai', s.waktuSelesai),
                       _buildInfoRow(
                         'Status',
                         _statusLabel(s.status),
@@ -238,9 +235,7 @@ class _ReceivedSampleDetailScreenState
                 ),
               ),
               const SizedBox(height: 16),
-
-              // Master LSU
-              if (m != null) ...[
+              if (m != null)
                 Card(
                   elevation: 2,
                   child: Padding(
@@ -290,7 +285,6 @@ class _ReceivedSampleDetailScreenState
                     ),
                   ),
                 ),
-              ],
             ],
           ),
         ),

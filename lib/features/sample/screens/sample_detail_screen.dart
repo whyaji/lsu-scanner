@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/database/models/master_lsu.dart';
 import '../../../core/database/models/received_sample.dart';
+import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/constants/app_constants.dart';
 import 'photo_capture_screen.dart';
@@ -12,6 +13,7 @@ class SampleDetailScreen extends StatefulWidget {
   final int masterLsuId;
   final String kode;
   final MasterLsu masterLsu;
+  final bool isCompleteSample;
 
   const SampleDetailScreen({
     super.key,
@@ -19,6 +21,7 @@ class SampleDetailScreen extends StatefulWidget {
     required this.masterLsuId,
     required this.kode,
     required this.masterLsu,
+    this.isCompleteSample = false,
   });
 
   @override
@@ -28,23 +31,46 @@ class SampleDetailScreen extends StatefulWidget {
 class _SampleDetailScreenState extends State<SampleDetailScreen> {
   static final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   ReceivedSample? _existingReceived;
+  CompletedSample? _existingCompleted;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadExistingReceived();
+    _loadExisting();
   }
 
-  Future<void> _loadExistingReceived() async {
-    final existing = await _dbHelper.getReceivedSampleByDataLsuId(
-      widget.dataLsuId,
-    );
-    if (mounted) {
-      setState(() {
-        _existingReceived = existing;
-        _loading = false;
-      });
+  Future<void> _loadExisting() async {
+    try {
+      if (widget.isCompleteSample) {
+        final existing = await _dbHelper.getCompletedSampleByDataLsuId(
+          widget.dataLsuId,
+        );
+        if (mounted) {
+          setState(() {
+            _existingCompleted = existing;
+            _loading = false;
+          });
+        }
+      } else {
+        final existing = await _dbHelper.getReceivedSampleByDataLsuId(
+          widget.dataLsuId,
+        );
+        if (mounted) {
+          setState(() {
+            _existingReceived = existing;
+            _loading = false;
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _existingCompleted = null;
+          _existingReceived = null;
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -52,7 +78,9 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Sampel'),
+        title: Text(
+          widget.isCompleteSample ? 'Detail Sampel Selesai' : 'Detail Sampel',
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -72,11 +100,15 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                     _buildMasterLsuCard(),
                     const SizedBox(height: 24),
 
-                    // When already received: show existing data (image + date/time), hide Take Photo
-                    if (_existingReceived != null) ...[
+                    // When already received/completed: show existing data, hide Take Photo
+                    if (widget.isCompleteSample &&
+                        _existingCompleted != null) ...[
+                      _buildAlreadyCompletedCard(),
+                    ] else if (!widget.isCompleteSample &&
+                        _existingReceived != null) ...[
                       _buildAlreadyReceivedCard(),
                     ] else ...[
-                      // Take Photo Button — only when not yet received
+                      // Take Photo Button — only when not yet received/completed
                       ElevatedButton.icon(
                         onPressed: () {
                           Navigator.of(context).push(
@@ -86,14 +118,17 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                                 masterLsuId: widget.masterLsuId,
                                 kode: widget.kode,
                                 masterLsu: widget.masterLsu,
+                                isCompleteSample: widget.isCompleteSample,
                               ),
                             ),
                           );
                         },
                         icon: const Icon(Icons.camera_alt),
-                        label: const Text(
-                          'Ambil Foto',
-                          style: TextStyle(fontSize: 16),
+                        label: Text(
+                          widget.isCompleteSample
+                              ? 'Ambil Foto Selesai'
+                              : 'Ambil Foto',
+                          style: const TextStyle(fontSize: 16),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -178,6 +213,80 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                 m.jmlPokokProduktif.toString(),
               ),
             if (m.sph != null) _buildInfoRow('SPH', m.sph!.toString()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlreadyCompletedCard() {
+    final s = _existingCompleted!;
+    final photoFile = File(s.fotoPath);
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.check_circle, color: AppColors.success, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  'Sudah selesai',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (photoFile.existsSync())
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => FullScreenImagePreviewScreen(
+                        imagePath: s.fotoPath,
+                        title: 'Sudah selesai',
+                        details: {
+                          'Tanggal selesai': s.tanggalSelesai,
+                          'Waktu selesai': s.waktuSelesai,
+                          'Kode': s.kode,
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    photoFile,
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              )
+            else
+              Container(
+                height: 200,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Foto tidak ditemukan',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+            const SizedBox(height: 16),
+            _buildInfoRow('Tanggal selesai', s.tanggalSelesai),
+            _buildInfoRow('Waktu selesai', s.waktuSelesai),
           ],
         ),
       ),

@@ -4,6 +4,7 @@ import '../constants/app_constants.dart';
 import 'models/master_sampel.dart';
 import 'models/master_lsu.dart';
 import 'models/received_sample.dart';
+import 'models/completed_sample.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -21,7 +22,62 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    final db = await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: _onUpgrade,
+    );
+    await _ensureCompletedSampleTable(db);
+    return db;
+  }
+
+  /// Ensures completed_sample exists (handles DBs created at v2 before table was in onCreate).
+  Future<void> _ensureCompletedSampleTable(Database db) async {
+    final result = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='completed_sample'",
+    );
+    if (result.isEmpty) {
+      await db.execute('''
+        CREATE TABLE completed_sample (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          data_lsu_id INTEGER NOT NULL UNIQUE,
+          master_lsu_id INTEGER NOT NULL,
+          kode TEXT NOT NULL,
+          tanggal_selesai TEXT NOT NULL,
+          waktu_selesai TEXT NOT NULL,
+          foto_path TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'not_uploaded',
+          error_message TEXT,
+          user_id INTEGER,
+          created_at TEXT NOT NULL,
+          updated_at TEXT,
+          FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
+        )
+      ''');
+    }
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE completed_sample (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          data_lsu_id INTEGER NOT NULL UNIQUE,
+          master_lsu_id INTEGER NOT NULL,
+          kode TEXT NOT NULL,
+          tanggal_selesai TEXT NOT NULL,
+          waktu_selesai TEXT NOT NULL,
+          foto_path TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'not_uploaded',
+          error_message TEXT,
+          user_id INTEGER,
+          created_at TEXT NOT NULL,
+          updated_at TEXT,
+          FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
+        )
+      ''');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -78,6 +134,27 @@ class DatabaseHelper {
         FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
       )
     ''');
+
+    // Create completed_sample table (for version 2; also in onUpgrade for existing DBs)
+    if (version >= 2) {
+      await db.execute('''
+        CREATE TABLE completed_sample (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          data_lsu_id INTEGER NOT NULL UNIQUE,
+          master_lsu_id INTEGER NOT NULL,
+          kode TEXT NOT NULL,
+          tanggal_selesai TEXT NOT NULL,
+          waktu_selesai TEXT NOT NULL,
+          foto_path TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'not_uploaded',
+          error_message TEXT,
+          user_id INTEGER,
+          created_at TEXT NOT NULL,
+          updated_at TEXT,
+          FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
+        )
+      ''');
+    }
 
     // Create user_preferences table
     await db.execute('''
@@ -243,6 +320,81 @@ class DatabaseHelper {
   Future<int> deleteReceivedSample(int id) async {
     final db = await database;
     return await db.delete('received_sample', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // Completed Sample methods
+  Future<int> insertCompletedSample(CompletedSample sample) async {
+    final db = await database;
+    return await db.insert('completed_sample', sample.toJson());
+  }
+
+  Future<List<CompletedSample>> getAllCompletedSamples() async {
+    final db = await database;
+    final result = await db.query(
+      'completed_sample',
+      orderBy: 'created_at DESC',
+    );
+    return result.map((json) => CompletedSample.fromJson(json)).toList();
+  }
+
+  Future<List<CompletedSample>> getPendingCompleteUploads() async {
+    final db = await database;
+    final result = await db.query(
+      'completed_sample',
+      where: 'status IN (?, ?)',
+      whereArgs: ['not_uploaded', 'error'],
+      orderBy: 'created_at DESC',
+    );
+    return result.map((json) => CompletedSample.fromJson(json)).toList();
+  }
+
+  Future<CompletedSample?> getCompletedSampleById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'completed_sample',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return null;
+    return CompletedSample.fromJson(result.first);
+  }
+
+  Future<CompletedSample?> getCompletedSampleByDataLsuId(int dataLsuId) async {
+    final db = await database;
+    final result = await db.query(
+      'completed_sample',
+      where: 'data_lsu_id = ?',
+      whereArgs: [dataLsuId],
+    );
+    if (result.isEmpty) return null;
+    return CompletedSample.fromJson(result.first);
+  }
+
+  Future<int> updateCompletedSampleStatus(
+    int id,
+    String status, {
+    String? errorMessage,
+  }) async {
+    final db = await database;
+    return await db.update(
+      'completed_sample',
+      {
+        'status': status,
+        'error_message': errorMessage,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> deleteCompletedSample(int id) async {
+    final db = await database;
+    return await db.delete(
+      'completed_sample',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   // User Preferences methods

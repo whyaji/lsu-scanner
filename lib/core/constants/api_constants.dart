@@ -19,6 +19,7 @@ class ApiConstants {
   static const String getCurrentUser = '/auth/me';
   static const String sync = '/mobile/sync';
   static const String batchUpload = '/data-lsu/upload';
+  static const String batchUploadComplete = '/data-lsu/upload-complete';
   static const String uploadPhoto = '/upload/photo';
 
   // Timeouts

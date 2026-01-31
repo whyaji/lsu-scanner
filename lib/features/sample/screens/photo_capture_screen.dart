@@ -15,6 +15,7 @@ class PhotoCaptureScreen extends ConsumerStatefulWidget {
   final int masterLsuId;
   final String kode;
   final MasterLsu masterLsu;
+  final bool isCompleteSample;
 
   const PhotoCaptureScreen({
     super.key,
@@ -22,6 +23,7 @@ class PhotoCaptureScreen extends ConsumerStatefulWidget {
     required this.masterLsuId,
     required this.kode,
     required this.masterLsu,
+    this.isCompleteSample = false,
   });
 
   @override
@@ -68,7 +70,8 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
     final part =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
-    return '${widget.kode}\n$line2\n$part';
+    final statusLine = widget.isCompleteSample ? 'SELESAI' : 'DITERIMA';
+    return '$statusLine\n${widget.kode}\n$line2\n$part';
   }
 
   Future<void> _onCaptured(String tempPath) async {
@@ -150,6 +153,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
           kode: widget.kode,
           masterLsu: widget.masterLsu,
           photoPath: _savedImagePath!,
+          isCompleteSample: widget.isCompleteSample,
         ),
       ),
     );
@@ -191,10 +195,12 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Ambil Foto',
-                          style: TextStyle(
+                          widget.isCompleteSample
+                              ? 'Ambil Foto Selesai'
+                              : 'Ambil Foto',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.w600,

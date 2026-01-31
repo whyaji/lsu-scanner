@@ -3,6 +3,7 @@ import '../../../core/network/api_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/received_sample.dart';
+import '../../../core/database/models/completed_sample.dart';
 import '../../../core/network/models/upload_models.dart';
 import '../../../core/utils/image_utils.dart';
 import '../../../core/constants/app_constants.dart';
@@ -148,11 +149,12 @@ class UploadNotifier extends StateNotifier<UploadState> {
             photoPath = compressedPath;
           }
 
-          // Upload photo
+          // Upload photo (foto terima)
           final photoResponse = await _apiService.uploadPhoto(
             filePath: photoPath,
             dataLsuId: item.id,
             kode: item.kode,
+            type: 'terima',
             onSendProgress: (sent, total) {
               // Individual photo upload progress could be tracked here
             },
@@ -218,4 +220,205 @@ final uploadProvider = StateNotifierProvider<UploadNotifier, UploadState>((
   final apiService = ApiService(ApiClient().dio);
   final dbHelper = DatabaseHelper.instance;
   return UploadNotifier(apiService, dbHelper);
+});
+
+// --- Upload Complete (completed_sample) ---
+
+class CompleteUploadResult {
+  final CompletedSample sample;
+  final bool success;
+  final String? error;
+
+  CompleteUploadResult({
+    required this.sample,
+    required this.success,
+    this.error,
+  });
+}
+
+class UploadCompleteState {
+  final bool isUploading;
+  final UploadProgress? progress;
+  final List<CompleteUploadResult> results;
+  final String? error;
+
+  UploadCompleteState({
+    this.isUploading = false,
+    this.progress,
+    this.results = const [],
+    this.error,
+  });
+
+  UploadCompleteState copyWith({
+    bool? isUploading,
+    UploadProgress? progress,
+    List<CompleteUploadResult>? results,
+    String? error,
+  }) {
+    return UploadCompleteState(
+      isUploading: isUploading ?? this.isUploading,
+      progress: progress ?? this.progress,
+      results: results ?? this.results,
+      error: error,
+    );
+  }
+}
+
+class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
+  final ApiService _apiService;
+  final DatabaseHelper _dbHelper;
+
+  UploadCompleteNotifier(this._apiService, this._dbHelper)
+      : super(UploadCompleteState());
+
+  Future<void> uploadAllComplete() async {
+    state = state.copyWith(isUploading: true, error: null, results: []);
+
+    try {
+      final samples = await _dbHelper.getPendingCompleteUploads();
+      if (samples.isEmpty) {
+        state = state.copyWith(isUploading: false);
+        return;
+      }
+
+      final uploadItems = samples.map((s) {
+        final fileName = ImageUtils.getFileName(s.fotoPath);
+        return CompleteUploadItem(
+          id: s.dataLsuId,
+          masterLsuId: s.masterLsuId,
+          kode: s.kode,
+          foto: fileName,
+          tanggalSelesai: s.tanggalSelesai,
+          waktuSelesai: s.waktuSelesai,
+        );
+      }).toList();
+
+      final batchResponse =
+          await _apiService.batchUploadComplete(uploadItems);
+
+      if (!batchResponse.success || batchResponse.data == null) {
+        state = state.copyWith(
+          isUploading: false,
+          error: batchResponse.error?.message ?? 'Upload failed',
+        );
+        return;
+      }
+
+      final uploadData = batchResponse.data!;
+      const statusAlreadyReceivedError =
+          'Status already received, need reupload photo';
+      final statusAlreadyReceivedItems = uploadData.failed
+          .where(
+            (item) =>
+                item.error.toLowerCase() ==
+                statusAlreadyReceivedError.toLowerCase(),
+          )
+          .toList();
+      final otherFailedItems = uploadData.failed
+          .where(
+            (item) =>
+                item.error.toLowerCase() !=
+                statusAlreadyReceivedError.toLowerCase(),
+          )
+          .toList();
+
+      final itemsForPhotoUpload = <UploadSuccessItem>[
+        ...uploadData.success,
+        ...statusAlreadyReceivedItems.map(
+          (f) => UploadSuccessItem(id: f.id, kode: f.kode),
+        ),
+      ];
+      final totalPhotos = itemsForPhotoUpload.length;
+      int uploadedPhotos = 0;
+      final List<CompleteUploadResult> results = [];
+
+      for (final item in itemsForPhotoUpload) {
+        final sample = samples.firstWhere((s) => s.dataLsuId == item.id);
+
+        state = state.copyWith(
+          progress: UploadProgress(
+            total: totalPhotos,
+            current: uploadedPhotos + 1,
+            percentage: ((uploadedPhotos + 1) / totalPhotos * 100).round(),
+            currentItem: sample.kode,
+          ),
+        );
+
+        try {
+          String photoPath = sample.fotoPath;
+          final compressedPath = await ImageUtils.compressImage(photoPath);
+          if (compressedPath != null) {
+            photoPath = compressedPath;
+          }
+
+          // Upload photo (foto selesai)
+          final photoResponse = await _apiService.uploadPhoto(
+            filePath: photoPath,
+            dataLsuId: item.id,
+            kode: item.kode,
+            type: 'selesai',
+            onSendProgress: (sent, total) {},
+          );
+
+          if (photoResponse.success) {
+            await _dbHelper.updateCompletedSampleStatus(
+              sample.id!,
+              AppConstants.statusUploaded,
+            );
+            results.add(CompleteUploadResult(sample: sample, success: true));
+          } else {
+            throw Exception(
+              photoResponse.error?.message ?? 'Photo upload failed',
+            );
+          }
+        } catch (e) {
+          await _dbHelper.updateCompletedSampleStatus(
+            sample.id!,
+            AppConstants.statusError,
+            errorMessage: e.toString(),
+          );
+          results.add(
+            CompleteUploadResult(
+              sample: sample,
+              success: false,
+              error: e.toString(),
+            ),
+          );
+        }
+
+        uploadedPhotos++;
+      }
+
+      for (final item in otherFailedItems) {
+        final sample = samples.firstWhere((s) => s.dataLsuId == item.id);
+        await _dbHelper.updateCompletedSampleStatus(
+          sample.id!,
+          AppConstants.statusError,
+          errorMessage: item.error,
+        );
+        results.add(
+          CompleteUploadResult(
+            sample: sample,
+            success: false,
+            error: item.error,
+          ),
+        );
+      }
+
+      state = state.copyWith(
+        isUploading: false,
+        progress: null,
+        results: results,
+      );
+    } catch (e) {
+      state = state.copyWith(isUploading: false, error: e.toString());
+    }
+  }
+}
+
+final uploadCompleteProvider =
+    StateNotifierProvider<UploadCompleteNotifier, UploadCompleteState>((ref) {
+  final apiService = ApiService(ApiClient().dio);
+  final dbHelper = DatabaseHelper.instance;
+  return UploadCompleteNotifier(apiService, dbHelper);
 });

@@ -6,7 +6,10 @@ import '../../../core/constants/app_constants.dart';
 import '../../sample/screens/sample_detail_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
-  const QRScannerScreen({super.key});
+  /// When true, flow saves to completed_sample (tanggal_selesai/waktu_selesai).
+  final bool isCompleteSample;
+
+  const QRScannerScreen({super.key, this.isCompleteSample = false});
 
   @override
   State<QRScannerScreen> createState() => _QRScannerScreenState();
@@ -75,6 +78,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             masterLsuId: qrData.masterLsuId,
             kode: qrData.kode,
             masterLsu: masterLsu,
+            isCompleteSample: widget.isCompleteSample,
           ),
         ),
       );
@@ -85,7 +89,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pindai QR Code'),
+        title: Text(widget.isCompleteSample ? 'Pindai QR Selesai' : 'Pindai QR Code'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),

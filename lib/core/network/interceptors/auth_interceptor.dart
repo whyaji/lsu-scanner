@@ -59,6 +59,7 @@ class AuthInterceptor extends Interceptor {
       if (response.statusCode == 200) {
         final data = response.data['data'];
         await _storage.saveAccessToken(data['accessToken']);
+        await _storage.saveRefreshToken(data['refreshToken']);
         final expiresAt = DateTime.now()
             .add(Duration(seconds: data['expiresIn']))
             .millisecondsSinceEpoch;

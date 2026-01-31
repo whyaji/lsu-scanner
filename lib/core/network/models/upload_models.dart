@@ -27,6 +27,35 @@ class UploadItem {
   }
 }
 
+class CompleteUploadItem {
+  final int id;
+  final int masterLsuId;
+  final String kode;
+  final String foto;
+  final String tanggalSelesai;
+  final String waktuSelesai;
+
+  CompleteUploadItem({
+    required this.id,
+    required this.masterLsuId,
+    required this.kode,
+    required this.foto,
+    required this.tanggalSelesai,
+    required this.waktuSelesai,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'masterLsuId': masterLsuId,
+      'kode': kode,
+      'foto': foto,
+      'tanggalSelesai': tanggalSelesai,
+      'waktuSelesai': waktuSelesai,
+    };
+  }
+}
+
 class UploadSuccessItem {
   final int id;
   final String kode;

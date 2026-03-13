@@ -8,6 +8,7 @@ import '../../../core/utils/date_utils.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../home/providers/home_counts_refresh_provider.dart';
+import '../../home/screens/lsu_home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'full_screen_image_preview_screen.dart';
 
@@ -134,6 +135,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
           ),
         );
         Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const LsuHomeScreen()));
       }
     } catch (e) {
       if (mounted) {

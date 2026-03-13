@@ -63,6 +63,7 @@ class User {
   final String? jabatan;
   final String? lokasiKerja;
   final bool isAdmin;
+  final List<String>? access;
 
   User({
     required this.id,
@@ -71,9 +72,17 @@ class User {
     this.jabatan,
     this.lokasiKerja,
     required this.isAdmin,
+    this.access,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    List<String>? accessList;
+    if (json['access'] != null) {
+      final list = json['access'];
+      if (list is List) {
+        accessList = list.map((e) => e.toString()).toList();
+      }
+    }
     return User(
       id: json['id'] as int,
       username: json['username'] as String,
@@ -81,6 +90,7 @@ class User {
       jabatan: json['jabatan'] as String?,
       lokasiKerja: json['lokasiKerja'] as String?,
       isAdmin: json['isAdmin'] as bool? ?? false,
+      access: accessList,
     );
   }
 
@@ -92,6 +102,12 @@ class User {
       'jabatan': jabatan,
       'lokasiKerja': lokasiKerja,
       'isAdmin': isAdmin,
+      if (access != null) 'access': access,
     };
   }
+
+  bool get hasPupukEstateAccess =>
+      access != null && access!.contains('pupuk:estate');
+  bool get hasPupukNtAccess => access != null && access!.contains('pupuk:nt');
+  bool get hasAnyPupukAccess => hasPupukEstateAccess || hasPupukNtAccess;
 }

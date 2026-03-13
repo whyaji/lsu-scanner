@@ -19,6 +19,25 @@ class QRParser {
       return null;
     }
   }
+
+  /// Sampel Pupuk QR format: id^supplier^kodeSampel^jenisPupukFull^qtyPartaiPengiriman
+  static QRPupukData? parsePupuk(String raw) {
+    try {
+      final parts = raw.split('^');
+      if (parts.length < 5) return null;
+      final id = int.tryParse(parts[0].trim());
+      if (id == null) return null;
+      return QRPupukData(
+        id: id,
+        supplier: parts[1].trim(),
+        kodeSampel: parts[2].trim(),
+        jenisPupukFull: parts[3].trim(),
+        qtyPartaiPengiriman: int.tryParse(parts[4].trim()),
+      );
+    } catch (e) {
+      return null;
+    }
+  }
 }
 
 class QRData {
@@ -31,5 +50,27 @@ class QRData {
   @override
   String toString() {
     return 'QRData(id: $id, masterLsuId: $masterLsuId, kode: $kode)';
+  }
+}
+
+/// Sampel Pupuk QR format: id^supplier^kodeSampel^jenisPupukFull^qtyPartaiPengiriman
+class QRPupukData {
+  final int id;
+  final String supplier;
+  final String kodeSampel;
+  final String jenisPupukFull;
+  final int? qtyPartaiPengiriman;
+
+  QRPupukData({
+    required this.id,
+    required this.supplier,
+    required this.kodeSampel,
+    required this.jenisPupukFull,
+    this.qtyPartaiPengiriman,
+  });
+
+  @override
+  String toString() {
+    return 'QRPupukData(id: $id, supplier: $supplier, kodeSampel: $kodeSampel, jenisPupukFull: $jenisPupukFull, qtyPartaiPengiriman: $qtyPartaiPengiriman)';
   }
 }

@@ -5,6 +5,11 @@ import 'models/master_sampel.dart';
 import 'models/master_lsu.dart';
 import 'models/received_sample.dart';
 import 'models/completed_sample.dart';
+import 'models/data_sampel_pupuk.dart';
+import 'models/terima_dari_gudang.dart';
+import 'models/kirim_dari_estate.dart';
+import 'models/terima_dari_estate.dart';
+import 'models/kirim_lab.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -14,7 +19,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('lsu_scanner.db');
+    _database = await _initDB(AppConstants.databaseName);
     return _database!;
   }
 
@@ -22,62 +27,93 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    final db = await openDatabase(
-      path,
-      version: 2,
-      onCreate: _createDB,
-      onUpgrade: _onUpgrade,
-    );
-    await _ensureCompletedSampleTable(db);
+    final db = await openDatabase(path, version: 1, onCreate: _createDB);
+    await _ensureSampelPupukTables(db);
     return db;
   }
 
-  /// Ensures completed_sample exists (handles DBs created at v2 before table was in onCreate).
-  Future<void> _ensureCompletedSampleTable(Database db) async {
-    final result = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='completed_sample'",
-    );
-    if (result.isEmpty) {
-      await db.execute('''
-        CREATE TABLE completed_sample (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          data_lsu_id INTEGER NOT NULL UNIQUE,
-          master_lsu_id INTEGER NOT NULL,
-          kode TEXT NOT NULL,
-          tanggal_selesai TEXT NOT NULL,
-          waktu_selesai TEXT NOT NULL,
-          foto_path TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'not_uploaded',
-          error_message TEXT,
-          user_id INTEGER,
-          created_at TEXT NOT NULL,
-          updated_at TEXT,
-          FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
-        )
-      ''');
-    }
-  }
-
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute('''
-        CREATE TABLE completed_sample (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          data_lsu_id INTEGER NOT NULL UNIQUE,
-          master_lsu_id INTEGER NOT NULL,
-          kode TEXT NOT NULL,
-          tanggal_selesai TEXT NOT NULL,
-          waktu_selesai TEXT NOT NULL,
-          foto_path TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'not_uploaded',
-          error_message TEXT,
-          user_id INTEGER,
-          created_at TEXT NOT NULL,
-          updated_at TEXT,
-          FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
-        )
-      ''');
-    }
+  static Future<void> _ensureSampelPupukTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS data_sampel_pupuk (
+        id INTEGER PRIMARY KEY,
+        kode_sampel TEXT,
+        jenis_pupuk_full TEXT,
+        jenis_pupuk TEXT,
+        merek TEXT,
+        no_kode_sampel INTEGER,
+        jumlah_sampel_zak INTEGER,
+        no_segel TEXT,
+        no_ba_sampel_pupuk TEXT,
+        supplier TEXT,
+        regional INTEGER,
+        wilayah INTEGER,
+        estate TEXT,
+        pt TEXT,
+        no_po TEXT,
+        no_bpb TEXT,
+        qty_partai_pengiriman INTEGER,
+        qty_terima INTEGER,
+        jenis_kendaraan TEXT,
+        tanggal_pengambilan_sampel TEXT,
+        tanggal_terima_dari_gudang TEXT,
+        created_at TEXT,
+        updated_at TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS terima_dari_gudang (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        tanggal_terima_dari_gudang TEXT NOT NULL,
+        foto_terima_dari_gudang TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS kirim_dari_estate (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        tanggal_kirim_dari_estate TEXT NOT NULL,
+        foto_kirim_dari_estate TEXT,
+        nama_pengirim TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS terima_dari_estate (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        no_surat TEXT,
+        tanggal_terima_dari_estate TEXT NOT NULL,
+        foto_terima_dari_estate TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS kirim_lab (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        tanggal_kirim_lab TEXT NOT NULL,
+        foto_kirim_lab TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
   }
 
   Future _createDB(Database db, int version) async {
@@ -135,26 +171,24 @@ class DatabaseHelper {
       )
     ''');
 
-    // Create completed_sample table (for version 2; also in onUpgrade for existing DBs)
-    if (version >= 2) {
-      await db.execute('''
-        CREATE TABLE completed_sample (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          data_lsu_id INTEGER NOT NULL UNIQUE,
-          master_lsu_id INTEGER NOT NULL,
-          kode TEXT NOT NULL,
-          tanggal_selesai TEXT NOT NULL,
-          waktu_selesai TEXT NOT NULL,
-          foto_path TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'not_uploaded',
-          error_message TEXT,
-          user_id INTEGER,
-          created_at TEXT NOT NULL,
-          updated_at TEXT,
-          FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
-        )
-      ''');
-    }
+    // Create completed_sample table
+    await db.execute('''
+      CREATE TABLE completed_sample (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_lsu_id INTEGER NOT NULL UNIQUE,
+        master_lsu_id INTEGER NOT NULL,
+        kode TEXT NOT NULL,
+        tanggal_selesai TEXT NOT NULL,
+        waktu_selesai TEXT NOT NULL,
+        foto_path TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        user_id INTEGER,
+        created_at TEXT NOT NULL,
+        updated_at TEXT,
+        FOREIGN KEY (master_lsu_id) REFERENCES master_lsu(id)
+      )
+    ''');
 
     // Create user_preferences table
     await db.execute('''
@@ -392,6 +426,312 @@ class DatabaseHelper {
     final db = await database;
     return await db.delete(
       'completed_sample',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // --- Data Sampel Pupuk ---
+  Future<void> insertDataSampelPupukBatch(List<DataSampelPupuk> list) async {
+    if (list.isEmpty) return;
+    final db = await database;
+    final batch = db.batch();
+    for (final e in list) {
+      batch.insert(
+        'data_sampel_pupuk',
+        e.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<int> clearDataSampelPupukByRegional(int? regional) async {
+    final db = await database;
+    if (regional == null) return await db.delete('data_sampel_pupuk');
+    return await db.delete(
+      'data_sampel_pupuk',
+      where: 'regional = ?',
+      whereArgs: [regional],
+    );
+  }
+
+  Future<DataSampelPupuk?> getDataSampelPupukById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'data_sampel_pupuk',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return null;
+    return DataSampelPupuk.fromJson(result.first);
+  }
+
+  Future<DataSampelPupuk?> getDataSampelPupukByKodeSampel(
+    String kodeSampel,
+  ) async {
+    final db = await database;
+    final result = await db.query(
+      'data_sampel_pupuk',
+      where: 'kode_sampel = ?',
+      whereArgs: [kodeSampel],
+    );
+    if (result.isEmpty) return null;
+    return DataSampelPupuk.fromJson(result.first);
+  }
+
+  // --- Terima Dari Gudang ---
+  Future<int> insertTerimaDariGudang(TerimaDariGudang row) async {
+    final db = await database;
+    final map = row.toJson();
+    map.remove('id');
+    return await db.insert('terima_dari_gudang', map);
+  }
+
+  Future<List<TerimaDariGudang>> getPendingTerimaDariGudang() async {
+    final db = await database;
+    final result = await db.query(
+      'terima_dari_gudang',
+      where: 'status IN (?, ?)',
+      whereArgs: ['not_uploaded', 'error'],
+      orderBy: 'created_at DESC',
+    );
+    return result.map((e) => TerimaDariGudang.fromJson(e)).toList();
+  }
+
+  Future<List<TerimaDariGudang>> getAllTerimaDariGudang() async {
+    final db = await database;
+    final result = await db.query(
+      'terima_dari_gudang',
+      orderBy: 'created_at DESC',
+    );
+    return result.map((e) => TerimaDariGudang.fromJson(e)).toList();
+  }
+
+  Future<TerimaDariGudang?> getTerimaDariGudangById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'terima_dari_gudang',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return null;
+    return TerimaDariGudang.fromJson(result.first);
+  }
+
+  Future<int> deleteTerimaDariGudang(int id) async {
+    final db = await database;
+    return await db.delete(
+      'terima_dari_gudang',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateTerimaDariGudangStatus(
+    int id,
+    String status, {
+    String? errorMessage,
+  }) async {
+    final db = await database;
+    return await db.update(
+      'terima_dari_gudang',
+      {
+        'status': status,
+        'error_message': errorMessage,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // --- Kirim Dari Estate ---
+  Future<int> insertKirimDariEstate(KirimDariEstate row) async {
+    final db = await database;
+    final map = row.toJson();
+    map.remove('id');
+    return await db.insert('kirim_dari_estate', map);
+  }
+
+  Future<List<KirimDariEstate>> getPendingKirimDariEstate() async {
+    final db = await database;
+    final result = await db.query(
+      'kirim_dari_estate',
+      where: 'status IN (?, ?)',
+      whereArgs: ['not_uploaded', 'error'],
+      orderBy: 'created_at DESC',
+    );
+    return result.map((e) => KirimDariEstate.fromJson(e)).toList();
+  }
+
+  Future<List<KirimDariEstate>> getAllKirimDariEstate() async {
+    final db = await database;
+    final result = await db.query(
+      'kirim_dari_estate',
+      orderBy: 'created_at DESC',
+    );
+    return result.map((e) => KirimDariEstate.fromJson(e)).toList();
+  }
+
+  Future<KirimDariEstate?> getKirimDariEstateById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'kirim_dari_estate',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return null;
+    return KirimDariEstate.fromJson(result.first);
+  }
+
+  Future<int> deleteKirimDariEstate(int id) async {
+    final db = await database;
+    return await db.delete(
+      'kirim_dari_estate',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateKirimDariEstateStatus(
+    int id,
+    String status, {
+    String? errorMessage,
+  }) async {
+    final db = await database;
+    return await db.update(
+      'kirim_dari_estate',
+      {
+        'status': status,
+        'error_message': errorMessage,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // --- Terima Dari Estate ---
+  Future<int> insertTerimaDariEstate(TerimaDariEstate row) async {
+    final db = await database;
+    final map = row.toJson();
+    map.remove('id');
+    return await db.insert('terima_dari_estate', map);
+  }
+
+  Future<List<TerimaDariEstate>> getPendingTerimaDariEstate() async {
+    final db = await database;
+    final result = await db.query(
+      'terima_dari_estate',
+      where: 'status IN (?, ?)',
+      whereArgs: ['not_uploaded', 'error'],
+      orderBy: 'created_at DESC',
+    );
+    return result.map((e) => TerimaDariEstate.fromJson(e)).toList();
+  }
+
+  Future<List<TerimaDariEstate>> getAllTerimaDariEstate() async {
+    final db = await database;
+    final result = await db.query(
+      'terima_dari_estate',
+      orderBy: 'created_at DESC',
+    );
+    return result.map((e) => TerimaDariEstate.fromJson(e)).toList();
+  }
+
+  Future<TerimaDariEstate?> getTerimaDariEstateById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'terima_dari_estate',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return null;
+    return TerimaDariEstate.fromJson(result.first);
+  }
+
+  Future<int> deleteTerimaDariEstate(int id) async {
+    final db = await database;
+    return await db.delete(
+      'terima_dari_estate',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<int> updateTerimaDariEstateStatus(
+    int id,
+    String status, {
+    String? errorMessage,
+  }) async {
+    final db = await database;
+    return await db.update(
+      'terima_dari_estate',
+      {
+        'status': status,
+        'error_message': errorMessage,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // --- Kirim Lab ---
+  Future<int> insertKirimLab(KirimLab row) async {
+    final db = await database;
+    final map = row.toJson();
+    map.remove('id');
+    return await db.insert('kirim_lab', map);
+  }
+
+  Future<List<KirimLab>> getPendingKirimLab() async {
+    final db = await database;
+    final result = await db.query(
+      'kirim_lab',
+      where: 'status IN (?, ?)',
+      whereArgs: ['not_uploaded', 'error'],
+      orderBy: 'created_at DESC',
+    );
+    return result.map((e) => KirimLab.fromJson(e)).toList();
+  }
+
+  Future<List<KirimLab>> getAllKirimLab() async {
+    final db = await database;
+    final result = await db.query('kirim_lab', orderBy: 'created_at DESC');
+    return result.map((e) => KirimLab.fromJson(e)).toList();
+  }
+
+  Future<KirimLab?> getKirimLabById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'kirim_lab',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isEmpty) return null;
+    return KirimLab.fromJson(result.first);
+  }
+
+  Future<int> deleteKirimLab(int id) async {
+    final db = await database;
+    return await db.delete('kirim_lab', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> updateKirimLabStatus(
+    int id,
+    String status, {
+    String? errorMessage,
+  }) async {
+    final db = await database;
+    return await db.update(
+      'kirim_lab',
+      {
+        'status': status,
+        'error_message': errorMessage,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
       where: 'id = ?',
       whereArgs: [id],
     );

@@ -4,8 +4,17 @@ import '../constants/app_constants.dart';
 
 class ImageUtils {
   static Future<String?> compressImage(String imagePath) async {
+    return compressImageToFile(imagePath, '${imagePath}_compressed.jpg');
+  }
+
+  /// Compresses image at [sourcePath] and writes to [targetPath].
+  /// Uses [AppConstants] for quality, dimensions, and max size. Returns [targetPath] on success.
+  static Future<String?> compressImageToFile(
+    String sourcePath,
+    String targetPath,
+  ) async {
     try {
-      final file = File(imagePath);
+      final file = File(sourcePath);
       if (!await file.exists()) {
         throw Exception('Image file not found');
       }
@@ -27,32 +36,45 @@ class ImageUtils {
         );
       }
 
-      // Compress
-      final compressedBytes = img.encodeJpg(
-        resized,
-        quality: AppConstants.imageCompressQuality,
-      );
-
-      // Check size
-      if (compressedBytes.length > AppConstants.maxImageSizeBytes) {
-        // Further compress if still too large
-        final quality = (AppConstants.imageCompressQuality * 0.7).round();
-        final furtherCompressed = img.encodeJpg(resized, quality: quality);
-
-        if (furtherCompressed.length > AppConstants.maxImageSizeBytes) {
-          throw Exception('Image too large even after compression');
-        }
-
-        // Save further compressed
-        final compressedPath = '${imagePath}_compressed.jpg';
-        await File(compressedPath).writeAsBytes(furtherCompressed);
-        return compressedPath;
+      // Ensure output directory exists
+      final outFile = File(targetPath);
+      final parent = outFile.parent;
+      if (!await parent.exists()) {
+        await parent.create(recursive: true);
       }
 
-      // Save compressed
-      final compressedPath = '${imagePath}_compressed.jpg';
-      await File(compressedPath).writeAsBytes(compressedBytes);
-      return compressedPath;
+      // Compress
+      final compressedBytes = await recursiveCompressImage(resized);
+
+      if (compressedBytes == null) {
+        throw Exception('Compression failed');
+      }
+
+      await outFile.writeAsBytes(compressedBytes);
+      return targetPath;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<List<int>?> recursiveCompressImage(
+    img.Image image, {
+    int? quality,
+    int? maxWidth,
+  }) async {
+    try {
+      final currentQuality = quality ?? AppConstants.imageCompressQuality;
+
+      final compressedBytes = img.encodeJpg(image, quality: currentQuality);
+
+      if (compressedBytes.length > AppConstants.maxImageSizeBytes) {
+        return recursiveCompressImage(
+          image,
+          quality: (currentQuality * 0.7).round().clamp(10, 100),
+        );
+      }
+
+      return compressedBytes;
     } catch (e) {
       return null;
     }

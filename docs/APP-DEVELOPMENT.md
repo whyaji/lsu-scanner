@@ -1,6 +1,6 @@
 # App Development Guide
 
-This document provides comprehensive development guidelines for the LSU Scanner application.
+This document provides comprehensive development guidelines for the SampleTrack application.
 
 ## Table of Contents
 
@@ -18,7 +18,7 @@ This document provides comprehensive development guidelines for the LSU Scanner 
 
 ## Overview
 
-The LSU Scanner application is a Flutter-based mobile app designed for field officers to:
+The SampleTrack application is a Flutter-based mobile app designed for field officers to:
 
 - Scan QR codes to receive sample data
 - Capture photos of samples
@@ -562,7 +562,7 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('lsu_scanner.db');
+    _database = await _initDB('sampletrack.db');
     return _database!;
   }
 

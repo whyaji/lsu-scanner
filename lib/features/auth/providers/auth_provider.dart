@@ -100,7 +100,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return false;
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Terjadi kesalahan jaringan');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Terjadi kesalahan jaringan',
+      );
       return false;
     }
   }
@@ -123,6 +126,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   User? get currentUser => state.user;
+
+  /// Updates stored user (e.g. after sync-sampel-pupuk returns user with access).
+  Future<void> updateUserFromSync(User user) async {
+    await _dbHelper.setPreference('user_data', jsonEncode(user.toJson()));
+    state = state.copyWith(user: user);
+  }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {

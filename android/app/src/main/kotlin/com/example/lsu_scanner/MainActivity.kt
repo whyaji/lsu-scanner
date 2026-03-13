@@ -1,4 +1,4 @@
-package com.srs.lsu_scanner
+package com.srs.sampletrack
 
 import io.flutter.embedding.android.FlutterActivity
 

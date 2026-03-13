@@ -47,4 +47,22 @@ class DateUtils {
   static String getCurrentDateTime() {
     return formatDateTime(DateTime.now());
   }
+
+  /// Returns current date and time as ISO 8601 string (UTC).
+  /// Use for API payloads and local DB storage (API requires datetime with time).
+  static String getCurrentIso8601DateTime() {
+    return DateTime.now().toIso8601String();
+  }
+
+  /// Parses an ISO 8601 date string and formats it for display in local date+time.
+  /// Returns '-' if [isoString] is null, empty, or invalid.
+  static String formatDateTimeFromIso(String? isoString) {
+    if (isoString == null || isoString.trim().isEmpty) return '-';
+    try {
+      final dt = DateTime.parse(isoString);
+      return _dateTimeFormat.format(dt);
+    } catch (_) {
+      return isoString;
+    }
+  }
 }

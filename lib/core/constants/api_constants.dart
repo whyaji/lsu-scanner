@@ -17,10 +17,20 @@ class ApiConstants {
   static const String refreshToken = '/auth/refresh';
   static const String logout = '/auth/logout';
   static const String getCurrentUser = '/auth/me';
+
+  // Endpoint LSU Data
   static const String sync = '/mobile/sync';
   static const String batchUpload = '/data-lsu/upload';
   static const String batchUploadComplete = '/data-lsu/upload-complete';
   static const String uploadPhoto = '/upload/photo';
+
+  // Endpoint Sampel Pupuk (Fertilizer)
+  static const String syncSampelPupuk = '/mobile/sync-sampel-pupuk';
+  static const String areaRegional = '/area/regional';
+  static const String areaWilayah = '/area/wilayah';
+  static const String areaEstate = '/area/estate';
+  static const String uploadSampelPupuk = '/data-sampel-pupuk/upload';
+  static const String uploadPhotoPupuk = '/upload/photo-pupuk';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);

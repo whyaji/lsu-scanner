@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
 import 'models/api_response.dart';
 import 'models/auth_models.dart';
+import 'models/sampel_pupuk_models.dart';
 import 'models/sync_models.dart';
 import 'models/upload_models.dart';
 
@@ -142,6 +143,105 @@ class ApiService {
       return ApiResponse.fromJson(
         response.data,
         (data) => PhotoUploadResponse.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  // --- Sampel Pupuk endpoints ---
+
+  Future<ApiResponse<SyncSampelPupukResponse>> syncSampelPupuk(int regional) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.syncSampelPupuk,
+        queryParameters: {'regional': regional},
+      );
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => SyncSampelPupukResponse.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<List<int>>> getAreaRegional() async {
+    try {
+      final response = await _dio.get(ApiConstants.areaRegional);
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => (data as List).map((e) => (e as num).toInt()).toList(),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<List<int>>> getAreaWilayah() async {
+    try {
+      final response = await _dio.get(ApiConstants.areaWilayah);
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => (data as List).map((e) => (e as num).toInt()).toList(),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<AreaEstateResponse>> getAreaEstate() async {
+    try {
+      final response = await _dio.get(ApiConstants.areaEstate);
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => AreaEstateResponse.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<SampelPupukUploadResponse>> uploadSampelPupuk(
+    SampelPupukUploadPayload payload,
+  ) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.uploadSampelPupuk,
+        data: payload.toJson(),
+      );
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => SampelPupukUploadResponse.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  /// [type] must be one of: terimaDariGudang, kirimDariEstate, terimaDariEstate, kirimLab.
+  Future<ApiResponse<PhotoPupukUploadResponse>> uploadPhotoPupuk({
+    required String filePath,
+    required int dataSampelPupukId,
+    required String kodeSampel,
+    required String type,
+    ProgressCallback? onSendProgress,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(filePath),
+        'dataSampelPupukId': dataSampelPupukId,
+        'kodeSampel': kodeSampel,
+        'type': type,
+      });
+      final response = await _dio.post(
+        ApiConstants.uploadPhotoPupuk,
+        data: formData,
+        onSendProgress: onSendProgress,
+      );
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => PhotoPupukUploadResponse.fromJson(data as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       return _handleError(e);

@@ -27,6 +27,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   Future<void> _handleQRCode(String rawValue) async {
+    print('rawValue: $rawValue');
     if (_isProcessing) return;
 
     setState(() {
@@ -89,7 +90,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isCompleteSample ? 'Pindai QR Selesai' : 'Pindai QR Code'),
+        title: Text(
+          widget.isCompleteSample ? 'Pindai QR Selesai' : 'Pindai QR Code',
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),

@@ -6,6 +6,8 @@ import 'core/constants/app_constants.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/regional/screens/regional_selection_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/home/screens/lsu_home_screen.dart';
+import 'features/home/screens/fertilizer_home_screen.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/regional/providers/regional_provider.dart';
 
@@ -92,7 +94,20 @@ class AuthWrapper extends ConsumerWidget {
       return const RegionalSelectionScreen();
     }
 
-    // Show home screen
+    // Default home by access: only LSU → LsuHomeScreen; only pupuk → FertilizerHomeScreen; both → HomeScreen
+    final access = authState.user?.access;
+    final hasLsu = access != null && access.contains('lsu');
+    final hasPupuk = authState.user?.hasAnyPupukAccess ?? false;
+
+    if (hasLsu && hasPupuk) {
+      return const HomeScreen();
+    }
+    if (hasLsu) {
+      return const LsuHomeScreen();
+    }
+    if (hasPupuk) {
+      return const FertilizerHomeScreen();
+    }
     return const HomeScreen();
   }
 }

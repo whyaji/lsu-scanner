@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../scanner/utils/qr_parser.dart';
 import '../constants/pupuk_activity_types.dart';
@@ -36,11 +37,7 @@ class SampelPupukDetailScreen extends ConsumerWidget {
     final allowedTypes = allowedPupukActivityTypes(access);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detail Sampel Pupuk'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('Detail Sampel Pupuk')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -49,17 +46,21 @@ class SampelPupukDetailScreen extends ConsumerWidget {
             children: [
               if (!fromSync)
                 Card(
-                  color: AppColors.warning.withValues(alpha: 0.15),
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
+                  color: AppTheme.warningColor(context).withValues(alpha: 0.15),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, color: AppColors.warning),
-                        SizedBox(width: 8),
+                        Icon(
+                          Icons.info_outline,
+                          color: AppTheme.warningColor(context),
+                          size: 22,
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Data dari QR. Rekaman ini mungkin belum disinkronkan. Anda tetap dapat mengisi formulir dan mengambil foto.',
-                            style: TextStyle(fontSize: 13),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
                       ],
@@ -82,13 +83,15 @@ class SampelPupukDetailScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _row('ID', dataSampelPupukId.toString()),
+                      _row(context, 'ID', dataSampelPupukId.toString()),
                       _row(
+                        context,
                         'Kode Sampel',
                         kodeSampel.isEmpty ? '-' : kodeSampel,
                       ),
-                      _row('Supplier', _supplierDisplay),
+                      _row(context, 'Supplier', _supplierDisplay),
                       _row(
+                        context,
                         'Jenis Pupuk',
                         dataSampelPupuk?.jenisPupukFull ??
                             (qrPupukData.jenisPupukFull.isEmpty
@@ -98,23 +101,30 @@ class SampelPupukDetailScreen extends ConsumerWidget {
                       if (dataSampelPupuk != null) ...[
                         if (dataSampelPupuk!.regional != null)
                           _row(
+                            context,
                             'Regional',
                             dataSampelPupuk!.regional.toString(),
                           ),
                         if (dataSampelPupuk!.wilayah != null)
-                          _row('Wilayah', dataSampelPupuk!.wilayah.toString()),
+                          _row(
+                            context,
+                            'Wilayah',
+                            dataSampelPupuk!.wilayah.toString(),
+                          ),
                         if (dataSampelPupuk!.estate != null &&
                             dataSampelPupuk!.estate!.isNotEmpty)
-                          _row('Estate', dataSampelPupuk!.estate!),
+                          _row(context, 'Estate', dataSampelPupuk!.estate!),
                         if (dataSampelPupuk!.qtyPartaiPengiriman != null)
                           _row(
+                            context,
                             'Qty Partai Pengiriman',
-                            dataSampelPupuk!.qtyPartaiPengiriman.toString(),
+                            '${dataSampelPupuk!.qtyPartaiPengiriman} Kg',
                           ),
                       ] else if (qrPupukData.qtyPartaiPengiriman != null)
                         _row(
+                          context,
                           'Qty Partai Pengiriman',
-                          qrPupukData.qtyPartaiPengiriman.toString(),
+                          '${qrPupukData.qtyPartaiPengiriman} Kg',
                         ),
                     ],
                   ),
@@ -127,49 +137,41 @@ class SampelPupukDetailScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     child: Text(
                       'Anda tidak memiliki akses untuk mencatat aktivitas Sampel Pupuk. Hubungi admin.',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 )
               else ...[
-                const Text(
-                  'Pilih jenis aktivitas:',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 12),
-                ...allowedTypes.map(
-                  (type) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => SampelPupukActivityFormScreen(
-                              activityType: type,
-                              dataSampelPupukId: dataSampelPupukId,
-                              kodeSampel: kodeSampel.isEmpty
-                                  ? qrPupukData.kodeSampel
-                                  : kodeSampel,
-                              dataSampelPupuk: dataSampelPupuk,
-                              qrPupukData: qrPupukData,
-                            ),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        alignment: Alignment.centerLeft,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.add_circle_outline),
-                          const SizedBox(width: 12),
-                          Text(labelForPupukActivityType(type)),
-                        ],
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Text(
+                    'Pilih jenis aktivitas',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
+                  ),
+                ),
+                ...allowedTypes.map(
+                  (type) => _ActivityTypeTile(
+                    label: labelForPupukActivityType(type),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => SampelPupukActivityFormScreen(
+                            activityType: type,
+                            dataSampelPupukId: dataSampelPupukId,
+                            kodeSampel: kodeSampel.isEmpty
+                                ? qrPupukData.kodeSampel
+                                : kodeSampel,
+                            dataSampelPupuk: dataSampelPupuk,
+                            qrPupukData: qrPupukData,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -180,7 +182,9 @@ class SampelPupukDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _row(String label, String value) {
+  Widget _row(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -190,14 +194,91 @@ class SampelPupukDetailScreen extends ConsumerWidget {
             width: 140,
             child: Text(
               label,
-              style: TextStyle(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
-          Expanded(child: Text(value)),
+          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
         ],
+      ),
+    );
+  }
+}
+
+/// Card-style tile for one activity type. Uses theme colors.
+class _ActivityTypeTile extends StatelessWidget {
+  const _ActivityTypeTile({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.md + 4,
+            ),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outline.withValues(alpha: 0.2),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.shadow.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.add_circle_outline,
+                    size: 22,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

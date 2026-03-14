@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../widgets/app_stat_card.dart';
+import '../../../widgets/app_section_header.dart';
 import '../../scanner/screens/qr_scanner_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../upload/screens/upload_screen.dart';
@@ -13,7 +16,14 @@ import '../../sample/screens/received_list_screen.dart';
 import '../providers/home_counts_refresh_provider.dart';
 
 class LsuHomeScreen extends ConsumerStatefulWidget {
-  const LsuHomeScreen({super.key});
+  const LsuHomeScreen({
+    super.key,
+    this.showBackButton = true,
+    this.showSettingsInAppBar = true,
+  });
+
+  final bool showBackButton;
+  final bool showSettingsInAppBar;
 
   @override
   ConsumerState<LsuHomeScreen> createState() => _LsuHomeScreenState();
@@ -48,6 +58,12 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
     });
   }
 
+  Future<void> _sync() async {
+    final regional = ref.read(regionalProvider).selectedRegional ?? 1;
+    await ref.read(syncProvider.notifier).syncData(regional);
+    if (mounted) _loadCounts();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -56,25 +72,41 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
     ref.listen<int>(homeCountsRefreshProvider, (prev, next) {
       if (prev != null && next != prev && mounted) _loadCounts();
     });
+    ref.listen<SyncState>(syncProvider, (prev, next) {
+      if (next.error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    });
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         title: const Text('Sampel LSU'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-          ),
+          if (widget.showSettingsInAppBar)
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              },
+            ),
         ],
       ),
       body: SafeArea(
@@ -89,50 +121,51 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingScreen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // User Info Card
                 Card(
-                  elevation: 2,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: AppSpacing.paddingMd,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Selamat datang, ${authState.user?.nama ?? "Pengguna"}',
-                          style: TextStyle(
-                            fontSize: 20,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        AppSpacing.gapSm,
                         if (regionalState.selectedRegional != null)
                           Text(
                             'Regional ${regionalState.selectedRegional}',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         Text(
                           _formatDateTimeSync(syncState.lastSyncTime),
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                AppSpacing.gapMd,
 
-                // Stats Cards
                 Row(
                   children: [
                     Expanded(
-                      child: InkWell(
+                      child: AppStatCard(
+                        label: 'Menunggu',
+                        value: _pendingCount.toString(),
+                        color: colorScheme.tertiary,
+                        icon: Icons.pending,
                         onTap: () {
                           Navigator.of(context)
                               .push(
@@ -143,18 +176,15 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                               )
                               .then((_) => _loadCounts());
                         },
-                        borderRadius: BorderRadius.circular(8),
-                        child: _buildStatCard(
-                          'Menunggu',
-                          _pendingCount.toString(),
-                          AppColors.warning,
-                          Icons.pending,
-                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    AppSpacing.gapMd,
                     Expanded(
-                      child: InkWell(
+                      child: AppStatCard(
+                        label: 'Terunggah',
+                        value: _uploadedCount.toString(),
+                        color: colorScheme.primary,
+                        icon: Icons.cloud_done,
                         onTap: () {
                           Navigator.of(context)
                               .push(
@@ -166,20 +196,12 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                               )
                               .then((_) => _loadCounts());
                         },
-                        borderRadius: BorderRadius.circular(8),
-                        child: _buildStatCard(
-                          'Terunggah',
-                          _uploadedCount.toString(),
-                          AppColors.success,
-                          Icons.cloud_done,
-                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-
-                // Action Buttons — Pindai QR Terima only for non-admin
+                AppSectionHeader(title: 'Aksi cepat'),
+                AppSpacing.gapSm,
                 if (authState.user?.isAdmin != true)
                   ElevatedButton.icon(
                     onPressed: () {
@@ -189,22 +211,10 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.qr_code_scanner, size: 28),
-                    label: const Text(
-                      'Pindai QR Terima',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                    icon: const Icon(Icons.qr_code_scanner, size: 24),
+                    label: const Text('Pindai QR Terima'),
                   ),
-                if (authState.user?.isAdmin != true) const SizedBox(height: 12),
-                // Pindai QR Selesai only for admin
+                if (authState.user?.isAdmin != true) AppSpacing.gapSm,
                 if (authState.user?.isAdmin == true)
                   ElevatedButton.icon(
                     onPressed: () {
@@ -215,21 +225,10 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.qr_code_scanner, size: 28),
-                    label: const Text(
-                      'Pindai QR Selesai',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
+                    icon: const Icon(Icons.qr_code_scanner, size: 24),
+                    label: const Text('Pindai QR Selesai'),
                   ),
-                if (authState.user?.isAdmin == true) const SizedBox(height: 12),
+                if (authState.user?.isAdmin == true) AppSpacing.gapSm,
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context)
@@ -240,55 +239,41 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                         )
                         .then((_) => _loadCounts());
                   },
-                  icon: const Icon(Icons.cloud_upload, size: 28),
-                  label: const Text(
-                    'Unggah Sampel',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    side: const BorderSide(color: AppColors.primary, width: 2),
+                  icon: const Icon(Icons.cloud_upload, size: 24),
+                  label: const Text('Unggah Sampel'),
+                ),
+                AppSectionHeader(title: 'Sinkronisasi'),
+                AppSpacing.gapSm,
+                ElevatedButton.icon(
+                  onPressed: syncState.isLoading ? null : _sync,
+                  icon: syncState.isLoading
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : const Icon(Icons.sync),
+                  label: Text(
+                    syncState.isLoading
+                        ? 'Menyinkronkan…'
+                        : 'Sinkronkan Data Sampel LSU',
                   ),
                 ),
+                if (syncState.error != null) ...[
+                  AppSpacing.gapSm,
+                  Text(
+                    syncState.error!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    Color color,
-    IconData icon,
-  ) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-          ],
         ),
       ),
     );

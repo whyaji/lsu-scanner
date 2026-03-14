@@ -4,7 +4,7 @@ import '../../../core/database/models/master_lsu.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/database_helper.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_theme.dart';
 import 'photo_capture_screen.dart';
 import 'full_screen_image_preview_screen.dart';
 
@@ -81,8 +81,6 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
         title: Text(
           widget.isCompleteSample ? 'Detail Sampel Selesai' : 'Detail Sampel',
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: _loading
@@ -131,8 +129,6 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                           style: const TextStyle(fontSize: 16),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -157,10 +153,9 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           children: [
             Text(
               'Informasi Sampel',
-              style: TextStyle(
-                fontSize: 20,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -184,10 +179,9 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           children: [
             Text(
               'Informasi Master LSU',
-              style: TextStyle(
-                fontSize: 20,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
@@ -231,14 +225,17 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle, color: AppColors.success, size: 28),
+                Icon(
+                  Icons.check_circle,
+                  color: AppTheme.successColor(context),
+                  size: 28,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Sudah selesai',
-                  style: TextStyle(
-                    fontSize: 20,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -276,12 +273,14 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                 height: 200,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   'Foto tidak ditemukan',
-                  style: TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             const SizedBox(height: 16),
@@ -305,14 +304,17 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle, color: AppColors.success, size: 28),
+                Icon(
+                  Icons.check_circle,
+                  color: AppTheme.successColor(context),
+                  size: 28,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Sudah diterima',
-                  style: TextStyle(
-                    fontSize: 20,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -350,12 +352,14 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                 height: 200,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   'Foto tidak ditemukan',
-                  style: TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             const SizedBox(height: 16),
@@ -368,6 +372,8 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -377,14 +383,19 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
             width: 120,
             child: Text(
               label,
-              style: TextStyle(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
-            child: Text(value, style: TextStyle(color: AppColors.textPrimary)),
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
           ),
         ],
       ),

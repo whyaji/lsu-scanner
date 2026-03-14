@@ -3,13 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/constants/app_constants.dart';
+import 'core/theme/app_theme.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/regional/screens/regional_selection_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/home/screens/lsu_home_screen.dart';
 import 'features/home/screens/fertilizer_home_screen.dart';
+import 'features/home/screens/bottom_nav_shell.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/regional/providers/regional_provider.dart';
+import 'features/settings/providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,44 +30,18 @@ Future<void> _requestPermissions() async {
   await [Permission.camera, Permission.storage, Permission.photos].request();
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider).themeMode;
     return MaterialApp(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: AppColors.primary,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          primary: AppColors.primary,
-          secondary: AppColors.secondary,
-          error: AppColors.error,
-        ),
-        scaffoldBackgroundColor: AppColors.background,
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       initialRoute: '/',
       routes: {
         '/': (context) => const AuthWrapper(),
@@ -94,19 +71,19 @@ class AuthWrapper extends ConsumerWidget {
       return const RegionalSelectionScreen();
     }
 
-    // Default home by access: only LSU → LsuHomeScreen; only pupuk → FertilizerHomeScreen; both → HomeScreen
+    // Dual access → bottom nav (LSU | Pupuk | Upload | Settings). Single access → single home.
     final access = authState.user?.access;
     final hasLsu = access != null && access.contains('lsu');
     final hasPupuk = authState.user?.hasAnyPupukAccess ?? false;
 
     if (hasLsu && hasPupuk) {
-      return const HomeScreen();
+      return const BottomNavShell();
     }
     if (hasLsu) {
-      return const LsuHomeScreen();
+      return const LsuHomeScreen(showBackButton: false);
     }
     if (hasPupuk) {
-      return const FertilizerHomeScreen();
+      return const FertilizerHomeScreen(showBackButton: false);
     }
     return const HomeScreen();
   }

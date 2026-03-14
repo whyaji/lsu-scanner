@@ -1,20 +1,22 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
-import '../../home/screens/fertilizer_home_screen.dart';
+import '../../home/providers/home_counts_refresh_provider.dart';
 import '../../sample/screens/full_screen_image_preview_screen.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
 import '../../scanner/utils/qr_parser.dart';
 
-class SampelPupukConfirmationScreen extends StatefulWidget {
+class SampelPupukConfirmationScreen extends ConsumerStatefulWidget {
   final SampelPupukFormData formData;
   final String photoPath;
   final QRPupukData qrPupukData;
@@ -29,12 +31,12 @@ class SampelPupukConfirmationScreen extends StatefulWidget {
   });
 
   @override
-  State<SampelPupukConfirmationScreen> createState() =>
+  ConsumerState<SampelPupukConfirmationScreen> createState() =>
       _SampelPupukConfirmationScreenState();
 }
 
 class _SampelPupukConfirmationScreenState
-    extends State<SampelPupukConfirmationScreen> {
+    extends ConsumerState<SampelPupukConfirmationScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
   bool _isSaving = false;
 
@@ -106,23 +108,21 @@ class _SampelPupukConfirmationScreenState
       }
 
       if (mounted) {
+        ref.read(fertilizerCountsRefreshProvider.notifier).state++;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data Sampel Pupuk berhasil disimpan'),
-            backgroundColor: AppColors.success,
+          SnackBar(
+            content: const Text('Data Sampel Pupuk berhasil disimpan'),
+            backgroundColor: AppTheme.successColor(context),
           ),
         );
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const FertilizerHomeScreen()));
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal menyimpan: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -155,11 +155,7 @@ class _SampelPupukConfirmationScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Konfirmasi Simpan'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('Konfirmasi Simpan')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -199,7 +195,9 @@ class _SampelPupukConfirmationScreenState
                           )
                         : Container(
                             height: 200,
-                            color: AppColors.background,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             child: const Center(
                               child: Icon(Icons.image_not_supported, size: 48),
                             ),
@@ -241,19 +239,15 @@ class _SampelPupukConfirmationScreenState
               ElevatedButton(
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: _isSaving
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 24,
                         width: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                       )
                     : const Text('Simpan'),
@@ -298,7 +292,7 @@ class _SampelPupukConfirmationScreenState
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),

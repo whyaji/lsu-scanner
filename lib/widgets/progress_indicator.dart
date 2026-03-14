@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_constants.dart';
+import '../core/theme/app_spacing.dart';
 
 class CustomProgressIndicator extends StatelessWidget {
   final int current;
@@ -15,41 +15,44 @@ class CustomProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final percentage = (current / total * 100).round();
 
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: AppSpacing.paddingScreen,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: AppSpacing.paddingMd,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Mengunggah',
-              style: TextStyle(
-                fontSize: 18,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 16),
+            AppSpacing.gapMd,
             LinearProgressIndicator(
               value: percentage / 100,
-              backgroundColor: Colors.grey[300],
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.primary,
-              ),
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
             ),
-            const SizedBox(height: 8),
+            AppSpacing.gapSm,
             Text(
               '$current / $total ($percentage%)',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             if (currentItem != null) ...[
-              const SizedBox(height: 8),
+              AppSpacing.gapSm,
               Text(
                 'Saat ini: $currentItem',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ],

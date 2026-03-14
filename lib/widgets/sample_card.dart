@@ -10,26 +10,26 @@ class SampleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     Color statusColor;
     IconData statusIcon;
 
     switch (sample.status) {
       case AppConstants.statusUploaded:
-        statusColor = AppColors.success;
+        statusColor = colorScheme.primary;
         statusIcon = Icons.cloud_done;
         break;
       case AppConstants.statusError:
-        statusColor = AppColors.error;
+        statusColor = colorScheme.error;
         statusIcon = Icons.error;
         break;
       default:
-        statusColor = AppColors.warning;
+        statusColor = colorScheme.tertiary;
         statusIcon = Icons.pending;
     }
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: statusColor.withValues(alpha: 0.2),
@@ -37,9 +37,9 @@ class SampleCard extends StatelessWidget {
         ),
         title: Text(
           sample.kode,
-          style: TextStyle(
+          style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: colorScheme.onSurface,
           ),
         ),
         subtitle: Column(
@@ -47,21 +47,24 @@ class SampleCard extends StatelessWidget {
           children: [
             Text(
               'Date: ${sample.tanggalTerima} ${sample.waktuTerima}',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             if (sample.errorMessage != null)
               Text(
                 'Error: ${sample.errorMessage}',
-                style: TextStyle(color: AppColors.error, fontSize: 12),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.error,
+                ),
               ),
           ],
         ),
         trailing: Text(
           sample.status.toUpperCase(),
-          style: TextStyle(
+          style: theme.textTheme.labelSmall?.copyWith(
             color: statusColor,
             fontWeight: FontWeight.bold,
-            fontSize: 12,
           ),
         ),
         onTap: onTap,

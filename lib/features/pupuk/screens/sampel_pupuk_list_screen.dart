@@ -2,11 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
+import '../../../widgets/app_empty_state.dart';
+import '../../../widgets/app_loading_state.dart';
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_detail_screen.dart';
 
@@ -184,14 +187,15 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
     _loadEntries();
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(BuildContext context, String status) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case AppConstants.statusUploaded:
-        return AppColors.success;
+        return colorScheme.primary;
       case AppConstants.statusError:
-        return AppColors.error;
+        return colorScheme.error;
       default:
-        return AppColors.warning;
+        return colorScheme.tertiary;
     }
   }
 
@@ -209,15 +213,13 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.isPending ? 'Menunggu' : 'Terunggah';
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: Text(title)),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoadingState(itemCount: 8)
           : RefreshIndicator(
               onRefresh: _loadEntries,
               child: _entries.isEmpty
@@ -226,38 +228,19 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                       children: [
                         SizedBox(
                           height: MediaQuery.of(context).size.height * 0.5,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.inbox_outlined,
-                                  size: 64,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Tidak ada data sampel pupuk $title',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          child: AppEmptyState(
+                            title: 'Tidak ada data sampel pupuk $title',
                           ),
                         ),
                       ],
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.paddingScreen,
                       physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: _entries.length,
                       itemBuilder: (context, index) {
                         final e = _entries[index];
                         return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 12),
                           child: InkWell(
                             onTap: () {
                               Navigator.of(context)
@@ -272,14 +255,14 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                   )
                                   .then((_) => _loadEntries());
                             },
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             child: Padding(
-                              padding: const EdgeInsets.all(12),
+                              padding: AppSpacing.paddingMd,
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(8),
                                     child:
                                         e.fotoPath != null &&
                                             e.fotoPath!.isNotEmpty &&
@@ -293,14 +276,16 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                         : Container(
                                             width: 56,
                                             height: 56,
-                                            color: AppColors.background,
+                                            color: colorScheme
+                                                .surfaceContainerHighest,
                                             child: Icon(
                                               Icons.image_not_supported,
-                                              color: AppColors.textSecondary,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
                                             ),
                                           ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  AppSpacing.gapMd,
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -311,10 +296,13 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                             Expanded(
                                               child: Text(
                                                 e.kodeSampel,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                ),
+                                                style: theme
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
                                               ),
                                             ),
                                             Container(
@@ -324,7 +312,8 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                                     vertical: 2,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color: AppColors.textSecondary
+                                                color: colorScheme
+                                                    .onSurfaceVariant
                                                     .withValues(alpha: 0.15),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
@@ -333,28 +322,32 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                                 labelForPupukActivityType(
                                                   e.activityType,
                                                 ),
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w500,
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
+                                                style: theme
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 4),
+                                        AppSpacing.gapXs,
                                         Text(
                                           app_date_utils
                                               .DateUtils.formatDateTimeFromIso(
                                             e.dateText,
                                           ),
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: AppColors.textSecondary,
-                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
                                         ),
-                                        const SizedBox(height: 6),
+                                        AppSpacing.gapSm,
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
@@ -362,6 +355,7 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: _statusColor(
+                                              context,
                                               e.status,
                                             ).withValues(alpha: 0.2),
                                             borderRadius: BorderRadius.circular(
@@ -370,22 +364,25 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                           ),
                                           child: Text(
                                             _statusLabel(e.status),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: _statusColor(e.status),
-                                            ),
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                  color: _statusColor(
+                                                    context,
+                                                    e.status,
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                         if (e.errorMessage != null &&
                                             e.errorMessage!.isNotEmpty) ...[
-                                          const SizedBox(height: 6),
+                                          AppSpacing.gapSm,
                                           Text(
                                             e.errorMessage!,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.error,
-                                            ),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme.error,
+                                                ),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -395,7 +392,7 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                   ),
                                   Icon(
                                     Icons.chevron_right,
-                                    color: AppColors.textSecondary,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ],
                               ),

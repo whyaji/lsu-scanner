@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../widgets/app_empty_state.dart';
+import '../../../widgets/app_loading_state.dart';
 import 'received_sample_detail_screen.dart';
 import 'completed_sample_detail_screen.dart';
 
@@ -128,14 +131,15 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
     _loadSamples();
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(BuildContext context, String status) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case AppConstants.statusUploaded:
-        return AppColors.success;
+        return colorScheme.primary;
       case AppConstants.statusError:
-        return AppColors.error;
+        return colorScheme.error;
       default:
-        return AppColors.warning;
+        return colorScheme.tertiary;
     }
   }
 
@@ -153,15 +157,13 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.isPending ? 'Menunggu' : 'Terunggah';
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: Text(title)),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoadingState(itemCount: 8)
           : RefreshIndicator(
               onRefresh: _loadSamples,
               child: _entries.isEmpty
@@ -170,38 +172,19 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                       children: [
                         SizedBox(
                           height: MediaQuery.of(context).size.height * 0.5,
-                          child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.inbox_outlined,
-                                  size: 64,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Tidak ada sampel $title',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          child: AppEmptyState(
+                            title: 'Tidak ada sampel $title',
                           ),
                         ),
                       ],
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: AppSpacing.paddingScreen,
                       physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: _entries.length,
                       itemBuilder: (context, index) {
                         final s = _entries[index];
                         return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.only(bottom: 12),
                           child: InkWell(
                             onTap: () {
                               if (s.isCompleted) {
@@ -228,14 +211,14 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                     .then((_) => _loadSamples());
                               }
                             },
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             child: Padding(
-                              padding: const EdgeInsets.all(12),
+                              padding: AppSpacing.paddingMd,
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(8),
                                     child: File(s.fotoPath).existsSync()
                                         ? Image.file(
                                             File(s.fotoPath),
@@ -246,14 +229,16 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                         : Container(
                                             width: 56,
                                             height: 56,
-                                            color: AppColors.background,
+                                            color: colorScheme
+                                                .surfaceContainerHighest,
                                             child: Icon(
                                               Icons.image_not_supported,
-                                              color: AppColors.textSecondary,
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
                                             ),
                                           ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  AppSpacing.gapMd,
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -264,10 +249,13 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                             Expanded(
                                               child: Text(
                                                 s.kode,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
-                                                ),
+                                                style: theme
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
                                               ),
                                             ),
                                             Container(
@@ -279,9 +267,10 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                               decoration: BoxDecoration(
                                                 color:
                                                     (s.isCompleted
-                                                            ? AppColors.primary
-                                                            : AppColors
-                                                                  .textSecondary)
+                                                            ? colorScheme
+                                                                  .primary
+                                                            : colorScheme
+                                                                  .onSurfaceVariant)
                                                         .withValues(
                                                           alpha: 0.15,
                                                         ),
@@ -292,26 +281,31 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                                 s.isCompleted
                                                     ? 'Selesai'
                                                     : 'Diterima',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: s.isCompleted
-                                                      ? AppColors.primary
-                                                      : AppColors.textSecondary,
-                                                ),
+                                                style: theme
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: s.isCompleted
+                                                          ? colorScheme.primary
+                                                          : colorScheme
+                                                                .onSurfaceVariant,
+                                                    ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 4),
+                                        AppSpacing.gapXs,
                                         Text(
                                           s.dateTimeText,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: AppColors.textSecondary,
-                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
                                         ),
-                                        const SizedBox(height: 6),
+                                        AppSpacing.gapSm,
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
@@ -319,6 +313,7 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color: _statusColor(
+                                              context,
                                               s.status,
                                             ).withValues(alpha: 0.2),
                                             borderRadius: BorderRadius.circular(
@@ -327,11 +322,14 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                           ),
                                           child: Text(
                                             _statusLabel(s.status),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w500,
-                                              color: _statusColor(s.status),
-                                            ),
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w500,
+                                                  color: _statusColor(
+                                                    context,
+                                                    s.status,
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                       ],
@@ -339,7 +337,7 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                                   ),
                                   Icon(
                                     Icons.chevron_right,
-                                    color: AppColors.textSecondary,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ],
                               ),

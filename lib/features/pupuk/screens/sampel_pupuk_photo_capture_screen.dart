@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/utils/photo_capture_helper.dart';
 import '../../../widgets/camera_view.dart';
-import '../../../widgets/app_image_preview.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../sample/screens/full_screen_image_preview_screen.dart';
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
 import 'sampel_pupuk_confirmation_screen.dart';
@@ -114,6 +111,19 @@ class _SampelPupukPhotoCaptureScreenState
           _isProcessing = false;
         });
         _lockPortrait();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _savedImagePath == null) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(
+              builder: (context) => SampelPupukConfirmationScreen(
+                formData: widget.formData,
+                photoPath: _savedImagePath!,
+                qrPupukData: widget.qrPupukData,
+                dataSampelPupuk: widget.dataSampelPupuk,
+              ),
+            ),
+          );
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -126,43 +136,16 @@ class _SampelPupukPhotoCaptureScreenState
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: AppColors.error),
-    );
-  }
-
-  void _retake() {
-    setState(() => _savedImagePath = null);
-    _lockLandscape();
-  }
-
-  void _proceedToConfirmation() {
-    if (_savedImagePath == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ambil foto terlebih dahulu'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => SampelPupukConfirmationScreen(
-          formData: widget.formData,
-          photoPath: _savedImagePath!,
-          qrPupukData: widget.qrPupukData,
-          dataSampelPupuk: widget.dataSampelPupuk,
-        ),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: _savedImagePath != null ? _buildReview() : _buildCamera(),
-    );
+    return Scaffold(backgroundColor: Colors.black, body: _buildCamera());
   }
 
   Widget _buildCamera() {
@@ -240,78 +223,6 @@ class _SampelPupukPhotoCaptureScreenState
               ],
             ),
           ),
-      ],
-    );
-  }
-
-  Widget _buildReview() {
-    final path = _savedImagePath!;
-    final kode = widget.formData.kodeSampel.isEmpty
-        ? widget.qrPupukData.kodeSampel
-        : widget.formData.kodeSampel;
-    final details = {
-      'Kode Sampel': kode,
-      'Aktivitas': labelForPupukActivityType(widget.formData.activityType),
-    };
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Center(
-          child: AppImagePreview(
-            imagePath: path,
-            height: double.infinity,
-            width: double.infinity,
-            fit: BoxFit.contain,
-            borderRadius: 0,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (context) => FullScreenImagePreviewScreen(
-                    imagePath: path,
-                    title: 'Pratinjau Foto Sampel Pupuk',
-                    details: details,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: SafeArea(
-            top: false,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.black.withValues(alpha: 0.6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _retake,
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Ambil Ulang'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white70),
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  ElevatedButton.icon(
-                    onPressed: _proceedToConfirmation,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Gunakan Foto Ini'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }

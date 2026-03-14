@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../utils/qr_parser.dart';
 import '../../../core/database/database_helper.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../widgets/app_error_dialog.dart';
 import '../../sample/screens/sample_detail_screen.dart';
+import '../utils/qr_parser.dart';
 
 class QRScannerScreen extends StatefulWidget {
   /// When true, flow saves to completed_sample (tanggal_selesai/waktu_selesai).
@@ -18,6 +18,7 @@ class QRScannerScreen extends StatefulWidget {
 class _QRScannerScreenState extends State<QRScannerScreen> {
   final MobileScannerController _controller = MobileScannerController();
   bool _isProcessing = false;
+  bool _isShowingDialog = false;
 
   @override
   void dispose() {
@@ -26,52 +27,59 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     super.dispose();
   }
 
-  Future<void> _handleQRCode(String rawValue) async {
-    print('rawValue: $rawValue');
-    if (_isProcessing) return;
-
+  void _resumeScanning() {
+    if (!mounted) return;
     setState(() {
-      _isProcessing = true;
+      _isProcessing = false;
+      _isShowingDialog = false;
     });
+    _controller.start();
+  }
 
-    // Parse QR code
+  Future<void> _showErrorAndStop(String title, String message) async {
+    if (!mounted || _isShowingDialog) return;
+    _isShowingDialog = true;
+    _controller.stop();
+    await AppErrorDialog.show(
+      context,
+      title: title,
+      message: message,
+      onRetry: _resumeScanning,
+    );
+    if (mounted) setState(() => _isShowingDialog = false);
+  }
+
+  Future<void> _handleQRCode(String rawValue) async {
+    if (_isProcessing || _isShowingDialog) return;
+
+    setState(() => _isProcessing = true);
+
     final qrData = QRParser.parse(rawValue);
     if (qrData == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Format QR code tidak valid'),
-            backgroundColor: AppColors.error,
-          ),
+        await _showErrorAndStop(
+          'QR Tidak Valid',
+          'Format QR code tidak valid. Pastikan memindai kode LSU yang benar.',
         );
-        setState(() {
-          _isProcessing = false;
-        });
       }
       return;
     }
 
-    // Get master LSU data from local database
     final dbHelper = DatabaseHelper.instance;
     final masterLsu = await dbHelper.getMasterLsuById(qrData.masterLsuId);
 
     if (masterLsu == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Data Master LSU tidak ditemukan'),
-            backgroundColor: AppColors.error,
-          ),
+        await _showErrorAndStop(
+          'Data Tidak Ditemukan',
+          'Data Master LSU tidak ditemukan. Sinkronkan data terlebih dahulu.',
         );
-        setState(() {
-          _isProcessing = false;
-        });
       }
       return;
     }
 
-    // Navigate to sample detail screen
     if (mounted) {
+      _controller.stop();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => SampleDetailScreen(
@@ -93,8 +101,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         title: Text(
           widget.isCompleteSample ? 'Pindai QR Selesai' : 'Pindai QR Code',
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
       body: Stack(
         children: [

@@ -6,9 +6,9 @@ import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../home/providers/home_counts_refresh_provider.dart';
-import '../../home/screens/lsu_home_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'full_screen_image_preview_screen.dart';
 
@@ -55,9 +55,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
         );
         if (existing != null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sampel ini sudah selesai'),
-              backgroundColor: AppColors.error,
+            SnackBar(
+              content: const Text('Sampel ini sudah selesai'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
           return;
@@ -68,9 +68,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
         );
         if (existing != null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Sampel ini sudah diterima'),
-              backgroundColor: AppColors.error,
+            SnackBar(
+              content: const Text('Sampel ini sudah diterima'),
+              backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
           return;
@@ -131,20 +131,17 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                   ? 'Sampel selesai berhasil disimpan'
                   : 'Sampel berhasil disimpan',
             ),
-            backgroundColor: AppColors.success,
+            backgroundColor: AppTheme.successColor(context),
           ),
         );
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const LsuHomeScreen()));
+        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal menyimpan sampel: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -161,25 +158,19 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
       builder: (ctx) => AlertDialog(
         title: Text(
           widget.isCompleteSample ? 'Simpan Sampel Selesai?' : 'Simpan Sampel?',
-          style: TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
           widget.isCompleteSample
               ? 'Anda yakin ingin menyimpan data sampel selesai ini?'
               : 'Anda yakin ingin menyimpan data sampel diterima ini?',
-          style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              'Batal',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+            child: const Text('Batal'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('Ya, Simpan'),
           ),
         ],
@@ -197,8 +188,6 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
         title: Text(
           widget.isCompleteSample ? 'Konfirmasi Selesai' : 'Konfirmasi',
         ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -259,11 +248,11 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                     children: [
                       Text(
                         'Informasi Sampel',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow('Kode', widget.kode),
@@ -289,11 +278,11 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                     children: [
                       Text(
                         'Tanggal & Waktu',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(
@@ -317,33 +306,19 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
               // Save Button
               ElevatedButton(
                 onPressed: _isSaving ? null : _showSaveConfirmation,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
                 child: _isSaving
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
+                          color: Theme.of(context).colorScheme.onPrimary,
                         ),
                       )
                     : Text(
                         widget.isCompleteSample
                             ? 'Simpan Sampel Selesai'
                             : 'Simpan Sampel',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
                       ),
               ),
             ],
@@ -354,6 +329,8 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -363,14 +340,19 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
             width: 100,
             child: Text(
               label,
-              style: TextStyle(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
-            child: Text(value, style: TextStyle(color: AppColors.textPrimary)),
+            child: Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface,
+              ),
+            ),
           ),
         ],
       ),

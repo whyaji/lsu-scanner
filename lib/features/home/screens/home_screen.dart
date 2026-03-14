@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'lsu_home_screen.dart';
 import 'fertilizer_home_screen.dart';
@@ -12,14 +13,12 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(AppConstants.appName),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -36,24 +35,27 @@ class HomeScreen extends ConsumerWidget {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Selamat datang,',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textSecondary,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    AppSpacing.gapXs,
                     Text(
                       authState.user?.nama ?? 'Pengguna',
-                      style: TextStyle(
-                        fontSize: 24,
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -61,14 +63,19 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+              ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
                   _SampleTypeCard(
                     title: 'Sampel LSU',
                     subtitle: 'Kelola sampel LSU',
                     icon: Icons.eco,
-                    color: AppColors.success,
+                    color: colorScheme.tertiary,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -77,12 +84,12 @@ class HomeScreen extends ConsumerWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
+                  AppSpacing.gapMd,
                   _SampleTypeCard(
                     title: 'Sampel Pupuk',
                     subtitle: 'Kelola sampel pupuk',
                     icon: Icons.science,
-                    color: AppColors.primary,
+                    color: colorScheme.primary,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -118,19 +125,22 @@ class _SampleTypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: AppSpacing.paddingLg,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
+                color: colorScheme.shadow.withValues(alpha: 0.06),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -146,25 +156,23 @@ class _SampleTypeCard extends StatelessWidget {
                 ),
                 child: Icon(icon, size: 32, color: color),
               ),
-              const SizedBox(width: 20),
+              AppSpacing.gapLg,
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
-                        fontSize: 18,
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: colorScheme.onSurface,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    AppSpacing.gapXs,
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -173,7 +181,7 @@ class _SampleTypeCard extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios,
                 size: 18,
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
             ],
           ),

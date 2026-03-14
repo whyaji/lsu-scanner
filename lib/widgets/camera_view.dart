@@ -1,7 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../core/constants/app_constants.dart';
 
 /// Flash mode for the camera: off, always on (torch), or flash when taking photo.
 enum CameraFlashMode { off, torch, onCapture }
@@ -190,7 +189,11 @@ class _CameraViewState extends State<CameraView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: AppColors.error),
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.error,
+              ),
               const SizedBox(height: 16),
               Text(
                 _errorMessage!,

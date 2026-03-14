@@ -33,6 +33,7 @@ class AppConstants {
       'last_sync_sampel_pupuk_time';
   static const String keyUserId = 'user_id';
   static const String keyUserData = 'user_data';
+  static const String keyThemeMode = 'theme_mode';
 
   // Sample Status
   static const String statusNotUploaded = 'not_uploaded';

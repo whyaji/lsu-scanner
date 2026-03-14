@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../widgets/app_stat_card.dart';
+import '../../../widgets/app_section_header.dart';
+import '../providers/home_counts_refresh_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../pupuk/providers/sync_sampel_pupuk_provider.dart';
 import '../../pupuk/screens/pupuk_qr_scanner_screen.dart';
@@ -9,10 +14,16 @@ import '../../pupuk/screens/sampel_pupuk_list_screen.dart';
 import '../../pupuk/screens/upload_sampel_pupuk_screen.dart';
 import '../../regional/providers/regional_provider.dart';
 import '../../settings/screens/settings_screen.dart';
-import 'package:intl/intl.dart';
 
 class FertilizerHomeScreen extends ConsumerStatefulWidget {
-  const FertilizerHomeScreen({super.key});
+  const FertilizerHomeScreen({
+    super.key,
+    this.showBackButton = true,
+    this.showSettingsInAppBar = true,
+  });
+
+  final bool showBackButton;
+  final bool showSettingsInAppBar;
 
   @override
   ConsumerState<FertilizerHomeScreen> createState() =>
@@ -78,67 +89,72 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
     final hasAccess = authState.user?.hasAnyPupukAccess ?? false;
     final syncState = ref.watch(syncSampelPupukProvider);
     final regionalState = ref.watch(regionalProvider);
+    ref.listen<int>(fertilizerCountsRefreshProvider, (prev, next) {
+      if (prev != null && next != prev && mounted) _loadCounts();
+    });
     ref.listen<SyncSampelPupukState>(syncSampelPupukProvider, (prev, next) {
       if (next.error != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(next.error!),
-            backgroundColor: AppColors.error,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
     });
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     if (!hasAccess) {
       return Scaffold(
         appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+          leading: widget.showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                )
+              : null,
           title: const Text('Sampel Pupuk'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  ),
-                );
-              },
-            ),
+            if (widget.showSettingsInAppBar)
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
         body: SafeArea(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
+              padding: AppSpacing.paddingXl,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.lock_outline,
                     size: 64,
-                    color: AppColors.textSecondary,
+                    color: colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 24),
+                  AppSpacing.gapLg,
                   Text(
                     'Anda tidak memiliki akses Sampel Pupuk.',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppColors.textPrimary,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: colorScheme.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  AppSpacing.gapSm,
                   Text(
                     'Hubungi admin untuk mendapatkan akses pupuk:estate atau pupuk:nt.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -152,22 +168,25 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              )
+            : null,
         title: const Text('Sampel Pupuk'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-              );
-            },
-          ),
+          if (widget.showSettingsInAppBar)
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                );
+              },
+            ),
         ],
       ),
       body: SafeArea(
@@ -178,58 +197,55 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
+            padding: AppSpacing.paddingScreen,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // User Info Card
                 Card(
-                  elevation: 2,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: AppSpacing.paddingMd,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Selamat datang, ${authState.user?.nama ?? "Pengguna"}',
-                          style: TextStyle(
-                            fontSize: 20,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        AppSpacing.gapSm,
                         if (regionalState.selectedRegional != null)
                           Text(
                             'Regional ${regionalState.selectedRegional}',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
-                        if (syncState.lastSyncTime != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              _formatDateTimeSync(
-                                syncState.lastSyncTime != null
-                                    ? DateTime.parse(syncState.lastSyncTime!)
-                                    : null,
-                              ),
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12,
-                              ),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
+                        Text(
+                          _formatDateTimeSync(
+                            syncState.lastSyncTime != null
+                                ? DateTime.parse(syncState.lastSyncTime!)
+                                : null,
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                AppSpacing.gapMd,
 
-                // Stats Cards — Menunggu / Terunggah
                 Row(
                   children: [
                     Expanded(
-                      child: InkWell(
+                      child: AppStatCard(
+                        label: 'Menunggu',
+                        value: _pendingCount.toString(),
+                        color: colorScheme.tertiary,
+                        icon: Icons.pending,
                         onTap: () {
                           Navigator.of(context)
                               .push(
@@ -241,18 +257,15 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                               )
                               .then((_) => _loadCounts());
                         },
-                        borderRadius: BorderRadius.circular(8),
-                        child: _buildStatCard(
-                          'Menunggu',
-                          _pendingCount.toString(),
-                          AppColors.warning,
-                          Icons.pending,
-                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    AppSpacing.gapMd,
                     Expanded(
-                      child: InkWell(
+                      child: AppStatCard(
+                        label: 'Terunggah',
+                        value: _uploadedCount.toString(),
+                        color: colorScheme.primary,
+                        icon: Icons.cloud_done,
                         onTap: () {
                           Navigator.of(context)
                               .push(
@@ -264,58 +277,12 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                               )
                               .then((_) => _loadCounts());
                         },
-                        borderRadius: BorderRadius.circular(8),
-                        child: _buildStatCard(
-                          'Terunggah',
-                          _uploadedCount.toString(),
-                          AppColors.success,
-                          Icons.cloud_done,
-                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-
-                // Sync
-                ElevatedButton.icon(
-                  onPressed: syncState.isSyncing ? null : _sync,
-                  icon: syncState.isSyncing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.sync),
-                  label: Text(
-                    syncState.isSyncing
-                        ? 'Menyinkronkan…'
-                        : 'Sinkronkan Data Sampel Pupuk',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                if (syncState.error != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    syncState.error!,
-                    style: TextStyle(color: AppColors.error, fontSize: 13),
-                  ),
-                ],
-                const SizedBox(height: 24),
-
-                // Actions
-                const Text(
-                  'Aksi',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
+                AppSectionHeader(title: 'Aksi cepat'),
+                AppSpacing.gapSm,
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -324,18 +291,10 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.qr_code_scanner, size: 28),
+                  icon: const Icon(Icons.qr_code_scanner, size: 24),
                   label: const Text('Pindai QR Sampel Pupuk'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                 ),
-                const SizedBox(height: 12),
+                AppSpacing.gapSm,
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context)
@@ -347,56 +306,45 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                         )
                         .then((_) => _loadCounts());
                   },
-                  icon: const Icon(Icons.cloud_upload, size: 28),
+                  icon: const Icon(Icons.cloud_upload, size: 24),
                   label: Text(
                     _pendingCount > 0
                         ? 'Unggah Sampel ($_pendingCount)'
                         : 'Unggah Sampel',
                   ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    side: const BorderSide(color: AppColors.primary, width: 2),
+                ),
+                AppSectionHeader(title: 'Sinkronisasi'),
+                AppSpacing.gapSm,
+                ElevatedButton.icon(
+                  onPressed: syncState.isSyncing ? null : _sync,
+                  icon: syncState.isSyncing
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : const Icon(Icons.sync),
+                  label: Text(
+                    syncState.isSyncing
+                        ? 'Menyinkronkan…'
+                        : 'Sinkronkan Data Sampel Pupuk',
                   ),
                 ),
+                if (syncState.error != null) ...[
+                  AppSpacing.gapSm,
+                  Text(
+                    syncState.error!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    Color color,
-    IconData icon,
-  ) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-          ],
         ),
       ),
     );

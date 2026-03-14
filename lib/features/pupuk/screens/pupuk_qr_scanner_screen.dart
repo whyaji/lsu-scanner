@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
+import '../../../widgets/app_error_dialog.dart';
 import '../../scanner/utils/qr_parser.dart';
 import 'sampel_pupuk_detail_screen.dart';
 
@@ -16,6 +16,7 @@ class PupukQRScannerScreen extends StatefulWidget {
 class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
   final MobileScannerController _controller = MobileScannerController();
   bool _isProcessing = false;
+  bool _isShowingDialog = false;
 
   @override
   void dispose() {
@@ -24,22 +25,39 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
     super.dispose();
   }
 
+  void _resumeScanning() {
+    if (!mounted) return;
+    setState(() {
+      _isProcessing = false;
+      _isShowingDialog = false;
+    });
+    _controller.start();
+  }
+
+  Future<void> _showErrorAndStop(String title, String message) async {
+    if (!mounted || _isShowingDialog) return;
+    _isShowingDialog = true;
+    _controller.stop();
+    await AppErrorDialog.show(
+      context,
+      title: title,
+      message: message,
+      onRetry: _resumeScanning,
+    );
+    if (mounted) setState(() => _isShowingDialog = false);
+  }
+
   Future<void> _handleQRCode(String rawValue) async {
-    if (_isProcessing) return;
+    if (_isProcessing || _isShowingDialog) return;
     setState(() => _isProcessing = true);
 
     final qrData = QRParser.parsePupuk(rawValue);
     if (qrData == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Format QR Sampel Pupuk tidak valid. Harap gunakan format: id^supplier^kodeSampel^jenisPupukFull^qty',
-            ),
-            backgroundColor: AppColors.error,
-          ),
+        await _showErrorAndStop(
+          'QR Tidak Valid',
+          'Format QR Sampel Pupuk tidak valid.',
         );
-        setState(() => _isProcessing = false);
       }
       return;
     }
@@ -50,7 +68,7 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
     );
 
     if (mounted) {
-      setState(() => _isProcessing = false);
+      _controller.stop();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => SampelPupukDetailScreen(
@@ -66,11 +84,7 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pindai QR Sampel Pupuk'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('Pindai QR Sampel Pupuk')),
       body: Stack(
         children: [
           MobileScanner(

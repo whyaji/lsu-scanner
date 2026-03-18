@@ -12,14 +12,13 @@ class ApiConstants {
   // Use development URL by default, change to production in release builds
   static String baseUrl = isDevelopmentMode ? baseUrlDev : baseUrlProd;
 
-  // Endpoints
-  static const String login = '/auth/login';
-  static const String refreshToken = '/auth/refresh';
-  static const String logout = '/auth/logout';
+  static const String login = '/auth/mobile-login';
+  static const String mobileRefresh = '/auth/mobile-refresh';
+  static const String mobileLogout = '/auth/mobile-logout';
   static const String getCurrentUser = '/auth/me';
 
   // Endpoint LSU Data
-  static const String sync = '/mobile/sync';
+  static const String sync = '/mobile/sync-sampel-lsu';
   static const String batchUpload = '/data-lsu/upload';
   static const String batchUploadComplete = '/data-lsu/upload-complete';
   static const String uploadPhoto = '/upload/photo';
@@ -42,4 +41,5 @@ class ApiConstants {
   static const String contentTypeHeader = 'Content-Type';
   static const String contentTypeJson = 'application/json';
   static const String contentTypeMultipart = 'multipart/form-data';
+  static const String userAgentHeader = 'User-Agent';
 }

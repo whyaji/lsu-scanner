@@ -13,6 +13,9 @@ import 'features/home/screens/bottom_nav_shell.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/regional/providers/regional_provider.dart';
 import 'features/settings/providers/theme_provider.dart';
+import 'core/network/services/app_update_service.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +39,28 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider).themeMode;
+
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      if (!next.shouldNavigateToLogin) return;
+      void tryNavigate(int attempt) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final nav = appNavigatorKey.currentState;
+          if (nav != null) {
+            nav.pushNamedAndRemoveUntil('/login', (_) => false);
+            ref
+                .read(authProvider.notifier)
+                .acknowledgeSessionTerminatedNavigation();
+          } else if (attempt < 30) {
+            tryNavigate(attempt + 1);
+          }
+        });
+      }
+
+      tryNavigate(0);
+    });
+
     return MaterialApp(
+      navigatorKey: appNavigatorKey,
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
@@ -58,6 +82,7 @@ class AuthWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appUpdateCheckProvider);
     final authState = ref.watch(authProvider);
     final regionalState = ref.watch(regionalProvider);
 

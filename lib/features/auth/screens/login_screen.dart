@@ -49,6 +49,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      if (!next.pendingSessionTerminationBanner || next.error == null) return;
+      final msg = next.error!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        ref.read(authProvider.notifier).clearSessionTerminationBanner();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            backgroundColor: colorScheme.errorContainer,
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      });
+    });
+
     return Scaffold(
       body: SafeArea(
         child: Center(

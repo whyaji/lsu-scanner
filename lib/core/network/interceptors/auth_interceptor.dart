@@ -1,19 +1,18 @@
 import 'package:dio/dio.dart';
-import '../../storage/secure_storage.dart';
+
 import '../../constants/api_constants.dart';
+import '../../storage/secure_storage.dart';
+import '../device_identity.dart';
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(this._dio);
+  AuthInterceptor();
 
-  final Dio _dio;
   final SecureStorage _storage = SecureStorage();
 
   /// Optional callback, configured from the auth layer, to clear local
-  /// auth state and trigger a logout when refresh can no longer recover.
+  /// auth state and trigger a logout when refresh can no longer recover
+  /// or when the server reports SESSION_CONFLICT (409).
   static Future<void> Function(String message)? _onForceLogout;
-
-  /// Serialize token refresh: only one refresh at a time; others wait and retry.
-  static Future<bool>? _refreshFuture;
 
   static void configure({
     Future<void> Function(String message)? onForceLogout,
@@ -21,14 +20,29 @@ class AuthInterceptor extends Interceptor {
     _onForceLogout = onForceLogout;
   }
 
+  static const String _sessionConflictMessage =
+      'Akun ini aktif di perangkat lain. Silakan login kembali di perangkat ini.';
+
+  bool _isUnauthenticatedAuthPath(String path) {
+    return path.contains('/auth/mobile-login') ||
+        path.contains('/auth/mobile-refresh') ||
+        path.contains('/auth/refresh');
+  }
+
+  /// Sync / LSU upload / pupuk upload may return SESSION_CONFLICT (409 or success:false body).
+  static bool isSessionSensitivePath(String path) {
+    return path.contains('sync-sampel-lsu') ||
+        path.contains('sync-sampel-pupuk') ||
+        path.contains('/data-lsu/upload') ||
+        path.contains('data-sampel-pupuk/upload');
+  }
+
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    // Attach Bearer token to all requests except auth endpoints.
-    if (!options.path.contains('/auth/login') &&
-        !options.path.contains('/auth/refresh')) {
+    if (!_isUnauthenticatedAuthPath(options.path)) {
       final token = await _storage.getAccessToken();
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
@@ -38,18 +52,52 @@ class AuthInterceptor extends Interceptor {
   }
 
   @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) async {
+    final path = response.requestOptions.path;
+    if (isSessionSensitivePath(path) && response.data is Map) {
+      final map = Map<String, dynamic>.from(response.data as Map);
+      if (map['success'] == false) {
+        final errMap = map['error'];
+        if (errMap is Map && errMap['code']?.toString() == 'SESSION_CONFLICT') {
+          final msg = errMap['message'] as String? ?? _sessionConflictMessage;
+          if (_onForceLogout != null) {
+            await _onForceLogout!(msg);
+          }
+        }
+      }
+    }
+    handler.next(response);
+  }
+
+  @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     final statusCode = err.response?.statusCode;
 
-    // Only handle 401 here; let other errors pass through.
+    // 409 SESSION_CONFLICT (sync/upload / other): clear local session only.
+    // Do not call mobile-logout — that would invalidate the legitimate device.
+    if (statusCode == 409) {
+      final data = err.response?.data;
+      if (data is Map) {
+        final root = Map<String, dynamic>.from(data);
+        final errMap = root['error'];
+        if (errMap is Map && errMap['code']?.toString() == 'SESSION_CONFLICT') {
+          final nested = Map<String, dynamic>.from(errMap);
+          final msg = nested['message'] as String? ?? _sessionConflictMessage;
+          if (_onForceLogout != null) {
+            await _onForceLogout!(msg);
+          }
+          handler.next(err);
+          return;
+        }
+      }
+    }
+
     if (statusCode != 401 ||
-        err.requestOptions.path.contains('/auth/login') ||
-        err.requestOptions.path.contains('/auth/refresh')) {
+        _isUnauthenticatedAuthPath(err.requestOptions.path)) {
       handler.next(err);
       return;
     }
 
-    // Avoid infinite loops: don't retry a request we've already retried.
     final alreadyRetried =
         err.requestOptions.extra['__auth_retry_done__'] == true;
     if (alreadyRetried) {
@@ -57,8 +105,7 @@ class AuthInterceptor extends Interceptor {
       return;
     }
 
-    // Serialize refresh: if another request is already refreshing, wait for it.
-    final refreshed = await _refreshTokenSerialized(err.requestOptions.baseUrl);
+    final refreshed = await _refreshToken(err.requestOptions.baseUrl);
     if (refreshed) {
       try {
         final token = await _storage.getAccessToken();
@@ -68,12 +115,8 @@ class AuthInterceptor extends Interceptor {
             : opts.headers['Authorization'];
         opts.extra['__auth_retry_done__'] = true;
 
-        // FormData is finalized after first send; clone so the retry can send the body again.
-        if (opts.data is FormData) {
-          opts.data = (opts.data as FormData).clone();
-        }
-
-        final response = await _dio.fetch(opts);
+        final dio = Dio(BaseOptions(baseUrl: opts.baseUrl));
+        final response = await dio.fetch(opts);
         handler.resolve(response);
         return;
       } catch (_) {
@@ -82,20 +125,6 @@ class AuthInterceptor extends Interceptor {
       }
     } else {
       await _forceLogoutAndForward(err, handler);
-    }
-  }
-
-  /// Ensures only one refresh runs at a time; concurrent 401s wait for the same refresh.
-  Future<bool> _refreshTokenSerialized(String baseUrl) async {
-    if (_refreshFuture != null) {
-      return _refreshFuture!;
-    }
-    _refreshFuture = _refreshToken(baseUrl);
-    try {
-      final result = await _refreshFuture!;
-      return result;
-    } finally {
-      _refreshFuture = null;
     }
   }
 
@@ -130,22 +159,36 @@ class AuthInterceptor extends Interceptor {
       final refreshToken = await _storage.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) return false;
 
-      final dio = Dio(BaseOptions(baseUrl: baseUrl));
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
+      final platformId = device['platformId']!;
+      final userAgent = device['userAgent']!;
+
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: baseUrl,
+          headers: {
+            ApiConstants.contentTypeHeader: ApiConstants.contentTypeJson,
+          },
+        ),
+      );
       final response = await dio.post(
-        ApiConstants.refreshToken,
-        data: {'refreshToken': refreshToken},
+        ApiConstants.mobileRefresh,
+        data: {'refreshToken': refreshToken, 'platformId': platformId},
+        options: Options(
+          headers: <String, dynamic>{ApiConstants.userAgentHeader: userAgent},
+        ),
       );
 
-      if (response.statusCode == 200 &&
-          response.data is Map<String, dynamic> &&
-          (response.data['success'] as bool? ?? true)) {
-        final data =
-            response.data['data'] as Map<String, dynamic>? ??
-            response.data as Map<String, dynamic>;
+      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
+        final root = response.data as Map<String, dynamic>;
+        final ok = root['success'] as bool? ?? true;
+        if (!ok) return false;
+
+        final data = root['data'] as Map<String, dynamic>? ?? root;
         final accessToken = data['accessToken'] as String?;
         final newRefresh = data['refreshToken'] as String? ?? refreshToken;
         final expiresIn = (data['expiresIn'] as num?)?.toInt();
-        if (accessToken == null) return false;
+        if (accessToken == null || accessToken.isEmpty) return false;
 
         await _storage.saveAccessToken(accessToken);
         await _storage.saveRefreshToken(newRefresh);

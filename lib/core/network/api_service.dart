@@ -5,21 +5,31 @@ import 'models/auth_models.dart';
 import 'models/sampel_pupuk_models.dart';
 import 'models/sync_models.dart';
 import 'models/upload_models.dart';
+import 'device_identity.dart';
 
 class ApiService {
   final Dio _dio;
 
   ApiService(this._dio);
 
-  // Auth endpoints
+  // Auth endpoints (mobile: POST /api/auth/mobile-login with platformId, userAgent)
   Future<ApiResponse<LoginResponse>> login(
     String username,
     String password,
   ) async {
     try {
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
       final response = await _dio.post(
         ApiConstants.login,
-        data: LoginRequest(username: username, password: password).toJson(),
+        data: LoginRequest(
+          username: username,
+          password: password,
+          platformId: device['platformId']!,
+          userAgent: device['userAgent']!,
+        ).toJson(),
+        options: Options(
+          headers: {ApiConstants.userAgentHeader: device['userAgent']!},
+        ),
       );
       return ApiResponse.fromJson(
         response.data,
@@ -30,26 +40,41 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse<RefreshTokenResponse>> refreshToken(
+  Future<ApiResponse<MobileRefreshResponse>> refreshToken(
     String refreshToken,
   ) async {
     try {
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
       final response = await _dio.post(
-        ApiConstants.refreshToken,
-        data: RefreshTokenRequest(refreshToken: refreshToken).toJson(),
+        ApiConstants.mobileRefresh,
+        data: RefreshTokenRequest(
+          refreshToken: refreshToken,
+          platformId: device['platformId']!,
+        ).toJson(),
+        options: Options(
+          headers: {ApiConstants.userAgentHeader: device['userAgent']!},
+        ),
       );
       return ApiResponse.fromJson(
         response.data,
-        (data) => RefreshTokenResponse.fromJson(data as Map<String, dynamic>),
+        (data) => MobileRefreshResponse.fromJson(data as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       return _handleError(e);
     }
   }
 
+  /// Ends mobile session on server (Bearer + body). Prefer over legacy logout.
   Future<ApiResponse<Map<String, dynamic>>> logout() async {
     try {
-      final response = await _dio.post(ApiConstants.logout);
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
+      final response = await _dio.post(
+        ApiConstants.mobileLogout,
+        data: MobileLogoutRequest(
+          platformId: device['platformId']!,
+          userAgent: device['userAgent']!,
+        ).toJson(),
+      );
       return ApiResponse.fromJson(response.data, null);
     } on DioException catch (e) {
       return _handleError(e);
@@ -68,12 +93,19 @@ class ApiService {
     }
   }
 
-  // Sync endpoint
+  // Sync endpoint (GET /api/mobile/sync-sampel-lsu; optional platformId + User-Agent for session refresh)
   Future<ApiResponse<SyncResponse>> syncData(int regional) async {
     try {
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
       final response = await _dio.get(
         ApiConstants.sync,
-        queryParameters: {'regional': regional},
+        queryParameters: {
+          'regional': regional,
+          'platformId': device['platformId'],
+        },
+        options: Options(
+          headers: {ApiConstants.userAgentHeader: device['userAgent']},
+        ),
       );
       return ApiResponse.fromJson(
         response.data,
@@ -89,8 +121,13 @@ class ApiService {
     List<UploadItem> items,
   ) async {
     try {
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
       final response = await _dio.post(
         ApiConstants.batchUpload,
+        queryParameters: {'platformId': device['platformId']},
+        options: Options(
+          headers: {ApiConstants.userAgentHeader: device['userAgent']},
+        ),
         data: items.map((e) => e.toJson()).toList(),
       );
       return ApiResponse.fromJson(
@@ -106,8 +143,13 @@ class ApiService {
     List<CompleteUploadItem> items,
   ) async {
     try {
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
       final response = await _dio.post(
         ApiConstants.batchUploadComplete,
+        queryParameters: {'platformId': device['platformId']},
+        options: Options(
+          headers: {ApiConstants.userAgentHeader: device['userAgent']},
+        ),
         data: items.map((e) => e.toJson()).toList(),
       );
       return ApiResponse.fromJson(
@@ -151,15 +193,25 @@ class ApiService {
 
   // --- Sampel Pupuk endpoints ---
 
-  Future<ApiResponse<SyncSampelPupukResponse>> syncSampelPupuk(int regional) async {
+  Future<ApiResponse<SyncSampelPupukResponse>> syncSampelPupuk(
+    int regional,
+  ) async {
     try {
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
       final response = await _dio.get(
         ApiConstants.syncSampelPupuk,
-        queryParameters: {'regional': regional},
+        queryParameters: {
+          'regional': regional,
+          'platformId': device['platformId'],
+        },
+        options: Options(
+          headers: {ApiConstants.userAgentHeader: device['userAgent']},
+        ),
       );
       return ApiResponse.fromJson(
         response.data,
-        (data) => SyncSampelPupukResponse.fromJson(data as Map<String, dynamic>),
+        (data) =>
+            SyncSampelPupukResponse.fromJson(data as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       return _handleError(e);
@@ -206,13 +258,19 @@ class ApiService {
     SampelPupukUploadPayload payload,
   ) async {
     try {
+      final device = await DeviceIdentity.getPlatformIdAndUserAgent();
       final response = await _dio.post(
         ApiConstants.uploadSampelPupuk,
+        queryParameters: {'platformId': device['platformId']},
+        options: Options(
+          headers: {ApiConstants.userAgentHeader: device['userAgent']},
+        ),
         data: payload.toJson(),
       );
       return ApiResponse.fromJson(
         response.data,
-        (data) => SampelPupukUploadResponse.fromJson(data as Map<String, dynamic>),
+        (data) =>
+            SampelPupukUploadResponse.fromJson(data as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       return _handleError(e);
@@ -241,7 +299,8 @@ class ApiService {
       );
       return ApiResponse.fromJson(
         response.data,
-        (data) => PhotoPupukUploadResponse.fromJson(data as Map<String, dynamic>),
+        (data) =>
+            PhotoPupukUploadResponse.fromJson(data as Map<String, dynamic>),
       );
     } on DioException catch (e) {
       return _handleError(e);

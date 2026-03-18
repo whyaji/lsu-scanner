@@ -1,11 +1,23 @@
 class LoginRequest {
   final String username;
   final String password;
+  final String platformId;
+  final String userAgent;
 
-  LoginRequest({required this.username, required this.password});
+  LoginRequest({
+    required this.username,
+    required this.password,
+    required this.platformId,
+    required this.userAgent,
+  });
 
   Map<String, dynamic> toJson() {
-    return {'username': username, 'password': password};
+    return {
+      'username': username,
+      'password': password,
+      'platformId': platformId,
+      'userAgent': userAgent,
+    };
   }
 }
 
@@ -34,25 +46,49 @@ class LoginResponse {
 
 class RefreshTokenRequest {
   final String refreshToken;
+  final String platformId;
 
-  RefreshTokenRequest({required this.refreshToken});
+  RefreshTokenRequest({required this.refreshToken, required this.platformId});
 
   Map<String, dynamic> toJson() {
-    return {'refreshToken': refreshToken};
+    return {'refreshToken': refreshToken, 'platformId': platformId};
   }
 }
 
-class RefreshTokenResponse {
+/// Response shape from `POST /auth/mobile-refresh` (same token fields as login).
+class MobileRefreshResponse {
   final String accessToken;
+  final String refreshToken;
   final int expiresIn;
+  final User? user;
 
-  RefreshTokenResponse({required this.accessToken, required this.expiresIn});
+  MobileRefreshResponse({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.expiresIn,
+    this.user,
+  });
 
-  factory RefreshTokenResponse.fromJson(Map<String, dynamic> json) {
-    return RefreshTokenResponse(
+  factory MobileRefreshResponse.fromJson(Map<String, dynamic> json) {
+    return MobileRefreshResponse(
       accessToken: json['accessToken'] as String,
-      expiresIn: json['expiresIn'] as int,
+      refreshToken: json['refreshToken'] as String,
+      expiresIn: (json['expiresIn'] as num).toInt(),
+      user: json['user'] != null
+          ? User.fromJson(json['user'] as Map<String, dynamic>)
+          : null,
     );
+  }
+}
+
+class MobileLogoutRequest {
+  final String platformId;
+  final String userAgent;
+
+  MobileLogoutRequest({required this.platformId, required this.userAgent});
+
+  Map<String, dynamic> toJson() {
+    return {'platformId': platformId, 'userAgent': userAgent};
   }
 }
 

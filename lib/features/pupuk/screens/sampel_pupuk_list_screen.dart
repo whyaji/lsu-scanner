@@ -24,6 +24,9 @@ class _PupukListEntry {
   final String createdAt;
   final String? fotoPath;
 
+  /// e.g. No. Surat for Kirim Lab
+  final String? extraSubtitle;
+
   _PupukListEntry({
     required this.activityType,
     required this.id,
@@ -33,6 +36,7 @@ class _PupukListEntry {
     this.errorMessage,
     required this.createdAt,
     this.fotoPath,
+    this.extraSubtitle,
   });
 }
 
@@ -169,6 +173,7 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
   }
 
   _PupukListEntry _entryFromKirimLab(KirimLab row) {
+    final ns = row.noSurat;
     return _PupukListEntry(
       activityType: kKirimLab,
       id: row.id!,
@@ -178,6 +183,7 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
       errorMessage: row.errorMessage,
       createdAt: row.createdAt,
       fotoPath: row.fotoKirimLab,
+      extraSubtitle: ns != null && ns.isNotEmpty ? 'No. Surat: $ns' : null,
     );
   }
 
@@ -347,6 +353,18 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                                     .onSurfaceVariant,
                                               ),
                                         ),
+                                        if (e.extraSubtitle != null &&
+                                            e.extraSubtitle!.isNotEmpty) ...[
+                                          AppSpacing.gapXs,
+                                          Text(
+                                            e.extraSubtitle!,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                        ],
                                         AppSpacing.gapSm,
                                         Container(
                                           padding: const EdgeInsets.symmetric(

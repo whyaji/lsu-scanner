@@ -27,9 +27,83 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    final db = await openDatabase(path, version: 1, onCreate: _createDB);
+    final db = await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
     await _ensureSampelPupukTables(db);
     return db;
+  }
+
+  /// v2: Move `no_surat` from terima_dari_estate to kirim_lab.
+  static Future<void> _upgradeDB(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion >= 2) return;
+
+    Future<bool> tableExists(String name) async {
+      final r = await db.rawQuery(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name=? LIMIT 1",
+        [name],
+      );
+      return r.isNotEmpty;
+    }
+
+    Future<bool> columnExists(String table, String column) async {
+      final info = await db.rawQuery('PRAGMA table_info($table)');
+      return info.any((c) => c['name'] == column);
+    }
+
+    if (await tableExists('kirim_lab')) {
+      if (!await columnExists('kirim_lab', 'no_surat')) {
+        await db.execute('ALTER TABLE kirim_lab ADD COLUMN no_surat TEXT');
+      }
+      if (await tableExists('terima_dari_estate') &&
+          await columnExists('terima_dari_estate', 'no_surat')) {
+        await db.execute('''
+          UPDATE kirim_lab SET no_surat = (
+            SELECT t.no_surat FROM terima_dari_estate t
+            WHERE t.data_sampel_pupuk_id = kirim_lab.data_sampel_pupuk_id
+              AND t.kode_sampel = kirim_lab.kode_sampel
+            ORDER BY t.id DESC LIMIT 1
+          )
+        ''');
+      }
+    }
+
+    if (await tableExists('terima_dari_estate') &&
+        await columnExists('terima_dari_estate', 'no_surat')) {
+      await db.execute('''
+        CREATE TABLE terima_dari_estate_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          data_sampel_pupuk_id INTEGER NOT NULL,
+          kode_sampel TEXT NOT NULL,
+          tanggal_terima_dari_estate TEXT NOT NULL,
+          foto_terima_dari_estate TEXT,
+          status TEXT NOT NULL DEFAULT 'not_uploaded',
+          error_message TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT
+        )
+      ''');
+      await db.execute('''
+        INSERT INTO terima_dari_estate_new (
+          id, data_sampel_pupuk_id, kode_sampel, tanggal_terima_dari_estate,
+          foto_terima_dari_estate, status, error_message, created_at, updated_at
+        )
+        SELECT id, data_sampel_pupuk_id, kode_sampel, tanggal_terima_dari_estate,
+          foto_terima_dari_estate, status, error_message, created_at, updated_at
+        FROM terima_dari_estate
+      ''');
+      await db.execute('DROP TABLE terima_dari_estate');
+      await db.execute(
+        'ALTER TABLE terima_dari_estate_new RENAME TO terima_dari_estate',
+      );
+    }
   }
 
   static Future<void> _ensureSampelPupukTables(Database db) async {
@@ -92,7 +166,6 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         data_sampel_pupuk_id INTEGER NOT NULL,
         kode_sampel TEXT NOT NULL,
-        no_surat TEXT,
         tanggal_terima_dari_estate TEXT NOT NULL,
         foto_terima_dari_estate TEXT,
         status TEXT NOT NULL DEFAULT 'not_uploaded',
@@ -106,6 +179,7 @@ class DatabaseHelper {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         data_sampel_pupuk_id INTEGER NOT NULL,
         kode_sampel TEXT NOT NULL,
+        no_surat TEXT,
         tanggal_kirim_lab TEXT NOT NULL,
         foto_kirim_lab TEXT,
         status TEXT NOT NULL DEFAULT 'not_uploaded',

@@ -2,7 +2,6 @@ class TerimaDariEstate {
   final int? id;
   final int dataSampelPupukId;
   final String kodeSampel;
-  final String? noSurat;
   final String tanggalTerimaDariEstate;
   final String? fotoTerimaDariEstate;
   final String status;
@@ -14,7 +13,6 @@ class TerimaDariEstate {
     this.id,
     required this.dataSampelPupukId,
     required this.kodeSampel,
-    this.noSurat,
     required this.tanggalTerimaDariEstate,
     this.fotoTerimaDariEstate,
     this.status = 'not_uploaded',
@@ -28,7 +26,6 @@ class TerimaDariEstate {
       id: (json['id'] as num?)?.toInt(),
       dataSampelPupukId: json['data_sampel_pupuk_id'] as int,
       kodeSampel: json['kode_sampel'] as String,
-      noSurat: json['no_surat'] as String?,
       tanggalTerimaDariEstate: json['tanggal_terima_dari_estate'] as String,
       fotoTerimaDariEstate: json['foto_terima_dari_estate'] as String?,
       status: json['status'] as String? ?? 'not_uploaded',
@@ -43,7 +40,6 @@ class TerimaDariEstate {
       if (id != null) 'id': id,
       'data_sampel_pupuk_id': dataSampelPupukId,
       'kode_sampel': kodeSampel,
-      'no_surat': noSurat,
       'tanggal_terima_dari_estate': tanggalTerimaDariEstate,
       'foto_terima_dari_estate': fotoTerimaDariEstate,
       'status': status,

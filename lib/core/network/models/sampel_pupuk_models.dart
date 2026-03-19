@@ -271,7 +271,6 @@ class TerimaDariEstateItem {
   final int id;
   final int dataSampelPupukId;
   final String kodeSampel;
-  final String? noSurat;
   final String tanggalTerimaDariEstate;
   final String? fotoTerimaDariEstate;
 
@@ -279,7 +278,6 @@ class TerimaDariEstateItem {
     required this.id,
     required this.dataSampelPupukId,
     required this.kodeSampel,
-    this.noSurat,
     required this.tanggalTerimaDariEstate,
     this.fotoTerimaDariEstate,
   });
@@ -288,7 +286,6 @@ class TerimaDariEstateItem {
     'id': id,
     'dataSampelPupukId': dataSampelPupukId,
     'kodeSampel': kodeSampel,
-    if (noSurat != null) 'noSurat': noSurat,
     'tanggalTerimaDariEstate': tanggalTerimaDariEstate,
     if (fotoTerimaDariEstate != null)
       'fotoTerimaDariEstate': fotoTerimaDariEstate,
@@ -299,6 +296,7 @@ class KirimLabItem {
   final int id;
   final int dataSampelPupukId;
   final String kodeSampel;
+  final String? noSurat;
   final String tanggalKirimLab;
   final String? fotoKirimLab;
 
@@ -306,6 +304,7 @@ class KirimLabItem {
     required this.id,
     required this.dataSampelPupukId,
     required this.kodeSampel,
+    this.noSurat,
     required this.tanggalKirimLab,
     this.fotoKirimLab,
   });
@@ -314,6 +313,7 @@ class KirimLabItem {
     'id': id,
     'dataSampelPupukId': dataSampelPupukId,
     'kodeSampel': kodeSampel,
+    if (noSurat != null) 'noSurat': noSurat,
     'tanggalKirimLab': tanggalKirimLab,
     if (fotoKirimLab != null) 'fotoKirimLab': fotoKirimLab,
   };

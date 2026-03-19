@@ -81,7 +81,6 @@ class _SampelPupukConfirmationScreenState
             TerimaDariEstate(
               dataSampelPupukId: widget.formData.dataSampelPupukId,
               kodeSampel: kode,
-              noSurat: widget.formData.noSurat,
               tanggalTerimaDariEstate: widget.formData.tanggalTerimaDariEstate,
               fotoTerimaDariEstate: widget.photoPath,
               status: AppConstants.statusNotUploaded,
@@ -94,6 +93,7 @@ class _SampelPupukConfirmationScreenState
             KirimLab(
               dataSampelPupukId: widget.formData.dataSampelPupukId,
               kodeSampel: kode,
+              noSurat: widget.formData.noSurat,
               tanggalKirimLab: widget.formData.tanggalKirimLab,
               fotoKirimLab: widget.photoPath,
               status: AppConstants.statusNotUploaded,
@@ -176,7 +176,8 @@ class _SampelPupukConfirmationScreenState
                             dateLabel: _getDateValue(),
                             if (widget.formData.namaPengirim != null)
                               'Nama Pengirim': widget.formData.namaPengirim!,
-                            if (widget.formData.noSurat != null)
+                            if (widget.formData.noSurat != null &&
+                                widget.formData.noSurat!.isNotEmpty)
                               'No. Surat': widget.formData.noSurat!,
                           },
                         ),
@@ -229,7 +230,8 @@ class _SampelPupukConfirmationScreenState
                       _row(dateLabel, _getDateValue()),
                       if (widget.formData.namaPengirim != null)
                         _row('Nama Pengirim', widget.formData.namaPengirim!),
-                      if (widget.formData.noSurat != null)
+                      if (widget.formData.noSurat != null &&
+                          widget.formData.noSurat!.isNotEmpty)
                         _row('No. Surat', widget.formData.noSurat!),
                     ],
                   ),

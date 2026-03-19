@@ -443,8 +443,6 @@ class _SampelPupukActivityDetailScreenState
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow('Kode Sampel', r.kodeSampel),
-                if (r.noSurat != null && r.noSurat!.isNotEmpty)
-                  _buildInfoRow('No. Surat', r.noSurat!),
                 _buildInfoRow(
                   'Tanggal Terima dari Estate',
                   app_date_utils.DateUtils.formatDateTimeFromIso(
@@ -504,6 +502,8 @@ class _SampelPupukActivityDetailScreenState
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow('Kode Sampel', r.kodeSampel),
+                if (r.noSurat != null && r.noSurat!.isNotEmpty)
+                  _buildInfoRow('No. Surat', r.noSurat!),
                 _buildInfoRow(
                   'Tanggal Kirim Lab',
                   app_date_utils.DateUtils.formatDateTimeFromIso(

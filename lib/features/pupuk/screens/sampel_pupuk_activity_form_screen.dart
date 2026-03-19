@@ -85,7 +85,7 @@ class _SampelPupukActivityFormScreenState
       namaPengirim: widget.activityType == kKirimDariEstate
           ? _namaPengirim
           : null,
-      noSurat: widget.activityType == kTerimaDariEstate ? _noSurat : null,
+      noSurat: widget.activityType == kKirimLab ? _noSurat : null,
       tanggalTerimaDariEstate: widget.activityType == kTerimaDariEstate
           ? _dateTimeIso
           : '',
@@ -146,7 +146,7 @@ class _SampelPupukActivityFormScreenState
                         _namaPengirim = v.trim().isEmpty ? null : v.trim(),
                   ),
                 ],
-                if (widget.activityType == kTerimaDariEstate) ...[
+                if (widget.activityType == kKirimLab) ...[
                   const SizedBox(height: 16),
                   TextFormField(
                     decoration: const InputDecoration(

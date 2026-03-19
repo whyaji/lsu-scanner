@@ -201,6 +201,10 @@ class _UploadSampelPupukScreenState
                         dateText: row.tanggalKirimLab,
                         status: row.status,
                         errorMessage: row.errorMessage,
+                        extraLine:
+                            row.noSurat != null && row.noSurat!.isNotEmpty
+                            ? 'No. Surat: ${row.noSurat}'
+                            : null,
                       ),
                     ),
                     if (_totalPending > 0)
@@ -338,12 +342,14 @@ class _PendingRow extends StatelessWidget {
   final String dateText;
   final String status;
   final String? errorMessage;
+  final String? extraLine;
 
   const _PendingRow({
     required this.kodeSampel,
     required this.dateText,
     required this.status,
     this.errorMessage,
+    this.extraLine,
   });
 
   @override
@@ -373,6 +379,13 @@ class _PendingRow extends StatelessWidget {
           app_date_utils.DateUtils.formatDateTimeFromIso(dateText),
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
+        if (extraLine != null && extraLine!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            extraLine!,
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          ),
+        ],
         const SizedBox(height: 6),
         Text(
           'Status: ${status == AppConstants.statusUploaded

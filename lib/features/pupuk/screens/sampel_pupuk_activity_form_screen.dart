@@ -94,7 +94,13 @@ class _SampelPupukActivityFormScreenState
   }
 
   void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Mohon lengkapi field yang wajib diisi.')),
+      );
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SampelPupukPhotoCaptureScreen(
@@ -137,9 +143,16 @@ class _SampelPupukActivityFormScreenState
                   const SizedBox(height: 16),
                   TextFormField(
                     decoration: const InputDecoration(
-                      labelText: 'Nama Pengirim (opsional)',
+                      labelText: 'Nama Pengirim',
                       border: OutlineInputBorder(),
                     ),
+                    validator: (v) {
+                      final value = v?.trim() ?? '';
+                      if (value.isEmpty) {
+                        return 'Nama Pengirim wajib diisi';
+                      }
+                      return null;
+                    },
                     onSaved: (v) => _namaPengirim = v?.trim(),
                     initialValue: _namaPengirim,
                     onChanged: (v) =>
@@ -150,9 +163,16 @@ class _SampelPupukActivityFormScreenState
                   const SizedBox(height: 16),
                   TextFormField(
                     decoration: const InputDecoration(
-                      labelText: 'No. Surat (opsional)',
+                      labelText: 'No. Surat',
                       border: OutlineInputBorder(),
                     ),
+                    validator: (v) {
+                      final value = v?.trim() ?? '';
+                      if (value.isEmpty) {
+                        return 'No. Surat wajib diisi';
+                      }
+                      return null;
+                    },
                     onSaved: (v) => _noSurat = v?.trim(),
                     initialValue: _noSurat,
                     onChanged: (v) =>

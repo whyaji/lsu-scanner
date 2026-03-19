@@ -12,6 +12,7 @@ import '../../pupuk/providers/sync_sampel_pupuk_provider.dart';
 import '../../pupuk/screens/pupuk_qr_scanner_screen.dart';
 import '../../pupuk/screens/sampel_pupuk_list_screen.dart';
 import '../../pupuk/screens/upload_sampel_pupuk_screen.dart';
+import '../../pupuk/screens/kirim_sertifikat_form_screen.dart';
 import '../../regional/providers/regional_provider.dart';
 import '../../settings/screens/settings_screen.dart';
 
@@ -47,15 +48,18 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
     final t2Pending = await _dbHelper.getPendingKirimDariEstate();
     final t3Pending = await _dbHelper.getPendingTerimaDariEstate();
     final t4Pending = await _dbHelper.getPendingKirimLab();
+    final t5Pending = await _dbHelper.getPendingKirimSertifikatEstate();
     final t1All = await _dbHelper.getAllTerimaDariGudang();
     final t2All = await _dbHelper.getAllKirimDariEstate();
     final t3All = await _dbHelper.getAllTerimaDariEstate();
     final t4All = await _dbHelper.getAllKirimLab();
+    final t5All = await _dbHelper.getAllKirimSertifikatEstate();
     final pending =
         t1Pending.length +
         t2Pending.length +
         t3Pending.length +
-        t4Pending.length;
+        t4Pending.length +
+        t5Pending.length;
     int uploaded = 0;
     for (final row in t1All) {
       if (row.status == AppConstants.statusUploaded) uploaded++;
@@ -67,6 +71,9 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
       if (row.status == AppConstants.statusUploaded) uploaded++;
     }
     for (final row in t4All) {
+      if (row.status == AppConstants.statusUploaded) uploaded++;
+    }
+    for (final row in t5All) {
       if (row.status == AppConstants.statusUploaded) uploaded++;
     }
     if (mounted) {
@@ -295,6 +302,22 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                   label: const Text('Pindai QR Sampel Pupuk'),
                 ),
                 AppSpacing.gapSm,
+                if (authState.user?.hasPupukNtAccess ?? false) ...[
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context)
+                          .push(
+                            MaterialPageRoute(
+                              builder: (_) => const KirimSertifikatFormScreen(),
+                            ),
+                          )
+                          .then((_) => _loadCounts());
+                    },
+                    icon: const Icon(Icons.send, size: 24),
+                    label: const Text('Kirim Sertifikat'),
+                  ),
+                  AppSpacing.gapSm,
+                ],
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context)

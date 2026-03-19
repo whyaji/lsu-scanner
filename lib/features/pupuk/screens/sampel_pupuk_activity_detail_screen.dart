@@ -2,13 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
-import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
+import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../../sample/screens/full_screen_image_preview_screen.dart';
 import '../constants/pupuk_activity_types.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 
 class SampelPupukActivityDetailScreen extends StatefulWidget {
   final String activityType;
@@ -33,6 +34,7 @@ class _SampelPupukActivityDetailScreenState
   KirimDariEstate? _kirimEstate;
   TerimaDariEstate? _terimaEstate;
   KirimLab? _kirimLab;
+  KirimSertifikatEstate? _kirimSertifikat;
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -66,6 +68,14 @@ class _SampelPupukActivityDetailScreenState
         if (mounted)
           setState(() {
             _kirimLab = row;
+            _loading = false;
+          });
+        break;
+      case kKirimSertifikatEstate:
+        final row = await _dbHelper.getKirimSertifikatEstateById(widget.id);
+        if (mounted)
+          setState(() {
+            _kirimSertifikat = row;
             _loading = false;
           });
         break;
@@ -137,6 +147,9 @@ class _SampelPupukActivityDetailScreenState
       case kKirimLab:
         await _dbHelper.deleteKirimLab(widget.id);
         break;
+      case kKirimSertifikatEstate:
+        await _dbHelper.deleteKirimSertifikatEstate(widget.id);
+        break;
     }
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -145,7 +158,8 @@ class _SampelPupukActivityDetailScreenState
       _terimaGudang != null ||
       _kirimEstate != null ||
       _terimaEstate != null ||
-      _kirimLab != null;
+      _kirimLab != null ||
+      _kirimSertifikat != null;
 
   @override
   Widget build(BuildContext context) {
@@ -198,6 +212,8 @@ class _SampelPupukActivityDetailScreenState
               if (_terimaEstate != null)
                 _buildTerimaEstateContent(_terimaEstate!),
               if (_kirimLab != null) _buildKirimLabContent(_kirimLab!),
+              if (_kirimSertifikat != null)
+                _buildKirimSertifikatContent(_kirimSertifikat!),
             ],
           ),
         ),
@@ -510,6 +526,65 @@ class _SampelPupukActivityDetailScreenState
                     r.tanggalKirimLab,
                   ),
                 ),
+                _buildInfoRow(
+                  'Status',
+                  _statusLabel(r.status),
+                  valueColor: _statusColor(r.status),
+                ),
+                if (r.errorMessage != null && r.errorMessage!.isNotEmpty)
+                  _buildInfoRow(
+                    'Kesalahan',
+                    r.errorMessage!,
+                    valueColor: AppColors.error,
+                  ),
+                _buildInfoRow(
+                  'Dibuat',
+                  app_date_utils.DateUtils.formatDateTimeFromIso(r.createdAt),
+                ),
+                if (r.updatedAt != null)
+                  _buildInfoRow(
+                    'Diperbarui',
+                    app_date_utils.DateUtils.formatDateTimeFromIso(
+                      r.updatedAt!,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKirimSertifikatContent(KirimSertifikatEstate r) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 0),
+        Card(
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Informasi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildInfoRow('Kode Sampel', r.kodeSampel),
+                _buildInfoRow(
+                  'Tanggal Kirim Sertifikat',
+                  app_date_utils.DateUtils.formatDateTimeFromIso(
+                    r.tanggalKirimSertifikatEstate,
+                  ),
+                ),
+                _buildInfoRow('Rekomendasi', r.rekomendasi),
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),

@@ -21,6 +21,10 @@ class DataSampelPupuk {
   final String? jenisKendaraan;
   final String? tanggalPengambilanSampel;
   final String? tanggalTerimaDariGudang;
+  final String? kodeTracking;
+  final String? noSertifikat;
+  final String? tanggalKirimSertifikatEstate;
+  final String? rekomendasi;
   final String? createdAt;
   final String? updatedAt;
 
@@ -46,6 +50,10 @@ class DataSampelPupuk {
     this.jenisKendaraan,
     this.tanggalPengambilanSampel,
     this.tanggalTerimaDariGudang,
+    this.kodeTracking,
+    this.noSertifikat,
+    this.tanggalKirimSertifikatEstate,
+    this.rekomendasi,
     this.createdAt,
     this.updatedAt,
   });
@@ -74,6 +82,11 @@ class DataSampelPupuk {
       jenisKendaraan: json['jenisKendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggalPengambilanSampel'] as String?,
       tanggalTerimaDariGudang: json['tanggalTerimaDariGudang'] as String?,
+      kodeTracking: json['kodeTracking'] as String?,
+      noSertifikat: json['noSertifikat'] as String?,
+      tanggalKirimSertifikatEstate:
+          json['tanggalKirimSertifikatEstate'] as String?,
+      rekomendasi: json['rekomendasi'] as String?,
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
     );
@@ -102,6 +115,11 @@ class DataSampelPupuk {
       jenisKendaraan: json['jenis_kendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggal_pengambilan_sampel'] as String?,
       tanggalTerimaDariGudang: json['tanggal_terima_dari_gudang'] as String?,
+      kodeTracking: json['kode_tracking'] as String?,
+      noSertifikat: json['no_sertifikat'] as String?,
+      tanggalKirimSertifikatEstate:
+          json['tanggal_kirim_sertifikat_estate'] as String?,
+      rekomendasi: json['rekomendasi'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
     );
@@ -130,6 +148,10 @@ class DataSampelPupuk {
       'jenis_kendaraan': jenisKendaraan,
       'tanggal_pengambilan_sampel': tanggalPengambilanSampel,
       'tanggal_terima_dari_gudang': tanggalTerimaDariGudang,
+      'kode_tracking': kodeTracking,
+      'no_sertifikat': noSertifikat,
+      'tanggal_kirim_sertifikat_estate': tanggalKirimSertifikatEstate,
+      'rekomendasi': rekomendasi,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };

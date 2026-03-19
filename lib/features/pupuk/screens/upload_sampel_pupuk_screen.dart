@@ -7,6 +7,7 @@ import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
+import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../constants/pupuk_activity_types.dart';
 import '../providers/upload_sampel_pupuk_provider.dart';
 import 'sampel_pupuk_activity_detail_screen.dart';
@@ -26,18 +27,21 @@ class _UploadSampelPupukScreenState
   List<KirimDariEstate> _pendingKirimEstate = [];
   List<TerimaDariEstate> _pendingTerimaEstate = [];
   List<KirimLab> _pendingKirimLab = [];
+  List<KirimSertifikatEstate> _pendingKirimSertifikat = [];
 
   Future<void> _loadAll() async {
     final t1 = await _dbHelper.getPendingTerimaDariGudang();
     final t2 = await _dbHelper.getPendingKirimDariEstate();
     final t3 = await _dbHelper.getPendingTerimaDariEstate();
     final t4 = await _dbHelper.getPendingKirimLab();
+    final t5 = await _dbHelper.getPendingKirimSertifikatEstate();
     if (mounted) {
       setState(() {
         _pendingTerimaGudang = t1;
         _pendingKirimEstate = t2;
         _pendingTerimaEstate = t3;
         _pendingKirimLab = t4;
+        _pendingKirimSertifikat = t5;
       });
     }
   }
@@ -88,7 +92,8 @@ class _UploadSampelPupukScreenState
       _pendingTerimaGudang.length +
       _pendingKirimEstate.length +
       _pendingTerimaEstate.length +
-      _pendingKirimLab.length;
+      _pendingKirimLab.length +
+      _pendingKirimSertifikat.length;
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +210,19 @@ class _UploadSampelPupukScreenState
                             row.noSurat != null && row.noSurat!.isNotEmpty
                             ? 'No. Surat: ${row.noSurat}'
                             : null,
+                      ),
+                    ),
+                    _buildSection<KirimSertifikatEstate>(
+                      'Kirim Sertifikat',
+                      kKirimSertifikatEstate,
+                      _pendingKirimSertifikat,
+                      (row) => row.id!,
+                      (row) => _PendingRow(
+                        kodeSampel: row.kodeSampel,
+                        dateText: row.tanggalKirimSertifikatEstate,
+                        status: row.status,
+                        errorMessage: row.errorMessage,
+                        extraLine: 'Rekomendasi: ${row.rekomendasi}',
                       ),
                     ),
                     if (_totalPending > 0)

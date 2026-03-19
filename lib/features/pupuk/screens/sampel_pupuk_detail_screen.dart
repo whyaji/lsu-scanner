@@ -8,6 +8,39 @@ import '../../scanner/utils/qr_parser.dart';
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
 
+/// Konfirmasi keluar dari detail — user dapat memindai QR ulang.
+Future<bool> _showDetailBackRescanDialog(BuildContext context) async {
+  final result = await showDialog<bool>(
+    context: context,
+    barrierDismissible: true,
+    builder: (ctx) {
+      final cs = Theme.of(ctx).colorScheme;
+      return AlertDialog(
+        icon: Icon(Icons.qr_code_scanner_rounded, size: 40, color: cs.primary),
+        iconColor: cs.primary,
+        title: const Text('Kembali dan pindai ulang?'),
+        content: const Text(
+          'Apakah Anda yakin ingin kembali?\n\n'
+          'Anda akan meninggalkan halaman ini dan dapat memindai kode QR ulang atau memilih alur lain.',
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actionsAlignment: MainAxisAlignment.end,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Tetap di sini'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Ya, pindai ulang'),
+          ),
+        ],
+      );
+    },
+  );
+  return result ?? false;
+}
+
 class SampelPupukDetailScreen extends ConsumerWidget {
   final DataSampelPupuk? dataSampelPupuk;
   final QRPupukData qrPupukData;
@@ -36,146 +69,168 @@ class SampelPupukDetailScreen extends ConsumerWidget {
     final access = authState.user?.access;
     final allowedTypes = allowedPupukActivityTypes(access);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Detail Sampel Pupuk')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (!fromSync)
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        final ok = await _showDetailBackRescanDialog(context);
+        if (!context.mounted || !ok) return;
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Detail Sampel Pupuk'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'Kembali',
+            onPressed: () async {
+              final ok = await _showDetailBackRescanDialog(context);
+              if (!context.mounted || !ok) return;
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!fromSync)
+                  Card(
+                    color: AppTheme.warningColor(
+                      context,
+                    ).withValues(alpha: 0.15),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: AppTheme.warningColor(context),
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Data dari QR. Rekaman ini mungkin belum disinkronkan. Anda tetap dapat mengisi formulir dan mengambil foto.',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
                 Card(
-                  color: AppTheme.warningColor(context).withValues(alpha: 0.15),
+                  elevation: 2,
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppTheme.warningColor(context),
-                          size: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Data dari QR. Rekaman ini mungkin belum disinkronkan. Anda tetap dapat mengisi formulir dan mengambil foto.',
-                            style: Theme.of(context).textTheme.bodySmall,
+                        Text(
+                          fromSync ? 'Data Sampel Pupuk' : 'Data dari QR',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        _row(context, 'ID', dataSampelPupukId.toString()),
+                        _row(
+                          context,
+                          'Kode Sampel',
+                          kodeSampel.isEmpty ? '-' : kodeSampel,
+                        ),
+                        _row(context, 'Supplier', _supplierDisplay),
+                        _row(
+                          context,
+                          'Jenis Pupuk',
+                          dataSampelPupuk?.jenisPupukFull ??
+                              (qrPupukData.jenisPupukFull.isEmpty
+                                  ? '-'
+                                  : qrPupukData.jenisPupukFull),
+                        ),
+                        if (dataSampelPupuk != null) ...[
+                          if (dataSampelPupuk!.regional != null)
+                            _row(
+                              context,
+                              'Regional',
+                              dataSampelPupuk!.regional.toString(),
+                            ),
+                          if (dataSampelPupuk!.wilayah != null)
+                            _row(
+                              context,
+                              'Wilayah',
+                              dataSampelPupuk!.wilayah.toString(),
+                            ),
+                          if (dataSampelPupuk!.estate != null &&
+                              dataSampelPupuk!.estate!.isNotEmpty)
+                            _row(context, 'Estate', dataSampelPupuk!.estate!),
+                          if (dataSampelPupuk!.qtyPartaiPengiriman != null)
+                            _row(
+                              context,
+                              'Qty Partai Pengiriman',
+                              '${dataSampelPupuk!.qtyPartaiPengiriman} Kg',
+                            ),
+                        ] else if (qrPupukData.qtyPartaiPengiriman != null)
+                          _row(
+                            context,
+                            'Qty Partai Pengiriman',
+                            '${qrPupukData.qtyPartaiPengiriman} Kg',
+                          ),
                       ],
                     ),
                   ),
                 ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        fromSync ? 'Data Sampel Pupuk' : 'Data dari QR',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                const SizedBox(height: 24),
+                if (allowedTypes.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Anda tidak memiliki akses untuk mencatat aktivitas Sampel Pupuk. Hubungi admin.',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      _row(context, 'ID', dataSampelPupukId.toString()),
-                      _row(
-                        context,
-                        'Kode Sampel',
-                        kodeSampel.isEmpty ? '-' : kodeSampel,
-                      ),
-                      _row(context, 'Supplier', _supplierDisplay),
-                      _row(
-                        context,
-                        'Jenis Pupuk',
-                        dataSampelPupuk?.jenisPupukFull ??
-                            (qrPupukData.jenisPupukFull.isEmpty
-                                ? '-'
-                                : qrPupukData.jenisPupukFull),
-                      ),
-                      if (dataSampelPupuk != null) ...[
-                        if (dataSampelPupuk!.regional != null)
-                          _row(
-                            context,
-                            'Regional',
-                            dataSampelPupuk!.regional.toString(),
-                          ),
-                        if (dataSampelPupuk!.wilayah != null)
-                          _row(
-                            context,
-                            'Wilayah',
-                            dataSampelPupuk!.wilayah.toString(),
-                          ),
-                        if (dataSampelPupuk!.estate != null &&
-                            dataSampelPupuk!.estate!.isNotEmpty)
-                          _row(context, 'Estate', dataSampelPupuk!.estate!),
-                        if (dataSampelPupuk!.qtyPartaiPengiriman != null)
-                          _row(
-                            context,
-                            'Qty Partai Pengiriman',
-                            '${dataSampelPupuk!.qtyPartaiPengiriman} Kg',
-                          ),
-                      ] else if (qrPupukData.qtyPartaiPengiriman != null)
-                        _row(
-                          context,
-                          'Qty Partai Pengiriman',
-                          '${qrPupukData.qtyPartaiPengiriman} Kg',
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (allowedTypes.isEmpty)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    ),
+                  )
+                else ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: Text(
-                      'Anda tidak memiliki akses untuk mencatat aktivitas Sampel Pupuk. Hubungi admin.',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      'Pilih jenis aktivitas',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
-                )
-              else ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                  child: Text(
-                    'Pilih jenis aktivitas',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
+                  ...allowedTypes.map(
+                    (type) => _ActivityTypeTile(
+                      label: labelForPupukActivityType(type),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => SampelPupukActivityFormScreen(
+                              activityType: type,
+                              dataSampelPupukId: dataSampelPupukId,
+                              kodeSampel: kodeSampel.isEmpty
+                                  ? qrPupukData.kodeSampel
+                                  : kodeSampel,
+                              dataSampelPupuk: dataSampelPupuk,
+                              qrPupukData: qrPupukData,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
-                ),
-                ...allowedTypes.map(
-                  (type) => _ActivityTypeTile(
-                    label: labelForPupukActivityType(type),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => SampelPupukActivityFormScreen(
-                            activityType: type,
-                            dataSampelPupukId: dataSampelPupukId,
-                            kodeSampel: kodeSampel.isEmpty
-                                ? qrPupukData.kodeSampel
-                                : kodeSampel,
-                            dataSampelPupuk: dataSampelPupuk,
-                            qrPupukData: qrPupukData,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

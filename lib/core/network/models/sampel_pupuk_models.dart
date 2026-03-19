@@ -47,6 +47,10 @@ class DataSampelPupukDto {
   final String? jenisKendaraan;
   final String? tanggalPengambilanSampel;
   final String? tanggalTerimaDariGudang;
+  final String? kodeTracking;
+  final String? noSertifikat;
+  final String? tanggalKirimSertifikatEstate;
+  final String? rekomendasi;
   final String? createdAt;
   final String? updatedAt;
 
@@ -72,6 +76,10 @@ class DataSampelPupukDto {
     this.jenisKendaraan,
     this.tanggalPengambilanSampel,
     this.tanggalTerimaDariGudang,
+    this.kodeTracking,
+    this.noSertifikat,
+    this.tanggalKirimSertifikatEstate,
+    this.rekomendasi,
     this.createdAt,
     this.updatedAt,
   });
@@ -99,6 +107,11 @@ class DataSampelPupukDto {
       jenisKendaraan: json['jenisKendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggalPengambilanSampel'] as String?,
       tanggalTerimaDariGudang: json['tanggalTerimaDariGudang'] as String?,
+      kodeTracking: json['kodeTracking'] as String?,
+      noSertifikat: json['noSertifikat'] as String?,
+      tanggalKirimSertifikatEstate:
+          json['tanggalKirimSertifikatEstate'] as String?,
+      rekomendasi: json['rekomendasi'] as String?,
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
     );
@@ -127,6 +140,10 @@ class DataSampelPupukDto {
       'jenisKendaraan': jenisKendaraan,
       'tanggalPengambilanSampel': tanggalPengambilanSampel,
       'tanggalTerimaDariGudang': tanggalTerimaDariGudang,
+      'kodeTracking': kodeTracking,
+      'noSertifikat': noSertifikat,
+      'tanggalKirimSertifikatEstate': tanggalKirimSertifikatEstate,
+      'rekomendasi': rekomendasi,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -319,17 +336,43 @@ class KirimLabItem {
   };
 }
 
+class KirimSertifikatEstateItem {
+  final int id;
+  final int dataSampelPupukId;
+  final String kodeSampel;
+  final String tanggalKirimSertifikatEstate;
+  final String rekomendasi;
+
+  KirimSertifikatEstateItem({
+    required this.id,
+    required this.dataSampelPupukId,
+    required this.kodeSampel,
+    required this.tanggalKirimSertifikatEstate,
+    required this.rekomendasi,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'dataSampelPupukId': dataSampelPupukId,
+    'kodeSampel': kodeSampel,
+    'tanggalKirimSertifikatEstate': tanggalKirimSertifikatEstate,
+    'rekomendasi': rekomendasi,
+  };
+}
+
 class SampelPupukUploadPayload {
   final List<TerimaDariGudangItem> terimaDariGudang;
   final List<KirimDariEstateItem> kirimDariEstate;
   final List<TerimaDariEstateItem> terimaDariEstate;
   final List<KirimLabItem> kirimLab;
+  final List<KirimSertifikatEstateItem> kirimSertifikatEstate;
 
   SampelPupukUploadPayload({
     this.terimaDariGudang = const [],
     this.kirimDariEstate = const [],
     this.terimaDariEstate = const [],
     this.kirimLab = const [],
+    this.kirimSertifikatEstate = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -337,6 +380,9 @@ class SampelPupukUploadPayload {
     'kirimDariEstate': kirimDariEstate.map((e) => e.toJson()).toList(),
     'terimaDariEstate': terimaDariEstate.map((e) => e.toJson()).toList(),
     'kirimLab': kirimLab.map((e) => e.toJson()).toList(),
+    'kirimSertifikatEstate': kirimSertifikatEstate
+        .map((e) => e.toJson())
+        .toList(),
   };
 }
 
@@ -399,12 +445,14 @@ class SampelPupukUploadResponse {
   final UploadTypeResult kirimDariEstate;
   final UploadTypeResult terimaDariEstate;
   final UploadTypeResult kirimLab;
+  final UploadTypeResult kirimSertifikatEstate;
 
   SampelPupukUploadResponse({
     required this.terimaDariGudang,
     required this.kirimDariEstate,
     required this.terimaDariEstate,
     required this.kirimLab,
+    required this.kirimSertifikatEstate,
   });
 
   factory SampelPupukUploadResponse.fromJson(Map<String, dynamic> json) {
@@ -420,6 +468,9 @@ class SampelPupukUploadResponse {
       ),
       kirimLab: UploadTypeResult.fromJson(
         json['kirimLab'] as Map<String, dynamic>? ?? {},
+      ),
+      kirimSertifikatEstate: UploadTypeResult.fromJson(
+        json['kirimSertifikatEstate'] as Map<String, dynamic>? ?? {},
       ),
     );
   }

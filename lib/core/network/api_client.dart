@@ -4,7 +4,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../constants/api_constants.dart';
 import 'interceptors/auth_interceptor.dart';
 
-const int _kMaxLogLines = 10;
+const int _kMaxLogLines = 50;
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();

@@ -355,7 +355,7 @@ curl -X GET "http://localhost:3000/api/mobile/sync-sampel-pupuk?regional=1" \
 
 ## 3. Upload Data Sampel Pupuk (Activity)
 
-Submit activity data for one or more Data Sampel Pupuk records. Supports four activity types; each type has its own array. Every item must include **id** (local row id from your app), **dataSampelPupukId** (server’s Data Sampel Pupuk ID from sync), and **kodeSampel** (must match the record). The server updates the corresponding date/foto/user fields per type.
+Submit activity data for one or more Data Sampel Pupuk records. Supports five activity types; each type has its own array. Every item must include **id** (local row id from your app), **dataSampelPupukId** (server’s Data Sampel Pupuk ID from sync), and **kodeSampel** (must match the record). The server updates the corresponding date/foto/user fields per type.
 
 ### Endpoint
 
@@ -425,6 +425,16 @@ Use this to design your local SQLite/tables. Each type is a separate table; all 
 | `tanggalKirimLab`   | text    | Yes      | Date and time: ISO 8601 datetime — time required |
 | `fotoKirimLab`      | text    | No       | Photo path                                       |
 
+#### Table: `kirim_sertifikat_estate` (Type 5)
+
+| Column                         | Type    | Required | Description                                      |
+| ------------------------------ | ------- | -------- | ------------------------------------------------ |
+| `id`                           | integer | Yes (PK) | Local row id                                     |
+| `dataSampelPupukId`            | integer | Yes      | Server Data Sampel Pupuk ID                      |
+| `kodeSampel`                   | text    | Yes      | No Registrasi Sampel                             |
+| `tanggalKirimSertifikatEstate` | text    | Yes      | Date and time: ISO 8601 datetime — time required |
+| `rekomendasi`                  | text    | No       | Recommendation                                   |
+
 ### Full request body example
 
 ```json
@@ -466,11 +476,20 @@ Use this to design your local SQLite/tables. Each type is a separate table; all 
       "tanggalKirimLab": "2026-01-18T14:00:00.000Z",
       "fotoKirimLab": "/protected/pupuk/2026/01/NBE/photo4.jpg"
     }
+  ],
+  "kirimSertifikatEstate": [
+    {
+      "id": 5,
+      "dataSampelPupukId": 105,
+      "kodeSampel": "NBE-2026-005",
+      "tanggalKirimSertifikatEstate": "2026-01-19T16:00:00.000Z",
+      "rekomendasi": "Sesuai"
+    }
   ]
 }
 ```
 
-All four keys are optional; omit or use empty arrays for types you are not sending.
+All five keys are optional; omit or use empty arrays for types you are not sending.
 
 ### Response
 
@@ -492,6 +511,10 @@ All four keys are optional; omit or use empty arrays for types you are not sendi
     },
     "kirimLab": {
       "success": [{ "id": 4 }],
+      "failed": []
+    },
+    "kirimSertifikatEstate": {
+      "success": [{ "id": 5 }],
       "failed": []
     }
   }
@@ -519,7 +542,8 @@ curl -X POST "http://localhost:3000/api/data-sampel-pupuk/upload" \
     ],
     "kirimDariEstate": [],
     "terimaDariEstate": [],
-    "kirimLab": []
+    "kirimLab": [],
+    "kirimSertifikatEstate": []
   }'
 ```
 

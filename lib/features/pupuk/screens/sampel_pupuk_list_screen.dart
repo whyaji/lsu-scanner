@@ -8,6 +8,7 @@ import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
+import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../../../widgets/app_empty_state.dart';
 import '../../../widgets/app_loading_state.dart';
 import '../constants/pupuk_activity_types.dart';
@@ -63,15 +64,18 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
       final t2 = await _dbHelper.getPendingKirimDariEstate();
       final t3 = await _dbHelper.getPendingTerimaDariEstate();
       final t4 = await _dbHelper.getPendingKirimLab();
+      final t5 = await _dbHelper.getPendingKirimSertifikatEstate();
       _addTerimaGudang(combined, t1);
       _addKirimEstate(combined, t2);
       _addTerimaEstate(combined, t3);
       _addKirimLab(combined, t4);
+      _addKirimSertifikat(combined, t5);
     } else {
       final t1 = await _dbHelper.getAllTerimaDariGudang();
       final t2 = await _dbHelper.getAllKirimDariEstate();
       final t3 = await _dbHelper.getAllTerimaDariEstate();
       final t4 = await _dbHelper.getAllKirimLab();
+      final t5 = await _dbHelper.getAllKirimSertifikatEstate();
       for (final row in t1) {
         if (row.status == AppConstants.statusUploaded && row.id != null) {
           combined.add(_entryFromTerimaGudang(row));
@@ -90,6 +94,11 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
       for (final row in t4) {
         if (row.status == AppConstants.statusUploaded && row.id != null) {
           combined.add(_entryFromKirimLab(row));
+        }
+      }
+      for (final row in t5) {
+        if (row.status == AppConstants.statusUploaded && row.id != null) {
+          combined.add(_entryFromKirimSertifikat(row));
         }
       }
     }
@@ -184,6 +193,29 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
       createdAt: row.createdAt,
       fotoPath: row.fotoKirimLab,
       extraSubtitle: ns != null && ns.isNotEmpty ? 'No. Surat: $ns' : null,
+    );
+  }
+
+  void _addKirimSertifikat(
+    List<_PupukListEntry> out,
+    List<KirimSertifikatEstate> list,
+  ) {
+    for (final row in list) {
+      if (row.id != null) out.add(_entryFromKirimSertifikat(row));
+    }
+  }
+
+  _PupukListEntry _entryFromKirimSertifikat(KirimSertifikatEstate row) {
+    return _PupukListEntry(
+      activityType: kKirimSertifikatEstate,
+      id: row.id!,
+      kodeSampel: row.kodeSampel,
+      dateText: row.tanggalKirimSertifikatEstate,
+      status: row.status,
+      errorMessage: row.errorMessage,
+      createdAt: row.createdAt,
+      fotoPath: null,
+      extraSubtitle: 'Rekomendasi: ${row.rekomendasi}',
     );
   }
 

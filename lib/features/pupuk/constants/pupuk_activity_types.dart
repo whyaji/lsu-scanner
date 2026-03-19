@@ -3,12 +3,14 @@ const String kTerimaDariGudang = 'terimaDariGudang';
 const String kKirimDariEstate = 'kirimDariEstate';
 const String kTerimaDariEstate = 'terimaDariEstate';
 const String kKirimLab = 'kirimLab';
+const String kKirimSertifikatEstate = 'kirimSertifikatEstate';
 
 const List<String> kAllPupukActivityTypes = [
   kTerimaDariGudang,
   kKirimDariEstate,
   kTerimaDariEstate,
   kKirimLab,
+  kKirimSertifikatEstate,
 ];
 
 String labelForPupukActivityType(String type) {
@@ -21,6 +23,8 @@ String labelForPupukActivityType(String type) {
       return 'Terima dari Estate';
     case kKirimLab:
       return 'Kirim Lab';
+    case kKirimSertifikatEstate:
+      return 'Kirim Sertifikat';
     default:
       return type;
   }

@@ -105,12 +105,14 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
       final kirimEstate = await _dbHelper.getPendingKirimDariEstate();
       final terimaEstate = await _dbHelper.getPendingTerimaDariEstate();
       final kirimLab = await _dbHelper.getPendingKirimLab();
+      final kirimSertifikat = await _dbHelper.getPendingKirimSertifikatEstate();
 
       final total =
           terimaGudang.length +
           kirimEstate.length +
           terimaEstate.length +
-          kirimLab.length;
+          kirimLab.length +
+          kirimSertifikat.length;
       if (total == 0) {
         state = state.copyWith(isUploading: false);
         return;
@@ -289,11 +291,34 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
         done++;
       }
 
+      final kirimSertifikatItems = <KirimSertifikatEstateItem>[];
+      for (final row in kirimSertifikat) {
+        state = state.copyWith(
+          progress: UploadSampelPupukProgress(
+            total: total,
+            current: done + 1,
+            percentage: ((done + 1) / total * 100).round(),
+            currentItem: row.kodeSampel,
+          ),
+        );
+        kirimSertifikatItems.add(
+          KirimSertifikatEstateItem(
+            id: row.id!,
+            dataSampelPupukId: row.dataSampelPupukId,
+            kodeSampel: row.kodeSampel,
+            tanggalKirimSertifikatEstate: row.tanggalKirimSertifikatEstate,
+            rekomendasi: row.rekomendasi,
+          ),
+        );
+        done++;
+      }
+
       final payload = SampelPupukUploadPayload(
         terimaDariGudang: terimaGudangItems,
         kirimDariEstate: kirimEstateItems,
         terimaDariEstate: terimaEstateItems,
         kirimLab: kirimLabItems,
+        kirimSertifikatEstate: kirimSertifikatItems,
       );
 
       final response = await _apiService.uploadSampelPupuk(payload);
@@ -363,6 +388,22 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
       }
       for (final f in data.kirimLab.failed) {
         await _dbHelper.updateKirimLabStatus(
+          f.id,
+          AppConstants.statusError,
+          errorMessage: f.error,
+        );
+        failedCount++;
+      }
+
+      for (final s in data.kirimSertifikatEstate.success) {
+        await _dbHelper.updateKirimSertifikatEstateStatus(
+          s.id,
+          AppConstants.statusUploaded,
+        );
+        successCount++;
+      }
+      for (final f in data.kirimSertifikatEstate.failed) {
+        await _dbHelper.updateKirimSertifikatEstateStatus(
           f.id,
           AppConstants.statusError,
           errorMessage: f.error,

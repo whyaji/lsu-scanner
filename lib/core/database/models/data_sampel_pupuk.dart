@@ -21,6 +21,13 @@ class DataSampelPupuk {
   final String? jenisKendaraan;
   final String? tanggalPengambilanSampel;
   final String? tanggalTerimaDariGudang;
+  final String? fotoTerimaDariGudang;
+  final String? tanggalKirimDariEstate;
+  final String? fotoKirimDariEstate;
+  final String? tanggalTerimaDariEstate;
+  final String? fotoTerimaDariEstate;
+  final String? tanggalKirimLab;
+  final String? fotoKirimLab;
   final String? kodeTracking;
   final String? noSertifikat;
   final String? tanggalKirimSertifikatEstate;
@@ -50,6 +57,13 @@ class DataSampelPupuk {
     this.jenisKendaraan,
     this.tanggalPengambilanSampel,
     this.tanggalTerimaDariGudang,
+    this.fotoTerimaDariGudang,
+    this.tanggalKirimDariEstate,
+    this.fotoKirimDariEstate,
+    this.tanggalTerimaDariEstate,
+    this.fotoTerimaDariEstate,
+    this.tanggalKirimLab,
+    this.fotoKirimLab,
     this.kodeTracking,
     this.noSertifikat,
     this.tanggalKirimSertifikatEstate,
@@ -82,6 +96,13 @@ class DataSampelPupuk {
       jenisKendaraan: json['jenisKendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggalPengambilanSampel'] as String?,
       tanggalTerimaDariGudang: json['tanggalTerimaDariGudang'] as String?,
+      fotoTerimaDariGudang: json['fotoTerimaDariGudang'] as String?,
+      tanggalKirimDariEstate: json['tanggalKirimDariEstate'] as String?,
+      fotoKirimDariEstate: json['fotoKirimDariEstate'] as String?,
+      tanggalTerimaDariEstate: json['tanggalTerimaDariEstate'] as String?,
+      fotoTerimaDariEstate: json['fotoTerimaDariEstate'] as String?,
+      tanggalKirimLab: json['tanggalKirimLab'] as String?,
+      fotoKirimLab: json['fotoKirimLab'] as String?,
       kodeTracking: json['kodeTracking'] as String?,
       noSertifikat: json['noSertifikat'] as String?,
       tanggalKirimSertifikatEstate:
@@ -115,6 +136,13 @@ class DataSampelPupuk {
       jenisKendaraan: json['jenis_kendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggal_pengambilan_sampel'] as String?,
       tanggalTerimaDariGudang: json['tanggal_terima_dari_gudang'] as String?,
+      fotoTerimaDariGudang: json['foto_terima_dari_gudang'] as String?,
+      tanggalKirimDariEstate: json['tanggal_kirim_dari_estate'] as String?,
+      fotoKirimDariEstate: json['foto_kirim_dari_estate'] as String?,
+      tanggalTerimaDariEstate: json['tanggal_terima_dari_estate'] as String?,
+      fotoTerimaDariEstate: json['foto_terima_dari_estate'] as String?,
+      tanggalKirimLab: json['tanggal_kirim_lab'] as String?,
+      fotoKirimLab: json['foto_kirim_lab'] as String?,
       kodeTracking: json['kode_tracking'] as String?,
       noSertifikat: json['no_sertifikat'] as String?,
       tanggalKirimSertifikatEstate:
@@ -148,6 +176,13 @@ class DataSampelPupuk {
       'jenis_kendaraan': jenisKendaraan,
       'tanggal_pengambilan_sampel': tanggalPengambilanSampel,
       'tanggal_terima_dari_gudang': tanggalTerimaDariGudang,
+      'foto_terima_dari_gudang': fotoTerimaDariGudang,
+      'tanggal_kirim_dari_estate': tanggalKirimDariEstate,
+      'foto_kirim_dari_estate': fotoKirimDariEstate,
+      'tanggal_terima_dari_estate': tanggalTerimaDariEstate,
+      'foto_terima_dari_estate': fotoTerimaDariEstate,
+      'tanggal_kirim_lab': tanggalKirimLab,
+      'foto_kirim_lab': fotoKirimLab,
       'kode_tracking': kodeTracking,
       'no_sertifikat': noSertifikat,
       'tanggal_kirim_sertifikat_estate': tanggalKirimSertifikatEstate,

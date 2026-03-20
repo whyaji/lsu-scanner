@@ -66,6 +66,9 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
     final DataSampelPupuk? synced = await dbHelper.getDataSampelPupukById(
       qrData.id,
     );
+    final aktivitas = synced != null
+        ? await dbHelper.getAktivitasSampelPupukByDataSampelPupukId(qrData.id)
+        : null;
 
     if (mounted) {
       _controller.stop();
@@ -73,6 +76,7 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
         MaterialPageRoute(
           builder: (context) => SampelPupukDetailScreen(
             dataSampelPupuk: synced,
+            aktivitasSampelPupuk: aktivitas,
             qrPupukData: qrData,
             fromSync: synced != null,
           ),

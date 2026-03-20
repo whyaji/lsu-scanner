@@ -5,6 +5,7 @@ import 'models/master_sampel.dart';
 import 'models/master_lsu.dart';
 import 'models/received_sample.dart';
 import 'models/completed_sample.dart';
+import 'models/aktivitas_sampel_pupuk.dart';
 import 'models/data_sampel_pupuk.dart';
 import 'models/terima_dari_gudang.dart';
 import 'models/kirim_dari_estate.dart';
@@ -57,6 +58,13 @@ class DatabaseHelper {
         jenis_kendaraan TEXT,
         tanggal_pengambilan_sampel TEXT,
         tanggal_terima_dari_gudang TEXT,
+        foto_terima_dari_gudang TEXT,
+        tanggal_kirim_dari_estate TEXT,
+        foto_kirim_dari_estate TEXT,
+        tanggal_terima_dari_estate TEXT,
+        foto_terima_dari_estate TEXT,
+        tanggal_kirim_lab TEXT,
+        foto_kirim_lab TEXT,
         kode_tracking TEXT,
         no_sertifikat TEXT,
         tanggal_kirim_sertifikat_estate TEXT,
@@ -483,6 +491,57 @@ class DatabaseHelper {
     );
     if (result.isEmpty) return null;
     return DataSampelPupuk.fromJson(result.first);
+  }
+
+  /// Loads [DataSampelPupuk] and the latest local row per activity table for
+  /// this sample (used for activity visibility on the detail screen).
+  Future<AktivitasSampelPupuk?> getAktivitasSampelPupukByDataSampelPupukId(
+    int dataSampelPupukId,
+  ) async {
+    final data = await getDataSampelPupukById(dataSampelPupukId);
+    if (data == null) return null;
+
+    final db = await database;
+
+    Future<T?> latestForSample<T>(
+      String table,
+      T Function(Map<String, dynamic> json) parse,
+    ) async {
+      final rows = await db.query(
+        table,
+        where: 'data_sampel_pupuk_id = ?',
+        whereArgs: [dataSampelPupukId],
+        orderBy: 'id DESC',
+        limit: 1,
+      );
+      if (rows.isEmpty) return null;
+      return parse(rows.first);
+    }
+
+    final kode = data.kodeSampel ?? '';
+
+    return AktivitasSampelPupuk(
+      id: data.id,
+      kodeSampel: kode,
+      dataSampelPupuk: data,
+      terimaDariGudang: await latestForSample(
+        'terima_dari_gudang',
+        TerimaDariGudang.fromJson,
+      ),
+      kirimDariEstate: await latestForSample(
+        'kirim_dari_estate',
+        KirimDariEstate.fromJson,
+      ),
+      terimaDariEstate: await latestForSample(
+        'terima_dari_estate',
+        TerimaDariEstate.fromJson,
+      ),
+      kirimLab: await latestForSample('kirim_lab', KirimLab.fromJson),
+      kirimSertifikatEstate: await latestForSample(
+        'kirim_sertifikat_estate',
+        KirimSertifikatEstate.fromJson,
+      ),
+    );
   }
 
   Future<DataSampelPupuk?> getDataSampelPupukByKodeSampel(

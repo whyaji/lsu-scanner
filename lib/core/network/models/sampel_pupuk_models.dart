@@ -47,6 +47,13 @@ class DataSampelPupukDto {
   final String? jenisKendaraan;
   final String? tanggalPengambilanSampel;
   final String? tanggalTerimaDariGudang;
+  final String? fotoTerimaDariGudang;
+  final String? tanggalKirimDariEstate;
+  final String? fotoKirimDariEstate;
+  final String? tanggalTerimaDariEstate;
+  final String? fotoTerimaDariEstate;
+  final String? tanggalKirimLab;
+  final String? fotoKirimLab;
   final String? kodeTracking;
   final String? noSertifikat;
   final String? tanggalKirimSertifikatEstate;
@@ -76,6 +83,13 @@ class DataSampelPupukDto {
     this.jenisKendaraan,
     this.tanggalPengambilanSampel,
     this.tanggalTerimaDariGudang,
+    this.fotoTerimaDariGudang,
+    this.tanggalKirimDariEstate,
+    this.fotoKirimDariEstate,
+    this.tanggalTerimaDariEstate,
+    this.fotoTerimaDariEstate,
+    this.tanggalKirimLab,
+    this.fotoKirimLab,
     this.kodeTracking,
     this.noSertifikat,
     this.tanggalKirimSertifikatEstate,
@@ -107,6 +121,13 @@ class DataSampelPupukDto {
       jenisKendaraan: json['jenisKendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggalPengambilanSampel'] as String?,
       tanggalTerimaDariGudang: json['tanggalTerimaDariGudang'] as String?,
+      fotoTerimaDariGudang: json['fotoTerimaDariGudang'] as String?,
+      tanggalKirimDariEstate: json['tanggalKirimDariEstate'] as String?,
+      fotoKirimDariEstate: json['fotoKirimDariEstate'] as String?,
+      tanggalTerimaDariEstate: json['tanggalTerimaDariEstate'] as String?,
+      fotoTerimaDariEstate: json['fotoTerimaDariEstate'] as String?,
+      tanggalKirimLab: json['tanggalKirimLab'] as String?,
+      fotoKirimLab: json['fotoKirimLab'] as String?,
       kodeTracking: json['kodeTracking'] as String?,
       noSertifikat: json['noSertifikat'] as String?,
       tanggalKirimSertifikatEstate:
@@ -140,6 +161,13 @@ class DataSampelPupukDto {
       'jenisKendaraan': jenisKendaraan,
       'tanggalPengambilanSampel': tanggalPengambilanSampel,
       'tanggalTerimaDariGudang': tanggalTerimaDariGudang,
+      'fotoTerimaDariGudang': fotoTerimaDariGudang,
+      'tanggalKirimDariEstate': tanggalKirimDariEstate,
+      'fotoKirimDariEstate': fotoKirimDariEstate,
+      'tanggalTerimaDariEstate': tanggalTerimaDariEstate,
+      'fotoTerimaDariEstate': fotoTerimaDariEstate,
+      'tanggalKirimLab': tanggalKirimLab,
+      'fotoKirimLab': fotoKirimLab,
       'kodeTracking': kodeTracking,
       'noSertifikat': noSertifikat,
       'tanggalKirimSertifikatEstate': tanggalKirimSertifikatEstate,

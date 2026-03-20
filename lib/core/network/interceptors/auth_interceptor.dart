@@ -5,8 +5,11 @@ import '../../storage/secure_storage.dart';
 import '../device_identity.dart';
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor();
+  /// Same [Dio] instance the interceptor is attached to — used for 401 retries so
+  /// multipart [FormData] can be rebuilt and request interceptors still run.
+  AuthInterceptor(this._dio);
 
+  final Dio _dio;
   final SecureStorage _storage = SecureStorage();
 
   /// Optional callback, configured from the auth layer, to clear local
@@ -110,13 +113,16 @@ class AuthInterceptor extends Interceptor {
       try {
         final token = await _storage.getAccessToken();
         final opts = err.requestOptions;
+        final data = opts.data;
+        if (data is FormData && data.isFinalized) {
+          opts.data = data.clone();
+        }
         opts.headers['Authorization'] = token != null
             ? 'Bearer $token'
             : opts.headers['Authorization'];
         opts.extra['__auth_retry_done__'] = true;
 
-        final dio = Dio(BaseOptions(baseUrl: opts.baseUrl));
-        final response = await dio.fetch(opts);
+        final response = await _dio.fetch(opts);
         handler.resolve(response);
         return;
       } catch (_) {

@@ -24,8 +24,8 @@ class ApiClient {
       ),
     );
 
-    // Add interceptors (pass _dio so 401 retry uses same client and can resend FormData)
-    _dio.interceptors.add(AuthInterceptor());
+    // Add interceptors (401 retry uses same Dio: clone FormData + run onRequest)
+    _dio.interceptors.add(AuthInterceptor(_dio));
 
     // State for truncating response body to first N lines (PrettyDioLogger calls logPrint once per line)
     var inBodySection = false;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sampletrack/core/database/models/aktivitas_sampel_pupuk.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -43,12 +44,14 @@ Future<bool> _showDetailBackRescanDialog(BuildContext context) async {
 
 class SampelPupukDetailScreen extends ConsumerWidget {
   final DataSampelPupuk? dataSampelPupuk;
+  final AktivitasSampelPupuk? aktivitasSampelPupuk;
   final QRPupukData qrPupukData;
   final bool fromSync;
 
   const SampelPupukDetailScreen({
     super.key,
     this.dataSampelPupuk,
+    this.aktivitasSampelPupuk,
     required this.qrPupukData,
     required this.fromSync,
   });
@@ -67,7 +70,11 @@ class SampelPupukDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final access = authState.user?.access;
-    final allowedTypes = allowedPupukActivityTypes(access);
+    final allowedTypes = allowedPupukActivityTypes(
+      access,
+      aktivitasSampelPupuk,
+      dataSampelPupukFallback: dataSampelPupuk,
+    );
 
     return PopScope(
       canPop: false,
@@ -228,6 +235,13 @@ class SampelPupukDetailScreen extends ConsumerWidget {
                       },
                     ),
                   ),
+                  if (allowedTypes.isEmpty) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      'Tidak ada aktivitas yang dapat dicatat.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ],
               ],
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sampletrack/core/database/models/aktivitas_sampel_pupuk.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -144,13 +145,19 @@ class SampelPupukDetailScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _row(context, 'ID', dataSampelPupukId.toString()),
-                        _row(
-                          context,
-                          'Kode Sampel',
-                          kodeSampel.isEmpty ? '-' : kodeSampel,
-                        ),
-                        _row(context, 'Supplier', _supplierDisplay),
+                        if ((dataSampelPupuk?.estate ?? '').isNotEmpty)
+                          _row(context, 'Estate', dataSampelPupuk!.estate!)
+                        else
+                          _row(
+                            context,
+                            'Estate',
+                            kodeSampel.isEmpty
+                                ? '-'
+                                : kodeSampel.split('/').first,
+                          ),
+                        _row(context, 'Nama Supplier', _supplierDisplay),
+                        if ((dataSampelPupuk?.noPo ?? '').isNotEmpty)
+                          _row(context, 'No. PO', dataSampelPupuk!.noPo!),
                         _row(
                           context,
                           'Jenis Pupuk',
@@ -159,33 +166,55 @@ class SampelPupukDetailScreen extends ConsumerWidget {
                                   ? '-'
                                   : qrPupukData.jenisPupukFull),
                         ),
-                        if (dataSampelPupuk != null) ...[
-                          if (dataSampelPupuk!.regional != null)
-                            _row(
-                              context,
-                              'Regional',
-                              dataSampelPupuk!.regional.toString(),
-                            ),
-                          if (dataSampelPupuk!.wilayah != null)
-                            _row(
-                              context,
-                              'Wilayah',
-                              dataSampelPupuk!.wilayah.toString(),
-                            ),
-                          if (dataSampelPupuk!.estate != null &&
-                              dataSampelPupuk!.estate!.isNotEmpty)
-                            _row(context, 'Estate', dataSampelPupuk!.estate!),
-                          if (dataSampelPupuk!.qtyPartaiPengiriman != null)
-                            _row(
-                              context,
-                              'Qty Partai Pengiriman',
-                              '${dataSampelPupuk!.qtyPartaiPengiriman} Kg',
-                            ),
-                        ] else if (qrPupukData.qtyPartaiPengiriman != null)
+                        if ((dataSampelPupuk?.noBpb ?? '').isNotEmpty)
                           _row(
                             context,
-                            'Qty Partai Pengiriman',
-                            '${qrPupukData.qtyPartaiPengiriman} Kg',
+                            'No. BPB / GRN',
+                            dataSampelPupuk!.noBpb!,
+                          ),
+                        _row(
+                          context,
+                          'No. Registrasi Sample',
+                          kodeSampel.isEmpty ? '-' : kodeSampel,
+                        ),
+                        //
+                        if (dataSampelPupuk?.tanggalTerimaDariGudang != null &&
+                            dataSampelPupuk!
+                                .tanggalTerimaDariGudang!
+                                .isNotEmpty)
+                          _row(
+                            context,
+                            'Tgl. Penerimaan Pupuk',
+                            app_date_utils.DateUtils.formatPupukDetailTanggal(
+                              dataSampelPupuk!.tanggalTerimaDariGudang,
+                            ),
+                          ),
+                        if (dataSampelPupuk?.tanggalKirimDariEstate != null &&
+                            dataSampelPupuk!.tanggalKirimDariEstate!.isNotEmpty)
+                          _row(
+                            context,
+                            'Tgl. Pengambilan Sample',
+                            app_date_utils.DateUtils.formatPupukDetailTanggal(
+                              dataSampelPupuk!.tanggalKirimDariEstate,
+                            ),
+                          ),
+                        if (dataSampelPupuk?.qtyTerima != null)
+                          _row(
+                            context,
+                            'Jumlah Pengiriman Pupuk',
+                            '${dataSampelPupuk!.qtyTerima} Kg',
+                          )
+                        else if (qrPupukData.qtyTerima != null)
+                          _row(
+                            context,
+                            'Jumlah Pengiriman Pupuk',
+                            '${qrPupukData.qtyTerima} Kg',
+                          ),
+                        if ((dataSampelPupuk?.noSegel ?? '').isNotEmpty)
+                          _row(
+                            context,
+                            'Nomor Segel',
+                            dataSampelPupuk!.noSegel!,
                           ),
                       ],
                     ),

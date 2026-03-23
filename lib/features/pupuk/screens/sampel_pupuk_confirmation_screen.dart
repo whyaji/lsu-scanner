@@ -385,7 +385,7 @@ class _SampelPupukConfirmationScreenState
       default:
         return '-';
     }
-    return app_date_utils.DateUtils.formatDateTimeFromIso(raw);
+    return app_date_utils.DateUtils.formatPupukDetailTanggal(raw);
   }
 
   Widget _row(String label, String value) {

@@ -4,6 +4,7 @@ class KirimSertifikatEstate {
   final String kodeSampel;
   final String tanggalKirimSertifikatEstate;
   final String rekomendasi;
+  final String fileSertifikat;
   final String status;
   final String? errorMessage;
   final String createdAt;
@@ -15,6 +16,7 @@ class KirimSertifikatEstate {
     required this.kodeSampel,
     required this.tanggalKirimSertifikatEstate,
     required this.rekomendasi,
+    required this.fileSertifikat,
     this.status = 'not_uploaded',
     this.errorMessage,
     required this.createdAt,
@@ -29,6 +31,7 @@ class KirimSertifikatEstate {
       tanggalKirimSertifikatEstate:
           json['tanggal_kirim_sertifikat_estate'] as String,
       rekomendasi: (json['rekomendasi'] as String?) ?? '',
+      fileSertifikat: (json['file_sertifikat'] as String?) ?? '',
       status: json['status'] as String? ?? 'not_uploaded',
       errorMessage: json['error_message'] as String?,
       createdAt: json['created_at'] as String,
@@ -43,6 +46,7 @@ class KirimSertifikatEstate {
       'kode_sampel': kodeSampel,
       'tanggal_kirim_sertifikat_estate': tanggalKirimSertifikatEstate,
       'rekomendasi': rekomendasi,
+      'file_sertifikat': fileSertifikat,
       'status': status,
       'error_message': errorMessage,
       'created_at': createdAt,

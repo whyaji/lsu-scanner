@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../widgets/app_empty_state.dart';
 import '../../../widgets/app_loading_state.dart';
 import 'received_sample_detail_screen.dart';
@@ -56,7 +57,8 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
               isCompleted: false,
               id: s.id!,
               kode: s.kode,
-              dateTimeText: '${s.tanggalTerima} ${s.waktuTerima}',
+              dateTimeText:
+                  '${app_date_utils.DateUtils.formatStoredDateForDisplay(s.tanggalTerima)} ${s.waktuTerima}',
               status: s.status,
               fotoPath: s.fotoPath,
               createdAt: s.createdAt,
@@ -71,7 +73,8 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
               isCompleted: true,
               id: s.id!,
               kode: s.kode,
-              dateTimeText: '${s.tanggalSelesai} ${s.waktuSelesai}',
+              dateTimeText:
+                  '${app_date_utils.DateUtils.formatStoredDateForDisplay(s.tanggalSelesai)} ${s.waktuSelesai}',
               status: s.status,
               fotoPath: s.fotoPath,
               createdAt: s.createdAt,
@@ -92,7 +95,8 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
               isCompleted: false,
               id: s.id!,
               kode: s.kode,
-              dateTimeText: '${s.tanggalTerima} ${s.waktuTerima}',
+              dateTimeText:
+                  '${app_date_utils.DateUtils.formatStoredDateForDisplay(s.tanggalTerima)} ${s.waktuTerima}',
               status: s.status,
               fotoPath: s.fotoPath,
               createdAt: s.createdAt,
@@ -107,7 +111,8 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
               isCompleted: true,
               id: s.id!,
               kode: s.kode,
-              dateTimeText: '${s.tanggalSelesai} ${s.waktuSelesai}',
+              dateTimeText:
+                  '${app_date_utils.DateUtils.formatStoredDateForDisplay(s.tanggalSelesai)} ${s.waktuSelesai}',
               status: s.status,
               fotoPath: s.fotoPath,
               createdAt: s.createdAt,

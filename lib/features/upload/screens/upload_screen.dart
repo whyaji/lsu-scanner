@@ -114,10 +114,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadAll,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadAll),
         ],
       ),
       body: SafeArea(
@@ -235,103 +232,107 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                       ),
                     ),
                     _pendingSamples.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.cloud_done,
-                                size: 48,
-                                color: AppColors.textSecondary,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Tidak ada sampel diterima tertunda',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _pendingSamples.length,
-                        itemBuilder: (context, index) {
-                          final sample = _pendingSamples[index];
-                          final isError =
-                              sample.status == AppConstants.statusError;
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
+                        ? Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Center(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          sample.kode,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      if (isError)
-                                        Icon(
-                                          Icons.error_outline,
-                                          color: AppColors.error,
-                                          size: 22,
-                                        ),
-                                    ],
+                                  Icon(
+                                    Icons.cloud_done,
+                                    size: 48,
+                                    color: AppColors.textSecondary,
                                   ),
-                                  const SizedBox(height: 6),
+                                  const SizedBox(height: 8),
                                   Text(
-                                    'Status: ${sample.status}',
+                                    'Tidak ada sampel diterima tertunda',
                                     style: TextStyle(
+                                      color: AppColors.textSecondary,
                                       fontSize: 14,
-                                      color: isError
-                                          ? AppColors.error
-                                          : AppColors.textSecondary,
                                     ),
                                   ),
-                                  if (isError &&
-                                      sample.errorMessage != null &&
-                                      sample.errorMessage!.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.error
-                                            .withOpacity(0.08),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        sample.errorMessage!,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: AppColors.error,
-                                          height: 1.3,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _pendingSamples.length,
+                            itemBuilder: (context, index) {
+                              final sample = _pendingSamples[index];
+                              final isError =
+                                  sample.status == AppConstants.statusError;
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              sample.kode,
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          if (isError)
+                                            Icon(
+                                              Icons.error_outline,
+                                              color: AppColors.error,
+                                              size: 22,
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Status: ${sample.status}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: isError
+                                              ? AppColors.error
+                                              : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                      if (isError &&
+                                          sample.errorMessage != null &&
+                                          sample.errorMessage!.isNotEmpty) ...[
+                                        const SizedBox(height: 8),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(10),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.error.withValues(
+                                              alpha: 0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            sample.errorMessage!,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: AppColors.error,
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                     if (_pendingSamples.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.all(16),
@@ -412,10 +413,9 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: _pendingCompleteSamples.length,
                             itemBuilder: (context, index) {
-                              final sample =
-                                  _pendingCompleteSamples[index];
-                              final isError = sample.status ==
-                                  AppConstants.statusError;
+                              final sample = _pendingCompleteSamples[index];
+                              final isError =
+                                  sample.status == AppConstants.statusError;
                               return Card(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 child: Padding(
@@ -462,10 +462,12 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                                           width: double.infinity,
                                           padding: const EdgeInsets.all(10),
                                           decoration: BoxDecoration(
-                                            color: AppColors.error
-                                                .withOpacity(0.08),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                            color: AppColors.error.withValues(
+                                              alpha: 0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Text(
                                             sample.errorMessage!,
@@ -493,8 +495,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -506,8 +507,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
                                   width: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor:
-                                        AlwaysStoppedAnimation<Color>(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
                                       Colors.white,
                                     ),
                                   ),

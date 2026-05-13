@@ -7,9 +7,7 @@ import 'models/received_sample.dart';
 import 'models/completed_sample.dart';
 import 'models/aktivitas_sampel_pupuk.dart';
 import 'models/data_sampel_pupuk.dart';
-import 'models/terima_dari_gudang.dart';
 import 'models/kirim_dari_estate.dart';
-import 'models/terima_dari_estate.dart';
 import 'models/kirim_lab.dart';
 import 'models/kirim_sertifikat_estate.dart';
 
@@ -119,6 +117,7 @@ class DatabaseHelper {
         data_sampel_pupuk_id INTEGER NOT NULL,
         kode_sampel TEXT NOT NULL,
         no_surat TEXT,
+        tanggal_estimasi_kupa TEXT,
         tanggal_kirim_lab TEXT NOT NULL,
         foto_kirim_lab TEXT,
         status TEXT NOT NULL DEFAULT 'not_uploaded',
@@ -134,12 +133,21 @@ class DatabaseHelper {
         kode_sampel TEXT NOT NULL,
         tanggal_kirim_sertifikat_estate TEXT NOT NULL,
         rekomendasi TEXT,
+        file_sertifikat TEXT,
         status TEXT NOT NULL DEFAULT 'not_uploaded',
         error_message TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT
       )
     ''');
+    await db
+        .execute("ALTER TABLE kirim_lab ADD COLUMN tanggal_estimasi_kupa TEXT")
+        .catchError((_) {});
+    await db
+        .execute(
+          "ALTER TABLE kirim_sertifikat_estate ADD COLUMN file_sertifikat TEXT",
+        )
+        .catchError((_) {});
   }
 
   Future _createDB(Database db, int version) async {
@@ -524,17 +532,9 @@ class DatabaseHelper {
       id: data.id,
       kodeSampel: kode,
       dataSampelPupuk: data,
-      terimaDariGudang: await latestForSample(
-        'terima_dari_gudang',
-        TerimaDariGudang.fromJson,
-      ),
       kirimDariEstate: await latestForSample(
         'kirim_dari_estate',
         KirimDariEstate.fromJson,
-      ),
-      terimaDariEstate: await latestForSample(
-        'terima_dari_estate',
-        TerimaDariEstate.fromJson,
       ),
       kirimLab: await latestForSample('kirim_lab', KirimLab.fromJson),
       kirimSertifikatEstate: await latestForSample(
@@ -586,72 +586,6 @@ class DatabaseHelper {
       },
       where: 'id = ?',
       whereArgs: [dataSampelPupukId],
-    );
-  }
-
-  // --- Terima Dari Gudang ---
-  Future<int> insertTerimaDariGudang(TerimaDariGudang row) async {
-    final db = await database;
-    final map = row.toJson();
-    map.remove('id');
-    return await db.insert('terima_dari_gudang', map);
-  }
-
-  Future<List<TerimaDariGudang>> getPendingTerimaDariGudang() async {
-    final db = await database;
-    final result = await db.query(
-      'terima_dari_gudang',
-      where: 'status IN (?, ?)',
-      whereArgs: ['not_uploaded', 'error'],
-      orderBy: 'created_at DESC',
-    );
-    return result.map((e) => TerimaDariGudang.fromJson(e)).toList();
-  }
-
-  Future<List<TerimaDariGudang>> getAllTerimaDariGudang() async {
-    final db = await database;
-    final result = await db.query(
-      'terima_dari_gudang',
-      orderBy: 'created_at DESC',
-    );
-    return result.map((e) => TerimaDariGudang.fromJson(e)).toList();
-  }
-
-  Future<TerimaDariGudang?> getTerimaDariGudangById(int id) async {
-    final db = await database;
-    final result = await db.query(
-      'terima_dari_gudang',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (result.isEmpty) return null;
-    return TerimaDariGudang.fromJson(result.first);
-  }
-
-  Future<int> deleteTerimaDariGudang(int id) async {
-    final db = await database;
-    return await db.delete(
-      'terima_dari_gudang',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-  }
-
-  Future<int> updateTerimaDariGudangStatus(
-    int id,
-    String status, {
-    String? errorMessage,
-  }) async {
-    final db = await database;
-    return await db.update(
-      'terima_dari_gudang',
-      {
-        'status': status,
-        'error_message': errorMessage,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      where: 'id = ?',
-      whereArgs: [id],
     );
   }
 
@@ -711,72 +645,6 @@ class DatabaseHelper {
     final db = await database;
     return await db.update(
       'kirim_dari_estate',
-      {
-        'status': status,
-        'error_message': errorMessage,
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-  }
-
-  // --- Terima Dari Estate ---
-  Future<int> insertTerimaDariEstate(TerimaDariEstate row) async {
-    final db = await database;
-    final map = row.toJson();
-    map.remove('id');
-    return await db.insert('terima_dari_estate', map);
-  }
-
-  Future<List<TerimaDariEstate>> getPendingTerimaDariEstate() async {
-    final db = await database;
-    final result = await db.query(
-      'terima_dari_estate',
-      where: 'status IN (?, ?)',
-      whereArgs: ['not_uploaded', 'error'],
-      orderBy: 'created_at DESC',
-    );
-    return result.map((e) => TerimaDariEstate.fromJson(e)).toList();
-  }
-
-  Future<List<TerimaDariEstate>> getAllTerimaDariEstate() async {
-    final db = await database;
-    final result = await db.query(
-      'terima_dari_estate',
-      orderBy: 'created_at DESC',
-    );
-    return result.map((e) => TerimaDariEstate.fromJson(e)).toList();
-  }
-
-  Future<TerimaDariEstate?> getTerimaDariEstateById(int id) async {
-    final db = await database;
-    final result = await db.query(
-      'terima_dari_estate',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    if (result.isEmpty) return null;
-    return TerimaDariEstate.fromJson(result.first);
-  }
-
-  Future<int> deleteTerimaDariEstate(int id) async {
-    final db = await database;
-    return await db.delete(
-      'terima_dari_estate',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-  }
-
-  Future<int> updateTerimaDariEstateStatus(
-    int id,
-    String status, {
-    String? errorMessage,
-  }) async {
-    final db = await database;
-    return await db.update(
-      'terima_dari_estate',
       {
         'status': status,
         'error_message': errorMessage,

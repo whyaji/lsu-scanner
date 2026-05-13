@@ -45,7 +45,8 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
                           fit: BoxFit.contain,
                           width: double.infinity,
                           height: double.infinity,
-                          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholder(),
                         )
                       : _buildPlaceholder(),
                 ),

@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/master_lsu.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import 'full_screen_image_preview_screen.dart';
 
 class ReceivedSampleDetailScreen extends StatefulWidget {
@@ -149,7 +150,8 @@ class _ReceivedSampleDetailScreenState
                       ? () {
                           final details = <String, String>{
                             'Kode': s.kode,
-                            'Tanggal diterima': s.tanggalTerima,
+                            'Tanggal diterima': app_date_utils.DateUtils
+                                .formatStoredDateForDisplay(s.tanggalTerima),
                             'Waktu diterima': s.waktuTerima,
                             'Status': _statusLabel(s.status),
                             if (m != null && m.estate != null)
@@ -218,7 +220,12 @@ class _ReceivedSampleDetailScreenState
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow('Kode', s.kode),
-                      _buildInfoRow('Tanggal diterima', s.tanggalTerima),
+                      _buildInfoRow(
+                        'Tanggal diterima',
+                        app_date_utils.DateUtils.formatStoredDateForDisplay(
+                          s.tanggalTerima,
+                        ),
+                      ),
                       _buildInfoRow('Waktu diterima', s.waktuTerima),
                       _buildInfoRow(
                         'Status',

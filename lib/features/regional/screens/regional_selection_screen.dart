@@ -86,13 +86,10 @@ class _RegionalSelectionScreenState
                           final errorMsg =
                               ref.read(syncProvider).error ??
                               'Gagal menyinkronkan data';
-                          final errorColor = Theme.of(
-                            context,
-                          ).colorScheme.error;
                           messenger.showSnackBar(
                             SnackBar(
                               content: Text(errorMsg),
-                              backgroundColor: errorColor,
+                              backgroundColor: colorScheme.error,
                             ),
                           );
                           return;

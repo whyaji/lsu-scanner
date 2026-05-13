@@ -5,9 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
-import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
-import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../home/providers/home_counts_refresh_provider.dart';
 import '../../sample/screens/full_screen_image_preview_screen.dart';
@@ -138,18 +136,6 @@ class _SampelPupukConfirmationScreenState
           : widget.formData.kodeSampel;
 
       switch (widget.formData.activityType) {
-        case kTerimaDariGudang:
-          await _dbHelper.insertTerimaDariGudang(
-            TerimaDariGudang(
-              dataSampelPupukId: widget.formData.dataSampelPupukId,
-              kodeSampel: kode,
-              tanggalTerimaDariGudang: widget.formData.tanggalTerimaDariGudang,
-              fotoTerimaDariGudang: widget.photoPath,
-              status: AppConstants.statusNotUploaded,
-              createdAt: now,
-            ),
-          );
-          break;
         case kKirimDariEstate:
           await _dbHelper.insertKirimDariEstate(
             KirimDariEstate(
@@ -163,24 +149,13 @@ class _SampelPupukConfirmationScreenState
             ),
           );
           break;
-        case kTerimaDariEstate:
-          await _dbHelper.insertTerimaDariEstate(
-            TerimaDariEstate(
-              dataSampelPupukId: widget.formData.dataSampelPupukId,
-              kodeSampel: kode,
-              tanggalTerimaDariEstate: widget.formData.tanggalTerimaDariEstate,
-              fotoTerimaDariEstate: widget.photoPath,
-              status: AppConstants.statusNotUploaded,
-              createdAt: now,
-            ),
-          );
-          break;
         case kKirimLab:
           await _dbHelper.insertKirimLab(
             KirimLab(
               dataSampelPupukId: widget.formData.dataSampelPupukId,
               kodeSampel: kode,
               noSurat: widget.formData.noSurat,
+              tanggalEstimasiKupa: widget.formData.tanggalEstimasiKupa,
               tanggalKirimLab: widget.formData.tanggalKirimLab,
               fotoKirimLab: widget.photoPath,
               status: AppConstants.statusNotUploaded,
@@ -225,14 +200,8 @@ class _SampelPupukConfirmationScreenState
         : widget.formData.kodeSampel;
     String dateLabel = '';
     switch (widget.formData.activityType) {
-      case kTerimaDariGudang:
-        dateLabel = 'Tanggal Terima dari Gudang';
-        break;
       case kKirimDariEstate:
         dateLabel = 'Tanggal Kirim dari Estate';
-        break;
-      case kTerimaDariEstate:
-        dateLabel = 'Tanggal Terima dari Estate';
         break;
       case kKirimLab:
         dateLabel = 'Tanggal Kirim Lab';
@@ -279,6 +248,12 @@ class _SampelPupukConfirmationScreenState
                               if (widget.formData.noSurat != null &&
                                   widget.formData.noSurat!.isNotEmpty)
                                 'No. Surat': widget.formData.noSurat!,
+                              if (widget.formData.tanggalEstimasiKupa != null)
+                                'Tanggal Estimasi KUPA':
+                                    app_date_utils
+                                        .DateUtils.formatPupukDetailTanggal(
+                                      widget.formData.tanggalEstimasiKupa,
+                                    ),
                             },
                           ),
                         ),
@@ -338,6 +313,13 @@ class _SampelPupukConfirmationScreenState
                         if (widget.formData.noSurat != null &&
                             widget.formData.noSurat!.isNotEmpty)
                           _row('No. Surat', widget.formData.noSurat!),
+                        if (widget.formData.tanggalEstimasiKupa != null)
+                          _row(
+                            'Tanggal Estimasi KUPA',
+                            app_date_utils.DateUtils.formatPupukDetailTanggal(
+                              widget.formData.tanggalEstimasiKupa,
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -370,14 +352,8 @@ class _SampelPupukConfirmationScreenState
   String _getDateValue() {
     String? raw;
     switch (widget.formData.activityType) {
-      case kTerimaDariGudang:
-        raw = widget.formData.tanggalTerimaDariGudang;
-        break;
       case kKirimDariEstate:
         raw = widget.formData.tanggalKirimDariEstate;
-        break;
-      case kTerimaDariEstate:
-        raw = widget.formData.tanggalTerimaDariEstate;
         break;
       case kKirimLab:
         raw = widget.formData.tanggalKirimLab;

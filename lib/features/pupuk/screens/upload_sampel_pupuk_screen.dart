@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
-import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
-import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../constants/pupuk_activity_types.dart';
@@ -23,23 +21,17 @@ class UploadSampelPupukScreen extends ConsumerStatefulWidget {
 class _UploadSampelPupukScreenState
     extends ConsumerState<UploadSampelPupukScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-  List<TerimaDariGudang> _pendingTerimaGudang = [];
   List<KirimDariEstate> _pendingKirimEstate = [];
-  List<TerimaDariEstate> _pendingTerimaEstate = [];
   List<KirimLab> _pendingKirimLab = [];
   List<KirimSertifikatEstate> _pendingKirimSertifikat = [];
 
   Future<void> _loadAll() async {
-    final t1 = await _dbHelper.getPendingTerimaDariGudang();
     final t2 = await _dbHelper.getPendingKirimDariEstate();
-    final t3 = await _dbHelper.getPendingTerimaDariEstate();
     final t4 = await _dbHelper.getPendingKirimLab();
     final t5 = await _dbHelper.getPendingKirimSertifikatEstate();
     if (mounted) {
       setState(() {
-        _pendingTerimaGudang = t1;
         _pendingKirimEstate = t2;
-        _pendingTerimaEstate = t3;
         _pendingKirimLab = t4;
         _pendingKirimSertifikat = t5;
       });
@@ -89,9 +81,7 @@ class _UploadSampelPupukScreenState
   }
 
   int get _totalPending =>
-      _pendingTerimaGudang.length +
       _pendingKirimEstate.length +
-      _pendingTerimaEstate.length +
       _pendingKirimLab.length +
       _pendingKirimSertifikat.length;
 
@@ -160,18 +150,6 @@ class _UploadSampelPupukScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildSection<TerimaDariGudang>(
-                      'Terima dari Gudang',
-                      kTerimaDariGudang,
-                      _pendingTerimaGudang,
-                      (row) => row.id!,
-                      (row) => _PendingRow(
-                        kodeSampel: row.kodeSampel,
-                        dateText: row.tanggalTerimaDariGudang,
-                        status: row.status,
-                        errorMessage: row.errorMessage,
-                      ),
-                    ),
                     _buildSection<KirimDariEstate>(
                       'Kirim dari Estate',
                       kKirimDariEstate,
@@ -180,18 +158,6 @@ class _UploadSampelPupukScreenState
                       (row) => _PendingRow(
                         kodeSampel: row.kodeSampel,
                         dateText: row.tanggalKirimDariEstate,
-                        status: row.status,
-                        errorMessage: row.errorMessage,
-                      ),
-                    ),
-                    _buildSection<TerimaDariEstate>(
-                      'Terima dari Estate',
-                      kTerimaDariEstate,
-                      _pendingTerimaEstate,
-                      (row) => row.id!,
-                      (row) => _PendingRow(
-                        kodeSampel: row.kodeSampel,
-                        dateText: row.tanggalTerimaDariEstate,
                         status: row.status,
                         errorMessage: row.errorMessage,
                       ),
@@ -422,7 +388,7 @@ class _PendingRow extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.error.withOpacity(0.08),
+              color: AppColors.error.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/database_helper.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../widgets/app_stat_card.dart';
 import '../../../widgets/app_section_header.dart';
+import '../../../widgets/sync_progress_modal.dart';
 import '../providers/home_counts_refresh_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../pupuk/providers/sync_sampel_pupuk_provider.dart';
@@ -44,22 +45,13 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
   }
 
   Future<void> _loadCounts() async {
-    final t1Pending = await _dbHelper.getPendingTerimaDariGudang();
     final t2Pending = await _dbHelper.getPendingKirimDariEstate();
-    final t3Pending = await _dbHelper.getPendingTerimaDariEstate();
     final t4Pending = await _dbHelper.getPendingKirimLab();
     final t5Pending = await _dbHelper.getPendingKirimSertifikatEstate();
-    final t1All = await _dbHelper.getAllTerimaDariGudang();
-    final t2All = await _dbHelper.getAllKirimDariEstate();
-    final t3All = await _dbHelper.getAllTerimaDariEstate();
-    final t4All = await _dbHelper.getAllKirimLab();
-    final t5All = await _dbHelper.getAllKirimSertifikatEstate();
-    final pending =
-        t1Pending.length +
-        t2Pending.length +
-        t3Pending.length +
-        t4Pending.length +
-        t5Pending.length;
+    final t1All = await _dbHelper.getAllKirimDariEstate();
+    final t2All = await _dbHelper.getAllKirimLab();
+    final t3All = await _dbHelper.getAllKirimSertifikatEstate();
+    final pending = t2Pending.length + t4Pending.length + t5Pending.length;
     int uploaded = 0;
     for (final row in t1All) {
       if (row.status == AppConstants.statusUploaded) uploaded++;
@@ -68,12 +60,6 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
       if (row.status == AppConstants.statusUploaded) uploaded++;
     }
     for (final row in t3All) {
-      if (row.status == AppConstants.statusUploaded) uploaded++;
-    }
-    for (final row in t4All) {
-      if (row.status == AppConstants.statusUploaded) uploaded++;
-    }
-    for (final row in t5All) {
       if (row.status == AppConstants.statusUploaded) uploaded++;
     }
     if (mounted) {
@@ -85,8 +71,19 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
   }
 
   Future<void> _sync() async {
+    if (!mounted) return;
     final regional = ref.read(regionalProvider).selectedRegional ?? 1;
-    await ref.read(syncSampelPupukProvider.notifier).sync(regional);
+    final syncFuture = ref
+        .read(syncSampelPupukProvider.notifier)
+        .sync(regional);
+    if (!mounted) return;
+    showSyncProgressDialog<SyncSampelPupukState>(
+      context: context,
+      provider: syncSampelPupukProvider,
+      isInProgress: (s) => s.isSyncing,
+      errorMessage: (s) => s.error,
+    );
+    await syncFuture;
     if (mounted) _loadCounts();
   }
 
@@ -98,16 +95,6 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
     final regionalState = ref.watch(regionalProvider);
     ref.listen<int>(fertilizerCountsRefreshProvider, (prev, next) {
       if (prev != null && next != prev && mounted) _loadCounts();
-    });
-    ref.listen<SyncSampelPupukState>(syncSampelPupukProvider, (prev, next) {
-      if (next.error != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
     });
 
     final theme = Theme.of(context);
@@ -356,15 +343,6 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                         : 'Sinkronkan Data Sampel Pupuk',
                   ),
                 ),
-                if (syncState.error != null) ...[
-                  AppSpacing.gapSm,
-                  Text(
-                    syncState.error!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.error,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -377,7 +355,7 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
     if (dateTime != null) {
       try {
         final localDt = dateTime.isUtc ? dateTime.toLocal() : dateTime;
-        return 'Sinkron Terakhir: ${DateFormat('d MMM yyyy, HH:mm:ss').format(localDt)}';
+        return 'Sinkron Terakhir: ${app_date_utils.DateUtils.formatDateTimeForDisplay(localDt)}';
       } catch (_) {
         return 'Sinkron Terakhir: ${dateTime.toIso8601String()}';
       }

@@ -1,10 +1,11 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
-import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
-import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../../sample/screens/full_screen_image_preview_screen.dart';
@@ -29,55 +30,42 @@ class SampelPupukActivityDetailScreen extends StatefulWidget {
 class _SampelPupukActivityDetailScreenState
     extends State<SampelPupukActivityDetailScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  final PdfViewerController _pdfSertifikatViewerController =
+      PdfViewerController();
   bool _loading = true;
-  TerimaDariGudang? _terimaGudang;
   KirimDariEstate? _kirimEstate;
-  TerimaDariEstate? _terimaEstate;
   KirimLab? _kirimLab;
   KirimSertifikatEstate? _kirimSertifikat;
 
   Future<void> _load() async {
     setState(() => _loading = true);
     switch (widget.activityType) {
-      case kTerimaDariGudang:
-        final row = await _dbHelper.getTerimaDariGudangById(widget.id);
-        if (mounted)
-          setState(() {
-            _terimaGudang = row;
-            _loading = false;
-          });
-        break;
       case kKirimDariEstate:
         final row = await _dbHelper.getKirimDariEstateById(widget.id);
-        if (mounted)
+        if (mounted) {
           setState(() {
             _kirimEstate = row;
             _loading = false;
           });
-        break;
-      case kTerimaDariEstate:
-        final row = await _dbHelper.getTerimaDariEstateById(widget.id);
-        if (mounted)
-          setState(() {
-            _terimaEstate = row;
-            _loading = false;
-          });
+        }
         break;
       case kKirimLab:
         final row = await _dbHelper.getKirimLabById(widget.id);
-        if (mounted)
+        if (mounted) {
           setState(() {
             _kirimLab = row;
             _loading = false;
           });
+        }
         break;
       case kKirimSertifikatEstate:
         final row = await _dbHelper.getKirimSertifikatEstateById(widget.id);
-        if (mounted)
+        if (mounted) {
           setState(() {
             _kirimSertifikat = row;
             _loading = false;
           });
+        }
         break;
       default:
         if (mounted) setState(() => _loading = false);
@@ -88,6 +76,12 @@ class _SampelPupukActivityDetailScreenState
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _pdfSertifikatViewerController.dispose();
+    super.dispose();
   }
 
   Color _statusColor(String status) {
@@ -135,14 +129,8 @@ class _SampelPupukActivityDetailScreenState
     );
     if (confirmed != true || !mounted) return;
     switch (widget.activityType) {
-      case kTerimaDariGudang:
-        await _dbHelper.deleteTerimaDariGudang(widget.id);
-        break;
       case kKirimDariEstate:
         await _dbHelper.deleteKirimDariEstate(widget.id);
-        break;
-      case kTerimaDariEstate:
-        await _dbHelper.deleteTerimaDariEstate(widget.id);
         break;
       case kKirimLab:
         await _dbHelper.deleteKirimLab(widget.id);
@@ -155,11 +143,7 @@ class _SampelPupukActivityDetailScreenState
   }
 
   bool get _hasData =>
-      _terimaGudang != null ||
-      _kirimEstate != null ||
-      _terimaEstate != null ||
-      _kirimLab != null ||
-      _kirimSertifikat != null;
+      _kirimEstate != null || _kirimLab != null || _kirimSertifikat != null;
 
   @override
   Widget build(BuildContext context) {
@@ -206,11 +190,7 @@ class _SampelPupukActivityDetailScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (_terimaGudang != null)
-                _buildTerimaGudangContent(_terimaGudang!),
               if (_kirimEstate != null) _buildKirimEstateContent(_kirimEstate!),
-              if (_terimaEstate != null)
-                _buildTerimaEstateContent(_terimaEstate!),
               if (_kirimLab != null) _buildKirimLabContent(_kirimLab!),
               if (_kirimSertifikat != null)
                 _buildKirimSertifikatContent(_kirimSertifikat!),
@@ -222,6 +202,7 @@ class _SampelPupukActivityDetailScreenState
   }
 
   Widget _buildPhotoSection(String? fotoPath, String subtitle) {
+    final colorScheme = Theme.of(context).colorScheme;
     final path = fotoPath != null && fotoPath.isNotEmpty ? fotoPath : null;
     final exists = path != null && File(path).existsSync();
     final pathValue = path; // promote for closure
@@ -253,7 +234,7 @@ class _SampelPupukActivityDetailScreenState
                 )
               : Container(
                   height: 200,
-                  color: AppColors.background,
+                  color: colorScheme.surfaceContainerHighest,
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -261,13 +242,13 @@ class _SampelPupukActivityDetailScreenState
                         Icon(
                           Icons.image_not_supported,
                           size: 56,
-                          color: AppColors.textSecondary,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Tidak ada foto',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 14,
                           ),
                         ),
@@ -281,6 +262,7 @@ class _SampelPupukActivityDetailScreenState
   }
 
   Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -292,80 +274,18 @@ class _SampelPupukActivityDetailScreenState
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: valueColor ?? AppColors.textPrimary),
+              style: TextStyle(color: valueColor ?? colorScheme.onSurface),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildTerimaGudangContent(TerimaDariGudang r) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildPhotoSection(
-          r.fotoTerimaDariGudang,
-          'Terima dari Gudang - ${r.kodeSampel}',
-        ),
-        const SizedBox(height: 16),
-        Card(
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Informasi',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildInfoRow('Kode Sampel', r.kodeSampel),
-                _buildInfoRow(
-                  'Tanggal Terima dari Gudang',
-                  app_date_utils.DateUtils.formatDateTimeFromIso(
-                    r.tanggalTerimaDariGudang,
-                  ),
-                ),
-                _buildInfoRow(
-                  'Status',
-                  _statusLabel(r.status),
-                  valueColor: _statusColor(r.status),
-                ),
-                if (r.errorMessage != null && r.errorMessage!.isNotEmpty)
-                  _buildInfoRow(
-                    'Kesalahan',
-                    r.errorMessage!,
-                    valueColor: AppColors.error,
-                  ),
-                _buildInfoRow(
-                  'Dibuat',
-                  app_date_utils.DateUtils.formatDateTimeFromIso(r.createdAt),
-                ),
-                if (r.updatedAt != null)
-                  _buildInfoRow(
-                    'Diperbarui',
-                    app_date_utils.DateUtils.formatDateTimeFromIso(
-                      r.updatedAt!,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -390,7 +310,7 @@ class _SampelPupukActivityDetailScreenState
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -403,68 +323,6 @@ class _SampelPupukActivityDetailScreenState
                 ),
                 if (r.namaPengirim != null && r.namaPengirim!.isNotEmpty)
                   _buildInfoRow('Nama Pengirim', r.namaPengirim!),
-                _buildInfoRow(
-                  'Status',
-                  _statusLabel(r.status),
-                  valueColor: _statusColor(r.status),
-                ),
-                if (r.errorMessage != null && r.errorMessage!.isNotEmpty)
-                  _buildInfoRow(
-                    'Kesalahan',
-                    r.errorMessage!,
-                    valueColor: AppColors.error,
-                  ),
-                _buildInfoRow(
-                  'Dibuat',
-                  app_date_utils.DateUtils.formatDateTimeFromIso(r.createdAt),
-                ),
-                if (r.updatedAt != null)
-                  _buildInfoRow(
-                    'Diperbarui',
-                    app_date_utils.DateUtils.formatDateTimeFromIso(
-                      r.updatedAt!,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTerimaEstateContent(TerimaDariEstate r) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildPhotoSection(
-          r.fotoTerimaDariEstate,
-          'Terima dari Estate - ${r.kodeSampel}',
-        ),
-        const SizedBox(height: 16),
-        Card(
-          elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Informasi',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildInfoRow('Kode Sampel', r.kodeSampel),
-                _buildInfoRow(
-                  'Tanggal Terima dari Estate',
-                  app_date_utils.DateUtils.formatDateTimeFromIso(
-                    r.tanggalTerimaDariEstate,
-                  ),
-                ),
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),
@@ -513,7 +371,7 @@ class _SampelPupukActivityDetailScreenState
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -526,6 +384,14 @@ class _SampelPupukActivityDetailScreenState
                     r.tanggalKirimLab,
                   ),
                 ),
+                if (r.tanggalEstimasiKupa != null &&
+                    r.tanggalEstimasiKupa!.trim().isNotEmpty)
+                  _buildInfoRow(
+                    'Tanggal Estimasi Kupa',
+                    app_date_utils.DateUtils.formatDateTimeFromIso(
+                      r.tanggalEstimasiKupa,
+                    ),
+                  ),
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),
@@ -556,11 +422,116 @@ class _SampelPupukActivityDetailScreenState
     );
   }
 
+  void _openSertifikatPdfFullScreen(String path) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Preview PDF Sertifikat'),
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+          ),
+          body: SfPdfViewer.file(
+            File(path),
+            canShowPaginationDialog: false,
+            canShowScrollHead: true,
+            canShowScrollStatus: true,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildKirimSertifikatContent(KirimSertifikatEstate r) {
+    final pdfPath = r.fileSertifikat.trim();
+    final pdfExists = pdfPath.isNotEmpty && File(pdfPath).existsSync();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 0),
+        if (pdfExists) ...[
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Preview halaman pertama PDF',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => _openSertifikatPdfFullScreen(pdfPath),
+                      icon: const Icon(Icons.open_in_full),
+                      label: const Text('Layar penuh'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 220,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: () => _openSertifikatPdfFullScreen(pdfPath),
+                        child: SfPdfViewer.file(
+                          File(pdfPath),
+                          key: ValueKey(pdfPath),
+                          controller: _pdfSertifikatViewerController,
+                          canShowScrollHead: false,
+                          canShowScrollStatus: false,
+                          canShowPaginationDialog: false,
+                          onDocumentLoaded: (_) {
+                            _pdfSertifikatViewerController.jumpToPage(1);
+                          },
+                          onDocumentLoadFailed: (details) {
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Preview PDF gagal dimuat: ${details.error}',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ] else if (pdfPath.isNotEmpty) ...[
+          Card(
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'File sertifikat tidak ditemukan di perangkat:\n${p.basename(pdfPath)}',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         Card(
           elevation: 2,
           child: Padding(
@@ -573,7 +544,7 @@ class _SampelPupukActivityDetailScreenState
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -585,6 +556,8 @@ class _SampelPupukActivityDetailScreenState
                   ),
                 ),
                 _buildInfoRow('Rekomendasi', r.rekomendasi),
+                if (pdfPath.isNotEmpty)
+                  _buildInfoRow('File Sertifikat', p.basename(pdfPath)),
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),

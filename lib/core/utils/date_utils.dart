@@ -7,27 +7,31 @@ class DateUtils {
   static final DateFormat _dateTimeFormat = DateFormat(
     AppConstants.dateTimeFormat,
   );
+  static final DateFormat _dateDisplayFormat = DateFormat(
+    AppConstants.dateDisplayFormat,
+    AppConstants.uiDateLocale,
+  );
 
-  static const List<String> _pupukDetailMonthAbbrEn = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mei',
-    'Jun',
-    'Jul',
-    'Agu',
-    'Sep',
-    'Okt',
-    'Nov',
-    'Des',
-  ];
+  /// Calendar date for UI ([AppConstants.dateDisplayFormat], local timezone).
+  static String formatDateForDisplay(DateTime date) {
+    return _dateDisplayFormat.format(date.toLocal());
+  }
 
-  /// Pattern `d-MMM-yy` (e.g. 23-Mar-26) without [DateFormat] locale init.
-  static String _formatPupukDetailTanggalDisplay(DateTime dt) {
-    final local = dt.toLocal();
-    final yy = (local.year % 100).toString().padLeft(2, '0');
-    return '${local.day}-${_pupukDetailMonthAbbrEn[local.month - 1]}-$yy';
+  /// Parses ISO / storage date strings and formats the calendar date for UI.
+  static String formatStoredDateForDisplay(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '-';
+    final dt = _parseFlexibleToLocal(raw);
+    if (dt != null) return formatDateForDisplay(dt);
+    final d = parseDate(raw.trim());
+    if (d != null) return formatDateForDisplay(d);
+    final fb = _normalizePupukDateRaw(raw);
+    return fb.isEmpty ? '-' : fb;
+  }
+
+  /// Local date + time for UI (date uses [AppConstants.dateDisplayFormat]).
+  static String formatDateTimeForDisplay(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    return '${_dateDisplayFormat.format(local)} ${_timeFormat.format(local)}';
   }
 
   static String formatDate(DateTime date) {
@@ -124,16 +128,10 @@ class DateUtils {
     return parseDate(s);
   }
 
-  /// Formats API/sync date strings for pupuk detail rows (day–abbrev month–2-digit year).
+  /// Formats API/sync date strings for pupuk detail rows ([AppConstants.dateDisplayFormat]).
   /// Accepts ISO 8601 and [AppConstants.dateFormat]; returns normalized text if unparsable.
   static String formatPupukDetailTanggal(String? raw) {
-    if (raw == null || raw.trim().isEmpty) return '-';
-    final dt = _parseFlexibleToLocal(raw);
-    if (dt == null) {
-      final fallback = _normalizePupukDateRaw(raw);
-      return fallback.isEmpty ? '-' : fallback;
-    }
-    return _formatPupukDetailTanggalDisplay(dt);
+    return formatStoredDateForDisplay(raw);
   }
 
   /// Parses an ISO 8601 date string and formats it for display in local date+time.
@@ -142,6 +140,6 @@ class DateUtils {
     if (isoString == null || isoString.trim().isEmpty) return '-';
     final dt = _parseFlexibleToLocal(isoString);
     if (dt == null) return _normalizePupukDateRaw(isoString);
-    return _dateTimeFormat.format(dt);
+    return formatDateTimeForDisplay(dt);
   }
 }

@@ -46,12 +46,8 @@ class DataSampelPupukDto {
   final int? qtyTerima;
   final String? jenisKendaraan;
   final String? tanggalPengambilanSampel;
-  final String? tanggalTerimaDariGudang;
-  final String? fotoTerimaDariGudang;
   final String? tanggalKirimDariEstate;
   final String? fotoKirimDariEstate;
-  final String? tanggalTerimaDariEstate;
-  final String? fotoTerimaDariEstate;
   final String? tanggalKirimLab;
   final String? fotoKirimLab;
   final String? kodeTracking;
@@ -82,12 +78,8 @@ class DataSampelPupukDto {
     this.qtyTerima,
     this.jenisKendaraan,
     this.tanggalPengambilanSampel,
-    this.tanggalTerimaDariGudang,
-    this.fotoTerimaDariGudang,
     this.tanggalKirimDariEstate,
     this.fotoKirimDariEstate,
-    this.tanggalTerimaDariEstate,
-    this.fotoTerimaDariEstate,
     this.tanggalKirimLab,
     this.fotoKirimLab,
     this.kodeTracking,
@@ -120,12 +112,8 @@ class DataSampelPupukDto {
       qtyTerima: (json['qtyTerima'] as num?)?.toInt(),
       jenisKendaraan: json['jenisKendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggalPengambilanSampel'] as String?,
-      tanggalTerimaDariGudang: json['tanggalTerimaDariGudang'] as String?,
-      fotoTerimaDariGudang: json['fotoTerimaDariGudang'] as String?,
       tanggalKirimDariEstate: json['tanggalKirimDariEstate'] as String?,
       fotoKirimDariEstate: json['fotoKirimDariEstate'] as String?,
-      tanggalTerimaDariEstate: json['tanggalTerimaDariEstate'] as String?,
-      fotoTerimaDariEstate: json['fotoTerimaDariEstate'] as String?,
       tanggalKirimLab: json['tanggalKirimLab'] as String?,
       fotoKirimLab: json['fotoKirimLab'] as String?,
       kodeTracking: json['kodeTracking'] as String?,
@@ -160,12 +148,8 @@ class DataSampelPupukDto {
       'qtyTerima': qtyTerima,
       'jenisKendaraan': jenisKendaraan,
       'tanggalPengambilanSampel': tanggalPengambilanSampel,
-      'tanggalTerimaDariGudang': tanggalTerimaDariGudang,
-      'fotoTerimaDariGudang': fotoTerimaDariGudang,
       'tanggalKirimDariEstate': tanggalKirimDariEstate,
       'fotoKirimDariEstate': fotoKirimDariEstate,
-      'tanggalTerimaDariEstate': tanggalTerimaDariEstate,
-      'fotoTerimaDariEstate': fotoTerimaDariEstate,
       'tanggalKirimLab': tanggalKirimLab,
       'fotoKirimLab': fotoKirimLab,
       'kodeTracking': kodeTracking,
@@ -260,31 +244,6 @@ class AreaEstateResponse {
 
 // --- Upload request (activity payload) ---
 
-class TerimaDariGudangItem {
-  final int id;
-  final int dataSampelPupukId;
-  final String kodeSampel;
-  final String tanggalTerimaDariGudang;
-  final String? fotoTerimaDariGudang;
-
-  TerimaDariGudangItem({
-    required this.id,
-    required this.dataSampelPupukId,
-    required this.kodeSampel,
-    required this.tanggalTerimaDariGudang,
-    this.fotoTerimaDariGudang,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'dataSampelPupukId': dataSampelPupukId,
-    'kodeSampel': kodeSampel,
-    'tanggalTerimaDariGudang': tanggalTerimaDariGudang,
-    if (fotoTerimaDariGudang != null)
-      'fotoTerimaDariGudang': fotoTerimaDariGudang,
-  };
-}
-
 class KirimDariEstateItem {
   final int id;
   final int dataSampelPupukId;
@@ -312,36 +271,12 @@ class KirimDariEstateItem {
   };
 }
 
-class TerimaDariEstateItem {
-  final int id;
-  final int dataSampelPupukId;
-  final String kodeSampel;
-  final String tanggalTerimaDariEstate;
-  final String? fotoTerimaDariEstate;
-
-  TerimaDariEstateItem({
-    required this.id,
-    required this.dataSampelPupukId,
-    required this.kodeSampel,
-    required this.tanggalTerimaDariEstate,
-    this.fotoTerimaDariEstate,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'dataSampelPupukId': dataSampelPupukId,
-    'kodeSampel': kodeSampel,
-    'tanggalTerimaDariEstate': tanggalTerimaDariEstate,
-    if (fotoTerimaDariEstate != null)
-      'fotoTerimaDariEstate': fotoTerimaDariEstate,
-  };
-}
-
 class KirimLabItem {
   final int id;
   final int dataSampelPupukId;
   final String kodeSampel;
   final String? noSurat;
+  final String? tanggalEstimasiKupa;
   final String tanggalKirimLab;
   final String? fotoKirimLab;
 
@@ -350,6 +285,7 @@ class KirimLabItem {
     required this.dataSampelPupukId,
     required this.kodeSampel,
     this.noSurat,
+    this.tanggalEstimasiKupa,
     required this.tanggalKirimLab,
     this.fotoKirimLab,
   });
@@ -359,6 +295,7 @@ class KirimLabItem {
     'dataSampelPupukId': dataSampelPupukId,
     'kodeSampel': kodeSampel,
     if (noSurat != null) 'noSurat': noSurat,
+    if (tanggalEstimasiKupa != null) 'tanggalEstimasiKupa': tanggalEstimasiKupa,
     'tanggalKirimLab': tanggalKirimLab,
     if (fotoKirimLab != null) 'fotoKirimLab': fotoKirimLab,
   };
@@ -370,6 +307,7 @@ class KirimSertifikatEstateItem {
   final String kodeSampel;
   final String tanggalKirimSertifikatEstate;
   final String rekomendasi;
+  final String fileSertifikat;
 
   KirimSertifikatEstateItem({
     required this.id,
@@ -377,6 +315,7 @@ class KirimSertifikatEstateItem {
     required this.kodeSampel,
     required this.tanggalKirimSertifikatEstate,
     required this.rekomendasi,
+    required this.fileSertifikat,
   });
 
   Map<String, dynamic> toJson() => {
@@ -385,28 +324,23 @@ class KirimSertifikatEstateItem {
     'kodeSampel': kodeSampel,
     'tanggalKirimSertifikatEstate': tanggalKirimSertifikatEstate,
     'rekomendasi': rekomendasi,
+    'fileSertifikat': fileSertifikat,
   };
 }
 
 class SampelPupukUploadPayload {
-  final List<TerimaDariGudangItem> terimaDariGudang;
   final List<KirimDariEstateItem> kirimDariEstate;
-  final List<TerimaDariEstateItem> terimaDariEstate;
   final List<KirimLabItem> kirimLab;
   final List<KirimSertifikatEstateItem> kirimSertifikatEstate;
 
   SampelPupukUploadPayload({
-    this.terimaDariGudang = const [],
     this.kirimDariEstate = const [],
-    this.terimaDariEstate = const [],
     this.kirimLab = const [],
     this.kirimSertifikatEstate = const [],
   });
 
   Map<String, dynamic> toJson() => {
-    'terimaDariGudang': terimaDariGudang.map((e) => e.toJson()).toList(),
     'kirimDariEstate': kirimDariEstate.map((e) => e.toJson()).toList(),
-    'terimaDariEstate': terimaDariEstate.map((e) => e.toJson()).toList(),
     'kirimLab': kirimLab.map((e) => e.toJson()).toList(),
     'kirimSertifikatEstate': kirimSertifikatEstate
         .map((e) => e.toJson())
@@ -469,30 +403,20 @@ class UploadFailedItem {
 }
 
 class SampelPupukUploadResponse {
-  final UploadTypeResult terimaDariGudang;
   final UploadTypeResult kirimDariEstate;
-  final UploadTypeResult terimaDariEstate;
   final UploadTypeResult kirimLab;
   final UploadTypeResult kirimSertifikatEstate;
 
   SampelPupukUploadResponse({
-    required this.terimaDariGudang,
     required this.kirimDariEstate,
-    required this.terimaDariEstate,
     required this.kirimLab,
     required this.kirimSertifikatEstate,
   });
 
   factory SampelPupukUploadResponse.fromJson(Map<String, dynamic> json) {
     return SampelPupukUploadResponse(
-      terimaDariGudang: UploadTypeResult.fromJson(
-        json['terimaDariGudang'] as Map<String, dynamic>? ?? {},
-      ),
       kirimDariEstate: UploadTypeResult.fromJson(
         json['kirimDariEstate'] as Map<String, dynamic>? ?? {},
-      ),
-      terimaDariEstate: UploadTypeResult.fromJson(
-        json['terimaDariEstate'] as Map<String, dynamic>? ?? {},
       ),
       kirimLab: UploadTypeResult.fromJson(
         json['kirimLab'] as Map<String, dynamic>? ?? {},

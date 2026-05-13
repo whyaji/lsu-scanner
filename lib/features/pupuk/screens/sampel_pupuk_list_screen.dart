@@ -4,9 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
-import '../../../core/database/models/terima_dari_gudang.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
-import '../../../core/database/models/terima_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../../../widgets/app_empty_state.dart';
@@ -60,35 +58,19 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
     final List<_PupukListEntry> combined = [];
 
     if (widget.isPending) {
-      final t1 = await _dbHelper.getPendingTerimaDariGudang();
       final t2 = await _dbHelper.getPendingKirimDariEstate();
-      final t3 = await _dbHelper.getPendingTerimaDariEstate();
       final t4 = await _dbHelper.getPendingKirimLab();
       final t5 = await _dbHelper.getPendingKirimSertifikatEstate();
-      _addTerimaGudang(combined, t1);
       _addKirimEstate(combined, t2);
-      _addTerimaEstate(combined, t3);
       _addKirimLab(combined, t4);
       _addKirimSertifikat(combined, t5);
     } else {
-      final t1 = await _dbHelper.getAllTerimaDariGudang();
       final t2 = await _dbHelper.getAllKirimDariEstate();
-      final t3 = await _dbHelper.getAllTerimaDariEstate();
       final t4 = await _dbHelper.getAllKirimLab();
       final t5 = await _dbHelper.getAllKirimSertifikatEstate();
-      for (final row in t1) {
-        if (row.status == AppConstants.statusUploaded && row.id != null) {
-          combined.add(_entryFromTerimaGudang(row));
-        }
-      }
       for (final row in t2) {
         if (row.status == AppConstants.statusUploaded && row.id != null) {
           combined.add(_entryFromKirimEstate(row));
-        }
-      }
-      for (final row in t3) {
-        if (row.status == AppConstants.statusUploaded && row.id != null) {
-          combined.add(_entryFromTerimaEstate(row));
         }
       }
       for (final row in t4) {
@@ -112,28 +94,6 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
     }
   }
 
-  void _addTerimaGudang(
-    List<_PupukListEntry> out,
-    List<TerimaDariGudang> list,
-  ) {
-    for (final row in list) {
-      if (row.id != null) out.add(_entryFromTerimaGudang(row));
-    }
-  }
-
-  _PupukListEntry _entryFromTerimaGudang(TerimaDariGudang row) {
-    return _PupukListEntry(
-      activityType: kTerimaDariGudang,
-      id: row.id!,
-      kodeSampel: row.kodeSampel,
-      dateText: row.tanggalTerimaDariGudang,
-      status: row.status,
-      errorMessage: row.errorMessage,
-      createdAt: row.createdAt,
-      fotoPath: row.fotoTerimaDariGudang,
-    );
-  }
-
   void _addKirimEstate(List<_PupukListEntry> out, List<KirimDariEstate> list) {
     for (final row in list) {
       if (row.id != null) out.add(_entryFromKirimEstate(row));
@@ -150,28 +110,6 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
       errorMessage: row.errorMessage,
       createdAt: row.createdAt,
       fotoPath: row.fotoKirimDariEstate,
-    );
-  }
-
-  void _addTerimaEstate(
-    List<_PupukListEntry> out,
-    List<TerimaDariEstate> list,
-  ) {
-    for (final row in list) {
-      if (row.id != null) out.add(_entryFromTerimaEstate(row));
-    }
-  }
-
-  _PupukListEntry _entryFromTerimaEstate(TerimaDariEstate row) {
-    return _PupukListEntry(
-      activityType: kTerimaDariEstate,
-      id: row.id!,
-      kodeSampel: row.kodeSampel,
-      dateText: row.tanggalTerimaDariEstate,
-      status: row.status,
-      errorMessage: row.errorMessage,
-      createdAt: row.createdAt,
-      fotoPath: row.fotoTerimaDariEstate,
     );
   }
 

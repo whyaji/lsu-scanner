@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/database_helper.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../widgets/app_stat_card.dart';
 import '../../../widgets/app_section_header.dart';
+import '../../../widgets/sync_progress_modal.dart';
 import '../../scanner/screens/qr_scanner_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 import '../../upload/screens/upload_screen.dart';
@@ -59,8 +60,17 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
   }
 
   Future<void> _sync() async {
+    if (!mounted) return;
     final regional = ref.read(regionalProvider).selectedRegional ?? 1;
-    await ref.read(syncProvider.notifier).syncData(regional);
+    final syncFuture = ref.read(syncProvider.notifier).syncData(regional);
+    if (!mounted) return;
+    showSyncProgressDialog<SyncState>(
+      context: context,
+      provider: syncProvider,
+      isInProgress: (s) => s.isLoading,
+      errorMessage: (s) => s.error,
+    );
+    await syncFuture;
     if (mounted) _loadCounts();
   }
 
@@ -71,16 +81,6 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
     final syncState = ref.watch(syncProvider);
     ref.listen<int>(homeCountsRefreshProvider, (prev, next) {
       if (prev != null && next != prev && mounted) _loadCounts();
-    });
-    ref.listen<SyncState>(syncProvider, (prev, next) {
-      if (next.error != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.error!),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
     });
 
     final theme = Theme.of(context);
@@ -112,12 +112,7 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            if (regionalState.selectedRegional != null) {
-              await ref
-                  .read(syncProvider.notifier)
-                  .syncData(regionalState.selectedRegional!);
-            }
-            await _loadCounts();
+            await _sync();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -262,15 +257,6 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                         : 'Sinkronkan Data Sampel LSU',
                   ),
                 ),
-                if (syncState.error != null) ...[
-                  AppSpacing.gapSm,
-                  Text(
-                    syncState.error!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.error,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -283,7 +269,7 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
     if (dateTime != null) {
       try {
         final localDt = dateTime.isUtc ? dateTime.toLocal() : dateTime;
-        return 'Sinkron Terakhir: ${DateFormat('d MMM yyyy, HH:mm:ss').format(localDt)}';
+        return 'Sinkron Terakhir: ${app_date_utils.DateUtils.formatDateTimeForDisplay(localDt)}';
       } catch (_) {
         return 'Sinkron Terakhir: ${dateTime.toIso8601String()}';
       }

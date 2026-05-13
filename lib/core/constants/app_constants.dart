@@ -51,6 +51,10 @@ class AppConstants {
   static const String dateFormat = 'yyyy-MM-dd';
   static const String timeFormat = 'HH:mm:ss';
   static const String dateTimeFormat = 'yyyy-MM-dd HH:mm:ss';
+  /// UI only: day, full month name, year (e.g. 13 Mei 2026). ICU `d MMMM yyyy`.
+  static const String dateDisplayFormat = 'd MMMM yyyy';
+  /// BCP 47 locale for [DateFormat] month/day names in the UI (Indonesian).
+  static const String uiDateLocale = 'id';
 }
 
 class AppColors {

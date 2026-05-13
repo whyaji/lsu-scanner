@@ -5,6 +5,7 @@ import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import 'photo_capture_screen.dart';
 import 'full_screen_image_preview_screen.dart';
 
@@ -84,7 +85,11 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              )
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -126,7 +131,10 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                           widget.isCompleteSample
                               ? 'Ambil Foto Selesai'
                               : 'Ambil Foto',
-                          style: const TextStyle(fontSize: 16),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -250,7 +258,11 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                         imagePath: s.fotoPath,
                         title: 'Sudah selesai',
                         details: {
-                          'Tanggal selesai': s.tanggalSelesai,
+                          'Tanggal selesai':
+                              app_date_utils
+                                  .DateUtils.formatStoredDateForDisplay(
+                                s.tanggalSelesai,
+                              ),
                           'Waktu selesai': s.waktuSelesai,
                           'Kode': s.kode,
                         },
@@ -284,7 +296,12 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                 ),
               ),
             const SizedBox(height: 16),
-            _buildInfoRow('Tanggal selesai', s.tanggalSelesai),
+            _buildInfoRow(
+              'Tanggal selesai',
+              app_date_utils.DateUtils.formatStoredDateForDisplay(
+                s.tanggalSelesai,
+              ),
+            ),
             _buildInfoRow('Waktu selesai', s.waktuSelesai),
           ],
         ),
@@ -329,7 +346,11 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                         imagePath: s.fotoPath,
                         title: 'Sudah diterima',
                         details: {
-                          'Tanggal diterima': s.tanggalTerima,
+                          'Tanggal diterima':
+                              app_date_utils
+                                  .DateUtils.formatStoredDateForDisplay(
+                                s.tanggalTerima,
+                              ),
                           'Waktu diterima': s.waktuTerima,
                           'Kode': s.kode,
                         },
@@ -363,7 +384,12 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
                 ),
               ),
             const SizedBox(height: 16),
-            _buildInfoRow('Tanggal diterima', s.tanggalTerima),
+            _buildInfoRow(
+              'Tanggal diterima',
+              app_date_utils.DateUtils.formatStoredDateForDisplay(
+                s.tanggalTerima,
+              ),
+            ),
             _buildInfoRow('Waktu diterima', s.waktuTerima),
           ],
         ),
@@ -374,6 +400,9 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
   Widget _buildInfoRow(String label, String value) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final baseStyle =
+        theme.textTheme.bodyMedium ??
+        TextStyle(fontSize: 14, color: colorScheme.onSurface);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -383,7 +412,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
             width: 120,
             child: Text(
               label,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: baseStyle.copyWith(
                 fontWeight: FontWeight.w500,
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -392,9 +421,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           Expanded(
             child: Text(
               value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface,
-              ),
+              style: baseStyle.copyWith(color: colorScheme.onSurface),
             ),
           ),
         ],

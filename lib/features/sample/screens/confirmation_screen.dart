@@ -216,7 +216,9 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                             'Estate': widget.masterLsu.estate ?? '-',
                             'Afdeling': widget.masterLsu.afdeling ?? '-',
                             'Blok': widget.masterLsu.blok ?? '-',
-                            dateLabel: DateUtils.formatDate(_selectedDate),
+                            dateLabel: DateUtils.formatDateForDisplay(
+                              _selectedDate,
+                            ),
                             timeLabel:
                                 '${_selectedTime.hour.toString().padLeft(2, '0')}:${_selectedTime.minute.toString().padLeft(2, '0')}',
                           },
@@ -289,7 +291,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
                         widget.isCompleteSample
                             ? 'Tanggal Selesai'
                             : 'Tanggal Diterima',
-                        DateUtils.formatDate(_selectedDate),
+                        DateUtils.formatDateForDisplay(_selectedDate),
                       ),
                       _buildInfoRow(
                         widget.isCompleteSample

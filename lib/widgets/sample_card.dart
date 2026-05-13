@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/database/models/received_sample.dart';
 import '../core/constants/app_constants.dart';
+import '../core/utils/date_utils.dart' as app_date_utils;
 
 class SampleCard extends StatelessWidget {
   final ReceivedSample sample;
@@ -46,7 +47,7 @@ class SampleCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Date: ${sample.tanggalTerima} ${sample.waktuTerima}',
+              'Tanggal: ${app_date_utils.DateUtils.formatStoredDateForDisplay(sample.tanggalTerima)} ${sample.waktuTerima}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

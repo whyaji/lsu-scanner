@@ -3,6 +3,7 @@ class KirimLab {
   final int dataSampelPupukId;
   final String kodeSampel;
   final String? noSurat;
+  final String? tanggalEstimasiKupa;
   final String tanggalKirimLab;
   final String? fotoKirimLab;
   final String status;
@@ -15,6 +16,7 @@ class KirimLab {
     required this.dataSampelPupukId,
     required this.kodeSampel,
     this.noSurat,
+    this.tanggalEstimasiKupa,
     required this.tanggalKirimLab,
     this.fotoKirimLab,
     this.status = 'not_uploaded',
@@ -29,6 +31,7 @@ class KirimLab {
       dataSampelPupukId: json['data_sampel_pupuk_id'] as int,
       kodeSampel: json['kode_sampel'] as String,
       noSurat: json['no_surat'] as String?,
+      tanggalEstimasiKupa: json['tanggal_estimasi_kupa'] as String?,
       tanggalKirimLab: json['tanggal_kirim_lab'] as String,
       fotoKirimLab: json['foto_kirim_lab'] as String?,
       status: json['status'] as String? ?? 'not_uploaded',
@@ -44,6 +47,7 @@ class KirimLab {
       'data_sampel_pupuk_id': dataSampelPupukId,
       'kode_sampel': kodeSampel,
       'no_surat': noSurat,
+      'tanggal_estimasi_kupa': tanggalEstimasiKupa,
       'tanggal_kirim_lab': tanggalKirimLab,
       'foto_kirim_lab': fotoKirimLab,
       'status': status,

@@ -11,22 +11,20 @@ class SampelPupukFormData {
   final String activityType;
   final int dataSampelPupukId;
   final String kodeSampel;
-  final String tanggalTerimaDariGudang;
   final String tanggalKirimDariEstate;
   final String? namaPengirim;
   final String? noSurat;
-  final String tanggalTerimaDariEstate;
+  final String? tanggalEstimasiKupa;
   final String tanggalKirimLab;
 
   SampelPupukFormData({
     required this.activityType,
     required this.dataSampelPupukId,
     required this.kodeSampel,
-    this.tanggalTerimaDariGudang = '',
     this.tanggalKirimDariEstate = '',
     this.namaPengirim,
     this.noSurat,
-    this.tanggalTerimaDariEstate = '',
+    this.tanggalEstimasiKupa,
     this.tanggalKirimLab = '',
   });
 }
@@ -60,6 +58,7 @@ class _SampelPupukActivityFormScreenState
   late DateTime _fixedDateTime;
   String? _namaPengirim;
   String? _noSurat;
+  DateTime? _tanggalEstimasiKupa;
 
   @override
   void initState() {
@@ -69,16 +68,13 @@ class _SampelPupukActivityFormScreenState
 
   String get _dateTimeIso => _fixedDateTime.toIso8601String();
   String get _dateTimeDisplay =>
-      app_date_utils.DateUtils.formatDateTime(_fixedDateTime);
+      app_date_utils.DateUtils.formatDateTimeForDisplay(_fixedDateTime);
 
   SampelPupukFormData _buildFormData() {
     return SampelPupukFormData(
       activityType: widget.activityType,
       dataSampelPupukId: widget.dataSampelPupukId,
       kodeSampel: widget.kodeSampel,
-      tanggalTerimaDariGudang: widget.activityType == kTerimaDariGudang
-          ? _dateTimeIso
-          : '',
       tanggalKirimDariEstate: widget.activityType == kKirimDariEstate
           ? _dateTimeIso
           : '',
@@ -86,9 +82,10 @@ class _SampelPupukActivityFormScreenState
           ? _namaPengirim
           : null,
       noSurat: widget.activityType == kKirimLab ? _noSurat : null,
-      tanggalTerimaDariEstate: widget.activityType == kTerimaDariEstate
-          ? _dateTimeIso
-          : '',
+      tanggalEstimasiKupa:
+          widget.activityType == kKirimLab && _tanggalEstimasiKupa != null
+          ? _tanggalEstimasiKupa!.toIso8601String()
+          : null,
       tanggalKirimLab: widget.activityType == kKirimLab ? _dateTimeIso : '',
     );
   }
@@ -139,26 +136,6 @@ class _SampelPupukActivityFormScreenState
                     child: Text(_dateTimeDisplay),
                   ),
                 ),
-                if (widget.activityType == kKirimDariEstate) ...[
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Nama Pengirim',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      final value = v?.trim() ?? '';
-                      if (value.isEmpty) {
-                        return 'Nama Pengirim wajib diisi';
-                      }
-                      return null;
-                    },
-                    onSaved: (v) => _namaPengirim = v?.trim(),
-                    initialValue: _namaPengirim,
-                    onChanged: (v) =>
-                        _namaPengirim = v.trim().isEmpty ? null : v.trim(),
-                  ),
-                ],
                 if (widget.activityType == kKirimLab) ...[
                   const SizedBox(height: 16),
                   TextFormField(
@@ -177,6 +154,69 @@ class _SampelPupukActivityFormScreenState
                     initialValue: _noSurat,
                     onChanged: (v) =>
                         _noSurat = v.trim().isEmpty ? null : v.trim(),
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final initial = _tanggalEstimasiKupa ?? now;
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: initial,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (date == null || !context.mounted) return;
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(initial),
+                      );
+                      if (time == null || !context.mounted) return;
+                      setState(() {
+                        _tanggalEstimasiKupa = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Tanggal Estimasi KUPA',
+                        border: const OutlineInputBorder(),
+                        errorText: _tanggalEstimasiKupa == null
+                            ? 'Tanggal Estimasi KUPA wajib diisi'
+                            : null,
+                        suffixIcon: const Icon(Icons.calendar_month),
+                      ),
+                      child: Text(
+                        _tanggalEstimasiKupa == null
+                            ? 'Pilih tanggal & waktu'
+                            : app_date_utils.DateUtils.formatDateTime(
+                                _tanggalEstimasiKupa!,
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+                if (widget.activityType == kKirimDariEstate) ...[
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Pengirim',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) {
+                      final value = v?.trim() ?? '';
+                      if (value.isEmpty) return 'Nama Pengirim wajib diisi';
+                      return null;
+                    },
+                    initialValue: _namaPengirim,
+                    onChanged: (v) =>
+                        _namaPengirim = v.trim().isEmpty ? null : v.trim(),
                   ),
                 ],
                 const SizedBox(height: 32),

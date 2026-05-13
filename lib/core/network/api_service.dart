@@ -277,7 +277,7 @@ class ApiService {
     }
   }
 
-  /// [type] must be one of: terimaDariGudang, kirimDariEstate, terimaDariEstate, kirimLab.
+  /// [type] must be one of: kirimLab, kirimSertifikatEstate.
   Future<ApiResponse<PhotoPupukUploadResponse>> uploadPhotoPupuk({
     required String filePath,
     required int dataSampelPupukId,

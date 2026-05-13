@@ -1,4 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
@@ -23,6 +33,10 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
   DataSampelPupuk? _selected;
   DateTime? _tanggalKirim;
   final TextEditingController _rekomendasiController = TextEditingController();
+  String? _fileSertifikatPath;
+  bool _processingPdf = false;
+  final ImagePicker _imagePicker = ImagePicker();
+  final PdfViewerController _pdfViewerController = PdfViewerController();
 
   @override
   void initState() {
@@ -33,6 +47,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
   @override
   void dispose() {
     _rekomendasiController.dispose();
+    _pdfViewerController.dispose();
     super.dispose();
   }
 
@@ -50,7 +65,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
 
   String get _tanggalDisplay => _tanggalKirim == null
       ? 'Pilih tanggal & waktu'
-      : app_date_utils.DateUtils.formatDateTime(_tanggalKirim!);
+      : app_date_utils.DateUtils.formatDateTimeForDisplay(_tanggalKirim!);
 
   Future<void> _pickTanggalKirim() async {
     final now = DateTime.now();
@@ -170,6 +185,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
     final selected = _selected!;
     final tanggalIso = _tanggalIso!;
     final rekomendasi = _rekomendasiController.text.trim();
+    final fileSertifikatPath = _fileSertifikatPath!;
 
     final nowIso = DateTime.now().toIso8601String();
     final row = KirimSertifikatEstate(
@@ -177,6 +193,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
       kodeSampel: selected.kodeSampel ?? '',
       tanggalKirimSertifikatEstate: tanggalIso,
       rekomendasi: rekomendasi,
+      fileSertifikat: fileSertifikatPath,
       createdAt: nowIso,
     );
 
@@ -188,6 +205,148 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
 
     if (!mounted) return;
     Navigator.of(context).pop(true);
+  }
+
+  Future<String> _createPdfFromImage(String imagePath) async {
+    final imageFile = File(imagePath);
+    final imageBytes = await imageFile.readAsBytes();
+    final decodedImage = img.decodeImage(imageBytes);
+    if (decodedImage == null) {
+      throw Exception('Foto tidak valid untuk dijadikan PDF');
+    }
+    final imageProvider = pw.MemoryImage(imageBytes);
+    final pdf = pw.Document();
+    const pageMargin = 24.0;
+    final contentWidth = PdfPageFormat.a4.width - (pageMargin * 2);
+    final contentHeight = PdfPageFormat.a4.height - (pageMargin * 2);
+    final imageAspectRatio = decodedImage.width / decodedImage.height;
+    final contentAspectRatio = contentWidth / contentHeight;
+    final targetWidth = imageAspectRatio > contentAspectRatio
+        ? contentWidth
+        : contentHeight * imageAspectRatio;
+    final targetHeight = imageAspectRatio > contentAspectRatio
+        ? contentWidth / imageAspectRatio
+        : contentHeight;
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(pageMargin),
+        build: (context) {
+          return pw.Center(
+            child: pw.SizedBox(
+              width: targetWidth,
+              height: targetHeight,
+              child: pw.Image(imageProvider, fit: pw.BoxFit.fill),
+            ),
+          );
+        },
+      ),
+    );
+
+    final tempDir = await getTemporaryDirectory();
+    final pdfFileName =
+        'sertifikat_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final pdfPath = p.join(tempDir.path, pdfFileName);
+    final pdfFile = File(pdfPath);
+    await pdfFile.writeAsBytes(await pdf.save(), flush: true);
+    return pdfPath;
+  }
+
+  Future<void> _pickPdfFromFile() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    final path = result?.files.single.path;
+    if (!mounted || path == null || path.isEmpty) {
+      return;
+    }
+    setState(() {
+      _fileSertifikatPath = path;
+    });
+  }
+
+  Future<void> _takePhotoAndConvertToPdf() async {
+    final captured = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 90,
+    );
+    if (!mounted || captured == null || captured.path.isEmpty) {
+      return;
+    }
+
+    setState(() => _processingPdf = true);
+    try {
+      final pdfPath = await _createPdfFromImage(captured.path);
+      if (!mounted) return;
+      setState(() {
+        _fileSertifikatPath = pdfPath;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal membuat PDF dari foto. Silakan coba lagi.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _processingPdf = false);
+      }
+    }
+  }
+
+  Future<void> _pickSertifikatFile() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf),
+              title: const Text('Pilih file PDF'),
+              onTap: () => Navigator.of(ctx).pop('file'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Ambil foto & ubah ke PDF'),
+              onTap: () => Navigator.of(ctx).pop('camera'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted || action == null) return;
+    if (action == 'file') {
+      await _pickPdfFromFile();
+      return;
+    }
+    await _takePhotoAndConvertToPdf();
+  }
+
+  void _openPdfPreviewFullScreen() {
+    if (_fileSertifikatPath == null || _fileSertifikatPath!.isEmpty) return;
+    final path = _fileSertifikatPath!;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Preview PDF Sertifikat'),
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+          ),
+          body: SfPdfViewer.file(
+            File(path),
+            canShowPaginationDialog: false,
+            canShowScrollHead: true,
+            canShowScrollStatus: true,
+          ),
+        ),
+      ),
+    );
   }
 
   Future<bool> _showConfirmBack() async {
@@ -293,8 +452,15 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
         body: SafeArea(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                  padding: const EdgeInsets.all(16),
+              : SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    16 + MediaQuery.of(context).viewInsets.bottom,
+                  ),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -352,6 +518,93 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
                           },
                           textInputAction: TextInputAction.done,
                         ),
+                        const SizedBox(height: 16),
+                        InkWell(
+                          onTap: _processingPdf ? null : _pickSertifikatFile,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: 'File Sertifikat (PDF)',
+                              border: const OutlineInputBorder(),
+                              errorText:
+                                  (_fileSertifikatPath == null ||
+                                      _fileSertifikatPath!.isEmpty)
+                                  ? 'File PDF sertifikat wajib dipilih'
+                                  : null,
+                              suffixIcon: const Icon(Icons.attach_file),
+                            ),
+                            child: Text(
+                              _processingPdf
+                                  ? 'Membuat PDF dari foto...'
+                                  : _fileSertifikatPath == null ||
+                                        _fileSertifikatPath!.isEmpty
+                                  ? 'Pilih file PDF'
+                                  : p.basename(_fileSertifikatPath!),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        if (_fileSertifikatPath != null &&
+                            _fileSertifikatPath!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade400),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Preview halaman pertama PDF',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: _openPdfPreviewFullScreen,
+                                    icon: const Icon(Icons.open_in_full),
+                                    label: const Text('Layar penuh'),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 220,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: InkWell(
+                                      onTap: _openPdfPreviewFullScreen,
+                                      child: SfPdfViewer.file(
+                                        File(_fileSertifikatPath!),
+                                        key: ValueKey(_fileSertifikatPath),
+                                        controller: _pdfViewerController,
+                                        canShowScrollHead: false,
+                                        canShowScrollStatus: false,
+                                        canShowPaginationDialog: false,
+                                        onDocumentLoaded: (_) {
+                                          _pdfViewerController.jumpToPage(1);
+                                        },
+                                        onDocumentLoadFailed: (details) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Preview PDF gagal dimuat: ${details.error}',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: _options.isEmpty ? null : _confirmAndSave,

@@ -101,18 +101,12 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
     );
 
     try {
-      final terimaGudang = await _dbHelper.getPendingTerimaDariGudang();
       final kirimEstate = await _dbHelper.getPendingKirimDariEstate();
-      final terimaEstate = await _dbHelper.getPendingTerimaDariEstate();
       final kirimLab = await _dbHelper.getPendingKirimLab();
       final kirimSertifikat = await _dbHelper.getPendingKirimSertifikatEstate();
 
       final total =
-          terimaGudang.length +
-          kirimEstate.length +
-          terimaEstate.length +
-          kirimLab.length +
-          kirimSertifikat.length;
+          kirimEstate.length + kirimLab.length + kirimSertifikat.length;
       if (total == 0) {
         state = state.copyWith(isUploading: false);
         return;
@@ -120,48 +114,6 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
 
       int done = 0;
       int skippedPhotoFailure = 0;
-
-      final terimaGudangItems = <TerimaDariGudangItem>[];
-      for (final row in terimaGudang) {
-        state = state.copyWith(
-          progress: UploadSampelPupukProgress(
-            total: total,
-            current: done + 1,
-            percentage: ((done + 1) / total * 100).round(),
-            currentItem: row.kodeSampel,
-          ),
-        );
-        String? fotoPath = row.fotoTerimaDariGudang;
-        if (fotoPath != null && fotoPath.isNotEmpty) {
-          final serverPath = await _uploadPhotoWithRetry(
-            filePath: fotoPath,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
-            type: 'terimaDariGudang',
-          );
-          if (serverPath == null) {
-            await _dbHelper.updateTerimaDariGudangStatus(
-              row.id!,
-              AppConstants.statusError,
-              errorMessage: 'Gagal mengunggah foto',
-            );
-            skippedPhotoFailure++;
-            done++;
-            continue;
-          }
-          fotoPath = serverPath;
-        }
-        terimaGudangItems.add(
-          TerimaDariGudangItem(
-            id: row.id!,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
-            tanggalTerimaDariGudang: row.tanggalTerimaDariGudang,
-            fotoTerimaDariGudang: fotoPath,
-          ),
-        );
-        done++;
-      }
 
       final kirimEstateItems = <KirimDariEstateItem>[];
       for (final row in kirimEstate) {
@@ -206,48 +158,6 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
         done++;
       }
 
-      final terimaEstateItems = <TerimaDariEstateItem>[];
-      for (final row in terimaEstate) {
-        state = state.copyWith(
-          progress: UploadSampelPupukProgress(
-            total: total,
-            current: done + 1,
-            percentage: ((done + 1) / total * 100).round(),
-            currentItem: row.kodeSampel,
-          ),
-        );
-        String? fotoPath = row.fotoTerimaDariEstate;
-        if (fotoPath != null && fotoPath.isNotEmpty) {
-          final serverPath = await _uploadPhotoWithRetry(
-            filePath: fotoPath,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
-            type: 'terimaDariEstate',
-          );
-          if (serverPath == null) {
-            await _dbHelper.updateTerimaDariEstateStatus(
-              row.id!,
-              AppConstants.statusError,
-              errorMessage: 'Gagal mengunggah foto',
-            );
-            skippedPhotoFailure++;
-            done++;
-            continue;
-          }
-          fotoPath = serverPath;
-        }
-        terimaEstateItems.add(
-          TerimaDariEstateItem(
-            id: row.id!,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
-            tanggalTerimaDariEstate: row.tanggalTerimaDariEstate,
-            fotoTerimaDariEstate: fotoPath,
-          ),
-        );
-        done++;
-      }
-
       final kirimLabItems = <KirimLabItem>[];
       for (final row in kirimLab) {
         state = state.copyWith(
@@ -284,6 +194,7 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
             dataSampelPupukId: row.dataSampelPupukId,
             kodeSampel: row.kodeSampel,
             noSurat: row.noSurat,
+            tanggalEstimasiKupa: row.tanggalEstimasiKupa,
             tanggalKirimLab: row.tanggalKirimLab,
             fotoKirimLab: fotoPath,
           ),
@@ -301,6 +212,26 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
             currentItem: row.kodeSampel,
           ),
         );
+        String filePath = row.fileSertifikat;
+        if (filePath.isNotEmpty) {
+          final serverPath = await _uploadPhotoWithRetry(
+            filePath: filePath,
+            dataSampelPupukId: row.dataSampelPupukId,
+            kodeSampel: row.kodeSampel,
+            type: 'kirimSertifikatEstate',
+          );
+          if (serverPath == null) {
+            await _dbHelper.updateKirimSertifikatEstateStatus(
+              row.id!,
+              AppConstants.statusError,
+              errorMessage: 'Gagal mengunggah file sertifikat',
+            );
+            skippedPhotoFailure++;
+            done++;
+            continue;
+          }
+          filePath = serverPath;
+        }
         kirimSertifikatItems.add(
           KirimSertifikatEstateItem(
             id: row.id!,
@@ -308,15 +239,14 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
             kodeSampel: row.kodeSampel,
             tanggalKirimSertifikatEstate: row.tanggalKirimSertifikatEstate,
             rekomendasi: row.rekomendasi,
+            fileSertifikat: filePath,
           ),
         );
         done++;
       }
 
       final payload = SampelPupukUploadPayload(
-        terimaDariGudang: terimaGudangItems,
         kirimDariEstate: kirimEstateItems,
-        terimaDariEstate: terimaEstateItems,
         kirimLab: kirimLabItems,
         kirimSertifikatEstate: kirimSertifikatItems,
       );
@@ -337,21 +267,6 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
       int successCount = 0;
       int failedCount = 0;
 
-      for (final s in data.terimaDariGudang.success) {
-        await _dbHelper.updateTerimaDariGudangStatus(
-          s.id,
-          AppConstants.statusUploaded,
-        );
-        successCount++;
-      }
-      for (final f in data.terimaDariGudang.failed) {
-        await _dbHelper.updateTerimaDariGudangStatus(
-          f.id,
-          AppConstants.statusError,
-          errorMessage: f.error,
-        );
-        failedCount++;
-      }
       for (final s in data.kirimDariEstate.success) {
         await _dbHelper.updateKirimDariEstateStatus(
           s.id,
@@ -361,21 +276,6 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
       }
       for (final f in data.kirimDariEstate.failed) {
         await _dbHelper.updateKirimDariEstateStatus(
-          f.id,
-          AppConstants.statusError,
-          errorMessage: f.error,
-        );
-        failedCount++;
-      }
-      for (final s in data.terimaDariEstate.success) {
-        await _dbHelper.updateTerimaDariEstateStatus(
-          s.id,
-          AppConstants.statusUploaded,
-        );
-        successCount++;
-      }
-      for (final f in data.terimaDariEstate.failed) {
-        await _dbHelper.updateTerimaDariEstateStatus(
           f.id,
           AppConstants.statusError,
           errorMessage: f.error,

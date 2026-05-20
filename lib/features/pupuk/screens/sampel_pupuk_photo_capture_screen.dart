@@ -1,26 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/utils/photo_capture_helper.dart';
 import '../../../widgets/camera_view.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
 import 'sampel_pupuk_confirmation_screen.dart';
-import '../../scanner/utils/qr_parser.dart';
 
 class SampelPupukPhotoCaptureScreen extends ConsumerStatefulWidget {
   final SampelPupukFormData formData;
-  final DataSampelPupuk? dataSampelPupuk;
-  final QRPupukData qrPupukData;
 
-  const SampelPupukPhotoCaptureScreen({
-    super.key,
-    required this.formData,
-    this.dataSampelPupuk,
-    required this.qrPupukData,
-  });
+  const SampelPupukPhotoCaptureScreen({super.key, required this.formData});
 
   @override
   ConsumerState<SampelPupukPhotoCaptureScreen> createState() =>
@@ -61,14 +52,21 @@ class _SampelPupukPhotoCaptureScreenState
 
   String _watermarkText() {
     final typeLabel = labelForPupukActivityType(widget.formData.activityType);
-    final kode = widget.formData.kodeSampel.isEmpty
-        ? widget.qrPupukData.kodeSampel
-        : widget.formData.kodeSampel;
+    final samples = widget.formData.samples;
     final now = DateTime.now();
     final part =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
-    return 'SAMPEL PUPUK\n$typeLabel\n$kode\n$part';
+
+    if (samples.length == 1) {
+      return 'SAMPEL PUPUK\n$typeLabel\n${samples.first.displayKodeSampel}\n$part';
+    }
+
+    final kodes = samples.map((s) => s.displayKodeSampel).toList();
+    final kodeLine = kodes.length <= 2
+        ? kodes.join(', ')
+        : '${kodes.take(2).join(', ')} +${kodes.length - 2} lainnya';
+    return 'SAMPEL PUPUK\n$typeLabel\n$kodeLine\n${samples.length} sampel\n$part';
   }
 
   Future<void> _onCaptured(String tempPath) async {
@@ -87,12 +85,15 @@ class _SampelPupukPhotoCaptureScreenState
 
       final dir = await PhotoCaptureHelper.getAppPicturesDirectory();
       final userId = ref.read(authProvider).user?.id.toString();
+      final first = widget.formData.samples.first;
       final fileName = PhotoCaptureHelper.newCaptureFileName(
         userId: userId,
-        dataId: widget.formData.dataSampelPupukId.toString(),
-        sampelKode: widget.formData.kodeSampel.isEmpty
-            ? widget.qrPupukData.kodeSampel
-            : widget.formData.kodeSampel,
+        dataId: widget.formData.isMultiSample
+            ? 'batch_${widget.formData.samples.length}'
+            : first.dataSampelPupukId.toString(),
+        sampelKode: widget.formData.isMultiSample
+            ? first.displayKodeSampel
+            : first.displayKodeSampel,
       );
       final savedPath = await PhotoCaptureHelper.compressAndSave(
         sourcePath: watermarkedPath,
@@ -118,8 +119,6 @@ class _SampelPupukPhotoCaptureScreenState
               builder: (context) => SampelPupukConfirmationScreen(
                 formData: widget.formData,
                 photoPath: _savedImagePath!,
-                qrPupukData: widget.qrPupukData,
-                dataSampelPupuk: widget.dataSampelPupuk,
               ),
             ),
           );
@@ -149,6 +148,9 @@ class _SampelPupukPhotoCaptureScreenState
   }
 
   Widget _buildCamera() {
+    final sampleHint = widget.formData.isMultiSample
+        ? ' (${widget.formData.samples.length} sampel)'
+        : '';
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -178,7 +180,7 @@ class _SampelPupukPhotoCaptureScreenState
                       ),
                       Expanded(
                         child: Text(
-                          'Ambil Foto – ${labelForPupukActivityType(widget.formData.activityType)}',
+                          'Ambil Foto – ${labelForPupukActivityType(widget.formData.activityType)}$sampleHint',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,

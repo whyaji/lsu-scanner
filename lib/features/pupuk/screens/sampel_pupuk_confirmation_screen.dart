@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/database/database_helper.dart';
-import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../home/providers/home_counts_refresh_provider.dart';
@@ -12,20 +11,15 @@ import '../../sample/screens/full_screen_image_preview_screen.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
-import '../../scanner/utils/qr_parser.dart';
 
 class SampelPupukConfirmationScreen extends ConsumerStatefulWidget {
   final SampelPupukFormData formData;
   final String photoPath;
-  final QRPupukData qrPupukData;
-  final DataSampelPupuk? dataSampelPupuk;
 
   const SampelPupukConfirmationScreen({
     super.key,
     required this.formData,
     required this.photoPath,
-    required this.qrPupukData,
-    this.dataSampelPupuk,
   });
 
   @override
@@ -73,6 +67,7 @@ class _SampelPupukConfirmationScreenState
   }
 
   Future<bool> _showSaveDataDialog() async {
+    final count = widget.formData.samples.length;
     final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -82,9 +77,12 @@ class _SampelPupukConfirmationScreenState
           icon: Icon(Icons.save_alt_rounded, size: 40, color: cs.primary),
           iconColor: cs.primary,
           title: const Text('Simpan data aktivitas?'),
-          content: const Text(
-            'Pastikan ringkasan dan foto sudah sesuai.\n\n'
-            'Data akan disimpan di perangkat Anda dan dapat diunggah nanti saat koneksi tersedia.',
+          content: Text(
+            count > 1
+                ? 'Pastikan ringkasan dan foto sudah sesuai.\n\n'
+                      'Data $count sampel akan disimpan dengan No. Surat dan foto yang sama.'
+                : 'Pastikan ringkasan dan foto sudah sesuai.\n\n'
+                      'Data akan disimpan di perangkat Anda dan dapat diunggah nanti saat koneksi tersedia.',
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -131,16 +129,14 @@ class _SampelPupukConfirmationScreenState
 
     try {
       final now = app_date_utils.DateUtils.getCurrentIso8601DateTime();
-      final kode = widget.formData.kodeSampel.isEmpty
-          ? widget.qrPupukData.kodeSampel
-          : widget.formData.kodeSampel;
 
       switch (widget.formData.activityType) {
         case kKirimDariEstate:
+          final sample = widget.formData.samples.first;
           await _dbHelper.insertKirimDariEstate(
             KirimDariEstate(
-              dataSampelPupukId: widget.formData.dataSampelPupukId,
-              kodeSampel: kode,
+              dataSampelPupukId: sample.dataSampelPupukId,
+              kodeSampel: sample.displayKodeSampel,
               tanggalKirimDariEstate: widget.formData.tanggalKirimDariEstate,
               fotoKirimDariEstate: widget.photoPath,
               namaPengirim: widget.formData.namaPengirim,
@@ -150,18 +146,19 @@ class _SampelPupukConfirmationScreenState
           );
           break;
         case kKirimLab:
-          await _dbHelper.insertKirimLab(
-            KirimLab(
-              dataSampelPupukId: widget.formData.dataSampelPupukId,
-              kodeSampel: kode,
-              noSurat: widget.formData.noSurat,
-              tanggalEstimasiKupa: widget.formData.tanggalEstimasiKupa,
-              tanggalKirimLab: widget.formData.tanggalKirimLab,
-              fotoKirimLab: widget.photoPath,
-              status: AppConstants.statusNotUploaded,
-              createdAt: now,
-            ),
-          );
+          for (final sample in widget.formData.samples) {
+            await _dbHelper.insertKirimLab(
+              KirimLab(
+                dataSampelPupukId: sample.dataSampelPupukId,
+                kodeSampel: sample.displayKodeSampel,
+                noSurat: widget.formData.noSurat,
+                tanggalKirimLab: widget.formData.tanggalKirimLab,
+                fotoKirimLab: widget.photoPath,
+                status: AppConstants.statusNotUploaded,
+                createdAt: now,
+              ),
+            );
+          }
           break;
         default:
           throw Exception(
@@ -171,9 +168,14 @@ class _SampelPupukConfirmationScreenState
 
       if (mounted) {
         ref.read(fertilizerCountsRefreshProvider.notifier).state++;
+        final count = widget.formData.samples.length;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Data Sampel Pupuk berhasil disimpan'),
+            content: Text(
+              count > 1
+                  ? '$count data Sampel Pupuk berhasil disimpan'
+                  : 'Data Sampel Pupuk berhasil disimpan',
+            ),
             backgroundColor: AppTheme.successColor(context),
           ),
         );
@@ -195,9 +197,6 @@ class _SampelPupukConfirmationScreenState
 
   @override
   Widget build(BuildContext context) {
-    final kode = widget.formData.kodeSampel.isEmpty
-        ? widget.qrPupukData.kodeSampel
-        : widget.formData.kodeSampel;
     String dateLabel = '';
     switch (widget.formData.activityType) {
       case kKirimDariEstate:
@@ -209,6 +208,10 @@ class _SampelPupukConfirmationScreenState
       default:
         dateLabel = 'Tanggal';
     }
+
+    final previewKode = widget.formData.isMultiSample
+        ? '${widget.formData.samples.length} sampel'
+        : widget.formData.samples.first.displayKodeSampel;
 
     return PopScope(
       canPop: false,
@@ -241,19 +244,13 @@ class _SampelPupukConfirmationScreenState
                             imagePath: widget.photoPath,
                             title: 'Foto Sampel Pupuk',
                             details: {
-                              'Kode': kode,
+                              'Kode': previewKode,
                               dateLabel: _getDateValue(),
                               if (widget.formData.namaPengirim != null)
                                 'Nama Pengirim': widget.formData.namaPengirim!,
                               if (widget.formData.noSurat != null &&
                                   widget.formData.noSurat!.isNotEmpty)
                                 'No. Surat': widget.formData.noSurat!,
-                              if (widget.formData.tanggalEstimasiKupa != null)
-                                'Tanggal Estimasi KUPA':
-                                    app_date_utils
-                                        .DateUtils.formatPupukDetailTanggal(
-                                      widget.formData.tanggalEstimasiKupa,
-                                    ),
                             },
                           ),
                         ),
@@ -300,7 +297,29 @@ class _SampelPupukConfirmationScreenState
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _row('Kode Sampel', kode),
+                        if (widget.formData.isMultiSample) ...[
+                          _row(
+                            'Jumlah Sampel',
+                            '${widget.formData.samples.length}',
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Kode Sampel',
+                            style: TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          const SizedBox(height: 4),
+                          ...widget.formData.samples.map(
+                            (s) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text('• ${s.displayKodeSampel}'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ] else
+                          _row(
+                            'Kode Sampel',
+                            widget.formData.samples.first.displayKodeSampel,
+                          ),
                         _row(
                           'Aktivitas',
                           labelForPupukActivityType(
@@ -313,13 +332,6 @@ class _SampelPupukConfirmationScreenState
                         if (widget.formData.noSurat != null &&
                             widget.formData.noSurat!.isNotEmpty)
                           _row('No. Surat', widget.formData.noSurat!),
-                        if (widget.formData.tanggalEstimasiKupa != null)
-                          _row(
-                            'Tanggal Estimasi KUPA',
-                            app_date_utils.DateUtils.formatPupukDetailTanggal(
-                              widget.formData.tanggalEstimasiKupa,
-                            ),
-                          ),
                       ],
                     ),
                   ),
@@ -339,7 +351,11 @@ class _SampelPupukConfirmationScreenState
                             color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         )
-                      : const Text('Simpan'),
+                      : Text(
+                          widget.formData.isMultiSample
+                              ? 'Simpan ${widget.formData.samples.length} Sampel'
+                              : 'Simpan',
+                        ),
                 ),
               ],
             ),

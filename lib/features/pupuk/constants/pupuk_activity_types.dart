@@ -54,3 +54,12 @@ List<String> allowedPupukActivityTypes(
   }
   return list;
 }
+
+/// Activity types shown on home (by role access, before QR scan).
+List<String> homePupukActivityTypes(List<String>? access) {
+  if (access == null || access.isEmpty) return [];
+  final list = <String>[];
+  if (access.contains('pupuk:estate')) list.add(kKirimDariEstate);
+  if (access.contains('pupuk:nt')) list.add(kKirimLab);
+  return list;
+}

@@ -85,6 +85,22 @@ class _UploadSampelPupukScreenState
       _pendingKirimLab.length +
       _pendingKirimSertifikat.length;
 
+  /// Distinct photo uploads for Kirim Lab (same no. surat + foto = one upload).
+  int get _kirimLabDistinctPhotoUploads {
+    final keys = <String>{};
+    for (final row in _pendingKirimLab) {
+      final noSurat = row.noSurat?.trim() ?? '';
+      final foto = row.fotoKirimLab?.trim() ?? '';
+      if (foto.isEmpty) continue;
+      if (noSurat.isNotEmpty) {
+        keys.add('batch:$noSurat|$foto');
+      } else {
+        keys.add('foto:$foto');
+      }
+    }
+    return keys.length;
+  }
+
   @override
   Widget build(BuildContext context) {
     final uploadState = ref.watch(uploadSampelPupukProvider);
@@ -162,6 +178,20 @@ class _UploadSampelPupukScreenState
                         errorMessage: row.errorMessage,
                       ),
                     ),
+                    if (_pendingKirimLab.length > 1 &&
+                        _kirimLabDistinctPhotoUploads < _pendingKirimLab.length)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Text(
+                          'Kirim Lab: ${_pendingKirimLab.length} sampel, '
+                          'foto diunggah $_kirimLabDistinctPhotoUploads kali '
+                          '(sampel dengan No. Surat dan foto sama berbagi satu foto).',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
                     _buildSection<KirimLab>(
                       'Kirim Lab',
                       kKirimLab,

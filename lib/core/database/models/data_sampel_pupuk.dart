@@ -26,6 +26,7 @@ class DataSampelPupuk {
   final String? fotoKirimDariEstate;
   final String? tanggalTerimaDariEstate;
   final String? fotoTerimaDariEstate;
+  final String? noSurat;
   final String? tanggalKirimLab;
   final String? fotoKirimLab;
   final String? kodeTracking;
@@ -62,6 +63,7 @@ class DataSampelPupuk {
     this.fotoKirimDariEstate,
     this.tanggalTerimaDariEstate,
     this.fotoTerimaDariEstate,
+    this.noSurat,
     this.tanggalKirimLab,
     this.fotoKirimLab,
     this.kodeTracking,
@@ -101,6 +103,7 @@ class DataSampelPupuk {
       fotoKirimDariEstate: json['fotoKirimDariEstate'] as String?,
       tanggalTerimaDariEstate: json['tanggalTerimaDariEstate'] as String?,
       fotoTerimaDariEstate: json['fotoTerimaDariEstate'] as String?,
+      noSurat: json['noSurat'] as String?,
       tanggalKirimLab: json['tanggalKirimLab'] as String?,
       fotoKirimLab: json['fotoKirimLab'] as String?,
       kodeTracking: json['kodeTracking'] as String?,
@@ -141,6 +144,7 @@ class DataSampelPupuk {
       fotoKirimDariEstate: json['foto_kirim_dari_estate'] as String?,
       tanggalTerimaDariEstate: json['tanggal_terima_dari_estate'] as String?,
       fotoTerimaDariEstate: json['foto_terima_dari_estate'] as String?,
+      noSurat: json['no_surat'] as String?,
       tanggalKirimLab: json['tanggal_kirim_lab'] as String?,
       fotoKirimLab: json['foto_kirim_lab'] as String?,
       kodeTracking: json['kode_tracking'] as String?,
@@ -181,6 +185,7 @@ class DataSampelPupuk {
       'foto_kirim_dari_estate': fotoKirimDariEstate,
       'tanggal_terima_dari_estate': tanggalTerimaDariEstate,
       'foto_terima_dari_estate': fotoTerimaDariEstate,
+      'no_surat': noSurat,
       'tanggal_kirim_lab': tanggalKirimLab,
       'foto_kirim_lab': fotoKirimLab,
       'kode_tracking': kodeTracking,

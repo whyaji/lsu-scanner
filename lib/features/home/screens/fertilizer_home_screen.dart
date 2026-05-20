@@ -9,8 +9,10 @@ import '../../../widgets/app_section_header.dart';
 import '../../../widgets/sync_progress_modal.dart';
 import '../providers/home_counts_refresh_provider.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../pupuk/constants/pupuk_activity_types.dart';
 import '../../pupuk/providers/sync_sampel_pupuk_provider.dart';
 import '../../pupuk/screens/pupuk_qr_scanner_screen.dart';
+import '../../pupuk/widgets/pupuk_activity_tile.dart';
 import '../../pupuk/screens/sampel_pupuk_list_screen.dart';
 import '../../pupuk/screens/upload_sampel_pupuk_screen.dart';
 import '../../pupuk/screens/kirim_sertifikat_form_screen.dart';
@@ -93,6 +95,7 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
     final hasAccess = authState.user?.hasAnyPupukAccess ?? false;
     final syncState = ref.watch(syncSampelPupukProvider);
     final regionalState = ref.watch(regionalProvider);
+    final homeActivities = homePupukActivityTypes(authState.user?.access);
     ref.listen<int>(fertilizerCountsRefreshProvider, (prev, next) {
       if (prev != null && next != prev && mounted) _loadCounts();
     });
@@ -275,19 +278,26 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                     ),
                   ],
                 ),
+                if (homeActivities.isNotEmpty) ...[
+                  AppSectionHeader(title: 'Aktivitas'),
+                  AppSpacing.gapSm,
+                  ...homeActivities.map(
+                    (type) => PupukActivityTile(
+                      label: labelForPupukActivityType(type),
+                      icon: Icons.qr_code_scanner,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PupukQRScannerScreen(activityType: type),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  AppSpacing.gapSm,
+                ],
                 AppSectionHeader(title: 'Aksi cepat'),
-                AppSpacing.gapSm,
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const PupukQRScannerScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.qr_code_scanner, size: 24),
-                  label: const Text('Pindai QR Sampel Pupuk'),
-                ),
                 AppSpacing.gapSm,
                 if (authState.user?.hasPupukNtAccess ?? false) ...[
                   OutlinedButton.icon(

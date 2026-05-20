@@ -279,19 +279,35 @@ class ApiService {
 
   /// [type] must be one of: kirimLab, kirimSertifikatEstate.
   Future<ApiResponse<PhotoPupukUploadResponse>> uploadPhotoPupuk({
-    required String filePath,
     required int dataSampelPupukId,
     required String kodeSampel,
     required String type,
+    String? filePath,
+    String? reuseFilePath,
     ProgressCallback? onSendProgress,
   }) async {
     try {
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(filePath),
+      if (filePath == null &&
+          (reuseFilePath == null || reuseFilePath.isEmpty)) {
+        return ApiResponse<PhotoPupukUploadResponse>(
+          success: false,
+          error: ApiError(
+            code: 'VALIDATION_ERROR',
+            message: 'filePath or reuseFilePath is required',
+          ),
+        );
+      }
+      final map = <String, dynamic>{
         'dataSampelPupukId': dataSampelPupukId,
         'kodeSampel': kodeSampel,
         'type': type,
-      });
+      };
+      if (reuseFilePath != null && reuseFilePath.isNotEmpty) {
+        map['reuseFilePath'] = reuseFilePath;
+      } else if (filePath != null) {
+        map['file'] = await MultipartFile.fromFile(filePath);
+      }
+      final formData = FormData.fromMap(map);
       final response = await _dio.post(
         ApiConstants.uploadPhotoPupuk,
         data: formData,

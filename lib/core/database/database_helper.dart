@@ -117,7 +117,6 @@ class DatabaseHelper {
         data_sampel_pupuk_id INTEGER NOT NULL,
         kode_sampel TEXT NOT NULL,
         no_surat TEXT,
-        tanggal_estimasi_kupa TEXT,
         tanggal_kirim_lab TEXT NOT NULL,
         foto_kirim_lab TEXT,
         status TEXT NOT NULL DEFAULT 'not_uploaded',
@@ -141,12 +140,12 @@ class DatabaseHelper {
       )
     ''');
     await db
-        .execute("ALTER TABLE kirim_lab ADD COLUMN tanggal_estimasi_kupa TEXT")
-        .catchError((_) {});
-    await db
         .execute(
           "ALTER TABLE kirim_sertifikat_estate ADD COLUMN file_sertifikat TEXT",
         )
+        .catchError((_) {});
+    await db
+        .execute('ALTER TABLE data_sampel_pupuk ADD COLUMN no_surat TEXT')
         .catchError((_) {});
   }
 
@@ -575,18 +574,43 @@ class DatabaseHelper {
 
   Future<int> updateDataSampelPupukTanggalKirimSertifikatEstate(
     int dataSampelPupukId,
-    String isoDateTime,
-  ) async {
+    String isoDateTime, {
+    String? rekomendasi,
+  }) async {
     final db = await database;
     return await db.update(
       'data_sampel_pupuk',
       {
         'tanggal_kirim_sertifikat_estate': isoDateTime,
+        if (rekomendasi != null) 'rekomendasi': rekomendasi,
         'updated_at': DateTime.now().toIso8601String(),
       },
       where: 'id = ?',
       whereArgs: [dataSampelPupukId],
     );
+  }
+
+  /// Resolves no. surat from synced data or latest local Kirim Lab row.
+  Future<String?> resolveNoSuratForDataSampelPupuk(
+    int dataSampelPupukId, {
+    String? fromData,
+  }) async {
+    final trimmed = fromData?.trim() ?? '';
+    if (trimmed.isNotEmpty) return trimmed;
+
+    final db = await database;
+    final rows = await db.query(
+      'kirim_lab',
+      columns: ['no_surat'],
+      where: 'data_sampel_pupuk_id = ?',
+      whereArgs: [dataSampelPupukId],
+      orderBy: 'id DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final noSurat = rows.first['no_surat'] as String?;
+    final fromLab = noSurat?.trim() ?? '';
+    return fromLab.isEmpty ? null : fromLab;
   }
 
   // --- Kirim Dari Estate ---

@@ -3,6 +3,9 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/network/api_service.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/database/models/kirim_lab.dart';
+import '../../../core/database/models/kirim_sertifikat_estate.dart';
+import '../../../core/network/models/api_response.dart';
 import '../../../core/network/models/sampel_pupuk_models.dart';
 import '../../../core/utils/image_utils.dart';
 
@@ -61,33 +64,68 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
   UploadSampelPupukNotifier(this._apiService, this._dbHelper)
     : super(UploadSampelPupukState());
 
-  /// Upload photo with one retry (new request each time). Returns server path on success, null on failure.
+  /// Groups Kirim Lab rows that share the same local foto and/or no. surat (one upload).
+  String _kirimLabPhotoGroupKey(KirimLab row) {
+    final noSurat = row.noSurat?.trim() ?? '';
+    final foto = row.fotoKirimLab?.trim() ?? '';
+    if (foto.isEmpty) return 'no-foto:${row.id}';
+    if (noSurat.isNotEmpty) return 'batch:$noSurat|$foto';
+    return 'foto:$foto';
+  }
+
+  Map<String, List<KirimLab>> _groupKirimLabByPhoto(List<KirimLab> rows) {
+    final groups = <String, List<KirimLab>>{};
+    for (final row in rows) {
+      groups.putIfAbsent(_kirimLabPhotoGroupKey(row), () => []).add(row);
+    }
+    return groups;
+  }
+
+  /// Groups rows that share the same local PDF (one Kirim Sertifikat batch).
+  String _kirimSertifikatFileGroupKey(KirimSertifikatEstate row) {
+    final file = row.fileSertifikat.trim();
+    if (file.isEmpty) return 'no-file:${row.id}';
+    return 'batch:$file';
+  }
+
+  Map<String, List<KirimSertifikatEstate>> _groupKirimSertifikatByFile(
+    List<KirimSertifikatEstate> rows,
+  ) {
+    final groups = <String, List<KirimSertifikatEstate>>{};
+    for (final row in rows) {
+      groups.putIfAbsent(_kirimSertifikatFileGroupKey(row), () => []).add(row);
+    }
+    return groups;
+  }
+
+  /// Upload photo with one retry. [reuseFilePath] skips file bytes (same batch / no. surat).
   Future<String?> _uploadPhotoWithRetry({
-    required String filePath,
+    String? filePath,
+    String? reuseFilePath,
     required int dataSampelPupukId,
     required String kodeSampel,
     required String type,
   }) async {
-    var path = filePath;
-    final compressed = await ImageUtils.compressImage(path);
-    if (compressed != null) path = compressed;
+    String? path = filePath;
+    if (path != null && path.isNotEmpty) {
+      final compressed = await ImageUtils.compressImage(path);
+      if (compressed != null) path = compressed;
+    }
 
-    var res = await _apiService.uploadPhotoPupuk(
-      filePath: path,
-      dataSampelPupukId: dataSampelPupukId,
-      kodeSampel: kodeSampel,
-      type: type,
-    );
+    Future<ApiResponse<PhotoPupukUploadResponse>> upload() =>
+        _apiService.uploadPhotoPupuk(
+          filePath: path,
+          reuseFilePath: reuseFilePath,
+          dataSampelPupukId: dataSampelPupukId,
+          kodeSampel: kodeSampel,
+          type: type,
+        );
+
+    var res = await upload();
     if (res.success && res.data != null) return res.data!.filePath;
 
-    // Retry once (token may have been refreshed by interceptor; new request = new FormData).
     await Future<void>.delayed(const Duration(milliseconds: 400));
-    res = await _apiService.uploadPhotoPupuk(
-      filePath: path,
-      dataSampelPupukId: dataSampelPupukId,
-      kodeSampel: kodeSampel,
-      type: type,
-    );
+    res = await upload();
     if (res.success && res.data != null) return res.data!.filePath;
     return null;
   }
@@ -159,90 +197,127 @@ class UploadSampelPupukNotifier extends StateNotifier<UploadSampelPupukState> {
       }
 
       final kirimLabItems = <KirimLabItem>[];
-      for (final row in kirimLab) {
-        state = state.copyWith(
-          progress: UploadSampelPupukProgress(
-            total: total,
-            current: done + 1,
-            percentage: ((done + 1) / total * 100).round(),
-            currentItem: row.kodeSampel,
-          ),
-        );
-        String? fotoPath = row.fotoKirimLab;
-        if (fotoPath != null && fotoPath.isNotEmpty) {
-          final serverPath = await _uploadPhotoWithRetry(
-            filePath: fotoPath,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
+      final kirimLabGroups = _groupKirimLabByPhoto(kirimLab);
+      for (final groupRows in kirimLabGroups.values) {
+        String? sharedServerFoto;
+        final localFoto = groupRows.first.fotoKirimLab?.trim() ?? '';
+
+        if (localFoto.isNotEmpty) {
+          final lead = groupRows.first;
+          state = state.copyWith(
+            progress: UploadSampelPupukProgress(
+              total: total,
+              current: done + 1,
+              percentage: ((done + 1) / total * 100).round(),
+              currentItem: groupRows.length > 1
+                  ? '${lead.kodeSampel} (+${groupRows.length - 1} sampel)'
+                  : lead.kodeSampel,
+            ),
+          );
+          sharedServerFoto = await _uploadPhotoWithRetry(
+            filePath: localFoto,
+            dataSampelPupukId: lead.dataSampelPupukId,
+            kodeSampel: lead.kodeSampel,
             type: 'kirimLab',
           );
-          if (serverPath == null) {
-            await _dbHelper.updateKirimLabStatus(
-              row.id!,
-              AppConstants.statusError,
-              errorMessage: 'Gagal mengunggah foto',
-            );
-            skippedPhotoFailure++;
-            done++;
+          if (sharedServerFoto == null) {
+            for (final row in groupRows) {
+              await _dbHelper.updateKirimLabStatus(
+                row.id!,
+                AppConstants.statusError,
+                errorMessage: 'Gagal mengunggah foto',
+              );
+              skippedPhotoFailure++;
+              done++;
+            }
             continue;
           }
-          fotoPath = serverPath;
         }
-        kirimLabItems.add(
-          KirimLabItem(
-            id: row.id!,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
-            noSurat: row.noSurat,
-            tanggalEstimasiKupa: row.tanggalEstimasiKupa,
-            tanggalKirimLab: row.tanggalKirimLab,
-            fotoKirimLab: fotoPath,
-          ),
-        );
-        done++;
+
+        for (final row in groupRows) {
+          state = state.copyWith(
+            progress: UploadSampelPupukProgress(
+              total: total,
+              current: done + 1,
+              percentage: ((done + 1) / total * 100).round(),
+              currentItem: row.kodeSampel,
+            ),
+          );
+          kirimLabItems.add(
+            KirimLabItem(
+              id: row.id!,
+              dataSampelPupukId: row.dataSampelPupukId,
+              kodeSampel: row.kodeSampel,
+              noSurat: row.noSurat,
+              tanggalKirimLab: row.tanggalKirimLab,
+              fotoKirimLab: sharedServerFoto ?? row.fotoKirimLab,
+            ),
+          );
+          done++;
+        }
       }
 
       final kirimSertifikatItems = <KirimSertifikatEstateItem>[];
-      for (final row in kirimSertifikat) {
-        state = state.copyWith(
-          progress: UploadSampelPupukProgress(
-            total: total,
-            current: done + 1,
-            percentage: ((done + 1) / total * 100).round(),
-            currentItem: row.kodeSampel,
-          ),
-        );
-        String filePath = row.fileSertifikat;
-        if (filePath.isNotEmpty) {
-          final serverPath = await _uploadPhotoWithRetry(
-            filePath: filePath,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
+      final kirimSertifikatGroups = _groupKirimSertifikatByFile(
+        kirimSertifikat,
+      );
+      for (final groupRows in kirimSertifikatGroups.values) {
+        String? sharedServerFile;
+        final localFile = groupRows.first.fileSertifikat.trim();
+
+        if (localFile.isNotEmpty) {
+          final lead = groupRows.first;
+          state = state.copyWith(
+            progress: UploadSampelPupukProgress(
+              total: total,
+              current: done + 1,
+              percentage: ((done + 1) / total * 100).round(),
+              currentItem: groupRows.length > 1
+                  ? '${lead.kodeSampel} (+${groupRows.length - 1} sampel)'
+                  : lead.kodeSampel,
+            ),
+          );
+          sharedServerFile = await _uploadPhotoWithRetry(
+            filePath: localFile,
+            dataSampelPupukId: lead.dataSampelPupukId,
+            kodeSampel: lead.kodeSampel,
             type: 'kirimSertifikatEstate',
           );
-          if (serverPath == null) {
-            await _dbHelper.updateKirimSertifikatEstateStatus(
-              row.id!,
-              AppConstants.statusError,
-              errorMessage: 'Gagal mengunggah file sertifikat',
-            );
-            skippedPhotoFailure++;
-            done++;
+          if (sharedServerFile == null) {
+            for (final row in groupRows) {
+              await _dbHelper.updateKirimSertifikatEstateStatus(
+                row.id!,
+                AppConstants.statusError,
+                errorMessage: 'Gagal mengunggah file sertifikat',
+              );
+              skippedPhotoFailure++;
+              done++;
+            }
             continue;
           }
-          filePath = serverPath;
         }
-        kirimSertifikatItems.add(
-          KirimSertifikatEstateItem(
-            id: row.id!,
-            dataSampelPupukId: row.dataSampelPupukId,
-            kodeSampel: row.kodeSampel,
-            tanggalKirimSertifikatEstate: row.tanggalKirimSertifikatEstate,
-            rekomendasi: row.rekomendasi,
-            fileSertifikat: filePath,
-          ),
-        );
-        done++;
+
+        for (final row in groupRows) {
+          state = state.copyWith(
+            progress: UploadSampelPupukProgress(
+              total: total,
+              current: done + 1,
+              percentage: ((done + 1) / total * 100).round(),
+              currentItem: row.kodeSampel,
+            ),
+          );
+          kirimSertifikatItems.add(
+            KirimSertifikatEstateItem(
+              id: row.id!,
+              dataSampelPupukId: row.dataSampelPupukId,
+              kodeSampel: row.kodeSampel,
+              tanggalKirimSertifikatEstate: row.tanggalKirimSertifikatEstate,
+              rekomendasi: row.rekomendasi,
+              fileSertifikat: sharedServerFile ?? row.fileSertifikat,
+            ),
+          );
+          done++;
+        }
       }
 
       final payload = SampelPupukUploadPayload(

@@ -1,19 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../widgets/app_error_dialog.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../scanner/utils/qr_parser.dart';
+import '../constants/pupuk_activity_types.dart';
+import '../models/pupuk_sampel_entry.dart';
+import 'kirim_lab_sampel_collection_screen.dart';
 import 'sampel_pupuk_detail_screen.dart';
 
-class PupukQRScannerScreen extends StatefulWidget {
-  const PupukQRScannerScreen({super.key});
+class PupukQRScannerScreen extends ConsumerStatefulWidget {
+  const PupukQRScannerScreen({
+    super.key,
+    required this.activityType,
+    this.addToCollection = false,
+    this.existingSampleIds = const {},
+  });
+
+  final String activityType;
+
+  /// When true, pops with [PupukSampelEntry] instead of opening a new screen.
+  final bool addToCollection;
+
+  /// Sample IDs already in the Kirim Lab batch (duplicate check).
+  final Set<int> existingSampleIds;
 
   @override
-  State<PupukQRScannerScreen> createState() => _PupukQRScannerScreenState();
+  ConsumerState<PupukQRScannerScreen> createState() =>
+      _PupukQRScannerScreenState();
 }
 
-class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
+class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
   final MobileScannerController _controller = MobileScannerController();
   bool _isProcessing = false;
   bool _isShowingDialog = false;
@@ -47,6 +66,17 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
     if (mounted) setState(() => _isShowingDialog = false);
   }
 
+  String _activityAlreadyRecordedMessage() {
+    switch (widget.activityType) {
+      case kKirimDariEstate:
+        return 'Kirim dari Estate untuk sampel ini sudah dicatat.';
+      case kKirimLab:
+        return 'Kirim Lab untuk sampel ini sudah dicatat.';
+      default:
+        return 'Aktivitas ini sudah dicatat untuk sampel tersebut.';
+    }
+  }
+
   Future<void> _handleQRCode(String rawValue) async {
     if (_isProcessing || _isShowingDialog) return;
     setState(() => _isProcessing = true);
@@ -62,6 +92,17 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
       return;
     }
 
+    if (widget.existingSampleIds.contains(qrData.id)) {
+      if (mounted) {
+        await _showErrorAndStop(
+          'Sampel Sudah Ada',
+          'Sampel ini sudah ada dalam daftar Kirim Lab.',
+        );
+      }
+      return;
+    }
+
+    final access = ref.read(authProvider).user?.access;
     final dbHelper = DatabaseHelper.instance;
     final DataSampelPupuk? synced = await dbHelper.getDataSampelPupukById(
       qrData.id,
@@ -70,25 +111,63 @@ class _PupukQRScannerScreenState extends State<PupukQRScannerScreen> {
         ? await dbHelper.getAktivitasSampelPupukByDataSampelPupukId(qrData.id)
         : null;
 
-    if (mounted) {
-      _controller.stop();
+    final allowed = allowedPupukActivityTypes(
+      access,
+      aktivitas,
+      dataSampelPupukFallback: synced,
+    );
+
+    if (!allowed.contains(widget.activityType)) {
+      if (mounted) {
+        await _showErrorAndStop(
+          'Aktivitas Tidak Tersedia',
+          _activityAlreadyRecordedMessage(),
+        );
+      }
+      return;
+    }
+
+    final entry = PupukSampelEntry.fromScan(
+      qrPupukData: qrData,
+      dataSampelPupuk: synced,
+    );
+
+    if (!mounted) return;
+    _controller.stop();
+
+    if (widget.addToCollection) {
+      Navigator.of(context).pop(entry);
+      return;
+    }
+
+    if (widget.activityType == kKirimLab) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => SampelPupukDetailScreen(
-            dataSampelPupuk: synced,
-            aktivitasSampelPupuk: aktivitas,
-            qrPupukData: qrData,
-            fromSync: synced != null,
-          ),
+          builder: (context) =>
+              KirimLabSampelCollectionScreen(initialSamples: [entry]),
         ),
       );
+      return;
     }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => SampelPupukDetailScreen(
+          entry: entry,
+          selectedActivityType: widget.activityType,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final activityLabel = labelForPupukActivityType(widget.activityType);
+    final title = widget.addToCollection
+        ? 'Tambah Sampel – $activityLabel'
+        : 'Pindai QR – $activityLabel';
     return Scaffold(
-      appBar: AppBar(title: const Text('Pindai QR Sampel Pupuk')),
+      appBar: AppBar(title: Text(title)),
       body: Stack(
         children: [
           MobileScanner(

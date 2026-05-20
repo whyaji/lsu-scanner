@@ -8,12 +8,21 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../widgets/inline_pdf_preview_panel.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
+
+const _defaultRekomendasi = 'Pupuk dapat diaplikasi';
+
+class _NoSuratGroup {
+  const _NoSuratGroup({required this.noSurat, required this.samples});
+
+  final String noSurat;
+  final List<DataSampelPupuk> samples;
+}
 
 class KirimSertifikatFormScreen extends StatefulWidget {
   const KirimSertifikatFormScreen({super.key});
@@ -28,15 +37,17 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   bool _loading = true;
-  List<DataSampelPupuk> _options = [];
+  List<_NoSuratGroup> _noSuratGroups = [];
 
-  DataSampelPupuk? _selected;
+  String? _selectedNoSurat;
+  List<DataSampelPupuk> _selectedSamples = [];
+  final Map<int, TextEditingController> _rekomendasiControllers = {};
   DateTime? _tanggalKirim;
-  final TextEditingController _rekomendasiController = TextEditingController();
   String? _fileSertifikatPath;
   bool _processingPdf = false;
+  final GlobalKey<InlinePdfPreviewPanelState> _pdfPanelKey =
+      GlobalKey<InlinePdfPreviewPanelState>();
   final ImagePicker _imagePicker = ImagePicker();
-  final PdfViewerController _pdfViewerController = PdfViewerController();
 
   @override
   void initState() {
@@ -46,18 +57,73 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
 
   @override
   void dispose() {
-    _rekomendasiController.dispose();
-    _pdfViewerController.dispose();
+    _disposeRekomendasiControllers();
     super.dispose();
+  }
+
+  void _disposeRekomendasiControllers() {
+    for (final controller in _rekomendasiControllers.values) {
+      controller.dispose();
+    }
+    _rekomendasiControllers.clear();
+  }
+
+  void _initRekomendasiControllersForSamples(List<DataSampelPupuk> samples) {
+    _disposeRekomendasiControllers();
+    for (final sample in samples) {
+      final existing = sample.rekomendasi?.trim() ?? '';
+      _rekomendasiControllers[sample.id] = TextEditingController(
+        text: existing.isNotEmpty ? existing : _defaultRekomendasi,
+      );
+    }
+  }
+
+  Future<void> _popRoute([Object? result]) async {
+    await _pdfPanelKey.currentState?.prepareForRoutePop();
+    if (!mounted) return;
+    Navigator.of(context).pop(result);
   }
 
   Future<void> _loadOptions() async {
     setState(() => _loading = true);
     final list = await _dbHelper.getEligibleDataSampelPupukKirimSertifikat();
+    final byNoSurat = <String, List<DataSampelPupuk>>{};
+    for (final item in list) {
+      final noSurat = await _dbHelper.resolveNoSuratForDataSampelPupuk(
+        item.id,
+        fromData: item.noSurat,
+      );
+      if (noSurat == null || noSurat.isEmpty) continue;
+      byNoSurat.putIfAbsent(noSurat, () => []).add(item);
+    }
+    final groups =
+        byNoSurat.entries
+            .map((e) => _NoSuratGroup(noSurat: e.key, samples: e.value))
+            .toList()
+          ..sort((a, b) => a.noSurat.compareTo(b.noSurat));
+
     if (!mounted) return;
     setState(() {
-      _options = list;
+      _noSuratGroups = groups;
       _loading = false;
+      if (_selectedNoSurat != null) {
+        final match = groups
+            .where((g) => g.noSurat == _selectedNoSurat)
+            .toList();
+        if (match.isEmpty) {
+          _selectedNoSurat = null;
+          _selectedSamples = [];
+          _disposeRekomendasiControllers();
+        } else {
+          final newSamples = match.first.samples;
+          final oldIds = _selectedSamples.map((s) => s.id).toSet();
+          final newIds = newSamples.map((s) => s.id).toSet();
+          _selectedSamples = newSamples;
+          if (oldIds.length != newIds.length || !oldIds.containsAll(newIds)) {
+            _initRekomendasiControllersForSamples(newSamples);
+          }
+        }
+      }
     });
   }
 
@@ -93,28 +159,26 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
     });
   }
 
-  Future<DataSampelPupuk?> _showSearchableSelect() async {
-    return showDialog<DataSampelPupuk>(
+  Future<_NoSuratGroup?> _showSearchableSelect() async {
+    return showDialog<_NoSuratGroup>(
       context: context,
       builder: (ctx) {
         final controller = TextEditingController();
-        List<DataSampelPupuk> filtered = List.of(_options);
+        List<_NoSuratGroup> filtered = List.of(_noSuratGroups);
 
         void applyFilter(String q) {
           final query = q.trim().toLowerCase();
           filtered = query.isEmpty
-              ? List.of(_options)
-              : _options
-                    .where(
-                      (e) => (e.kodeSampel ?? '').toLowerCase().contains(query),
-                    )
+              ? List.of(_noSuratGroups)
+              : _noSuratGroups
+                    .where((g) => g.noSurat.toLowerCase().contains(query))
                     .toList();
         }
 
         return StatefulBuilder(
           builder: (ctx2, setState2) {
             return AlertDialog(
-              title: const Text('Pilih Kode Sampel'),
+              title: const Text('Pilih No. Surat'),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -124,7 +188,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
                       controller: controller,
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.search),
-                        hintText: 'Cari kode sampel…',
+                        hintText: 'Cari no. surat…',
                         border: OutlineInputBorder(),
                       ),
                       onChanged: (v) {
@@ -139,18 +203,18 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
                               shrinkWrap: true,
                               itemCount: filtered.length,
                               itemBuilder: (context, index) {
-                                final item = filtered[index];
-                                final kode = item.kodeSampel ?? '-';
+                                final group = filtered[index];
+                                final kodes = group.samples
+                                    .map((s) => s.kodeSampel ?? '-')
+                                    .join(', ');
                                 return ListTile(
-                                  title: Text(kode),
-                                  subtitle:
-                                      item.noSertifikat != null &&
-                                          item.noSertifikat!.isNotEmpty
-                                      ? Text(
-                                          'No. Sertifikat: ${item.noSertifikat}',
-                                        )
-                                      : null,
-                                  onTap: () => Navigator.of(ctx).pop(item),
+                                  title: Text(group.noSurat),
+                                  subtitle: Text(
+                                    '${group.samples.length} sampel · $kodes',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () => Navigator.of(ctx).pop(group),
                                 );
                               },
                             ),
@@ -182,29 +246,30 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
       return;
     }
 
-    final selected = _selected!;
     final tanggalIso = _tanggalIso!;
-    final rekomendasi = _rekomendasiController.text.trim();
     final fileSertifikatPath = _fileSertifikatPath!;
-
     final nowIso = DateTime.now().toIso8601String();
-    final row = KirimSertifikatEstate(
-      dataSampelPupukId: selected.id,
-      kodeSampel: selected.kodeSampel ?? '',
-      tanggalKirimSertifikatEstate: tanggalIso,
-      rekomendasi: rekomendasi,
-      fileSertifikat: fileSertifikatPath,
-      createdAt: nowIso,
-    );
 
-    await _dbHelper.insertKirimSertifikatEstate(row);
-    await _dbHelper.updateDataSampelPupukTanggalKirimSertifikatEstate(
-      selected.id,
-      tanggalIso,
-    );
+    for (final sample in _selectedSamples) {
+      final rekomendasi = _rekomendasiControllers[sample.id]?.text.trim() ?? '';
+      final row = KirimSertifikatEstate(
+        dataSampelPupukId: sample.id,
+        kodeSampel: sample.kodeSampel ?? '',
+        tanggalKirimSertifikatEstate: tanggalIso,
+        rekomendasi: rekomendasi,
+        fileSertifikat: fileSertifikatPath,
+        createdAt: nowIso,
+      );
+      await _dbHelper.insertKirimSertifikatEstate(row);
+      await _dbHelper.updateDataSampelPupukTanggalKirimSertifikatEstate(
+        sample.id,
+        tanggalIso,
+        rekomendasi: rekomendasi,
+      );
+    }
 
     if (!mounted) return;
-    Navigator.of(context).pop(true);
+    await _popRoute(true);
   }
 
   Future<String> _createPdfFromImage(String imagePath) async {
@@ -262,14 +327,13 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
     if (!mounted || path == null || path.isEmpty) {
       return;
     }
-    setState(() {
-      _fileSertifikatPath = path;
-    });
+    setState(() => _fileSertifikatPath = path);
   }
 
   Future<void> _takePhotoAndConvertToPdf() async {
     final captured = await _imagePicker.pickImage(
       source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.rear,
       imageQuality: 90,
     );
     if (!mounted || captured == null || captured.path.isEmpty) {
@@ -280,9 +344,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
     try {
       final pdfPath = await _createPdfFromImage(captured.path);
       if (!mounted) return;
-      setState(() {
-        _fileSertifikatPath = pdfPath;
-      });
+      setState(() => _fileSertifikatPath = pdfPath);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -327,28 +389,6 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
     await _takePhotoAndConvertToPdf();
   }
 
-  void _openPdfPreviewFullScreen() {
-    if (_fileSertifikatPath == null || _fileSertifikatPath!.isEmpty) return;
-    final path = _fileSertifikatPath!;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Preview PDF Sertifikat'),
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-          ),
-          body: SfPdfViewer.file(
-            File(path),
-            canShowPaginationDialog: false,
-            canShowScrollHead: true,
-            canShowScrollStatus: true,
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<bool> _showConfirmBack() async {
     final result = await showDialog<bool>(
       context: context,
@@ -377,8 +417,12 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Simpan data?'),
-        content: const Text(
-          'Pastikan semua data sudah benar sebelum menyimpan.',
+        content: Text(
+          _selectedSamples.length > 1
+              ? 'File sertifikat dan tanggal kirim sama untuk '
+                    '${_selectedSamples.length} sampel (No. Surat $_selectedNoSurat). '
+                    'Rekomendasi disimpan per sampel.'
+              : 'Pastikan semua data sudah benar sebelum menyimpan.',
         ),
         actions: [
           TextButton(
@@ -403,7 +447,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
     if (!mounted) return;
     final ok = await _showConfirmBack();
     if (!mounted || !ok) return;
-    Navigator.of(context).pop();
+    await _popRoute();
   }
 
   Future<void> _confirmAndSave() async {
@@ -430,7 +474,7 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
         if (didPop) return;
         final ok = await _showConfirmBack();
         if (!context.mounted || !ok) return;
-        Navigator.of(context).pop();
+        await _popRoute();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -468,26 +512,59 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
                       children: [
                         InkWell(
                           onTap: () async {
-                            if (_options.isEmpty) return;
+                            if (_noSuratGroups.isEmpty) return;
                             final picked = await _showSearchableSelect();
                             if (!mounted || picked == null) return;
-                            setState(() => _selected = picked);
+                            setState(() {
+                              _selectedNoSurat = picked.noSurat;
+                              _selectedSamples = List.of(picked.samples);
+                              _initRekomendasiControllersForSamples(
+                                _selectedSamples,
+                              );
+                            });
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: InputDecorator(
                             decoration: InputDecoration(
-                              labelText: 'Kode Sampel',
+                              labelText: 'No. Surat',
                               border: const OutlineInputBorder(),
-                              errorText: (_selected == null)
-                                  ? 'Kode sampel wajib dipilih'
+                              errorText:
+                                  (_selectedNoSurat == null ||
+                                      _selectedSamples.isEmpty)
+                                  ? 'No. surat wajib dipilih'
                                   : null,
                               suffixIcon: const Icon(Icons.arrow_drop_down),
                             ),
-                            child: Text(
-                              _selected?.kodeSampel ?? 'Pilih kode sampel',
-                            ),
+                            child: Text(_selectedNoSurat ?? 'Pilih no. surat'),
                           ),
                         ),
+                        if (_selectedSamples.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Sampel (${_selectedSamples.length})',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'File sertifikat dan tanggal kirim sama untuk '
+                                    'semua sampel. Isi rekomendasi per sampel di bawah.',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         InkWell(
                           onTap: _pickTanggalKirim,
@@ -504,20 +581,41 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
                             child: Text(_tanggalDisplay),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _rekomendasiController,
-                          decoration: const InputDecoration(
-                            labelText: 'Rekomendasi',
-                            border: OutlineInputBorder(),
+                        if (_selectedSamples.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'Rekomendasi per Sampel',
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          validator: (v) {
-                            final value = v?.trim() ?? '';
-                            if (value.isEmpty) return 'Rekomendasi wajib diisi';
-                            return null;
-                          },
-                          textInputAction: TextInputAction.done,
-                        ),
+                          const SizedBox(height: 8),
+                          ..._selectedSamples.map((sample) {
+                            final kode = sample.kodeSampel ?? '-';
+                            final controller =
+                                _rekomendasiControllers[sample.id];
+                            if (controller == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TextFormField(
+                                controller: controller,
+                                decoration: InputDecoration(
+                                  labelText: 'Rekomendasi — $kode',
+                                  border: const OutlineInputBorder(),
+                                ),
+                                validator: (v) {
+                                  final value = v?.trim() ?? '';
+                                  if (value.isEmpty) {
+                                    return 'Rekomendasi wajib diisi';
+                                  }
+                                  return null;
+                                },
+                                textInputAction: TextInputAction.next,
+                              ),
+                            );
+                          }),
+                        ],
                         const SizedBox(height: 16),
                         InkWell(
                           onTap: _processingPdf ? null : _pickSertifikatFile,
@@ -554,60 +652,17 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
                               border: Border.all(color: Colors.grey.shade400),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Preview halaman pertama PDF',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    onPressed: _openPdfPreviewFullScreen,
-                                    icon: const Icon(Icons.open_in_full),
-                                    label: const Text('Layar penuh'),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  height: 220,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: InkWell(
-                                      onTap: _openPdfPreviewFullScreen,
-                                      child: SfPdfViewer.file(
-                                        File(_fileSertifikatPath!),
-                                        key: ValueKey(_fileSertifikatPath),
-                                        controller: _pdfViewerController,
-                                        canShowScrollHead: false,
-                                        canShowScrollStatus: false,
-                                        canShowPaginationDialog: false,
-                                        onDocumentLoaded: (_) {
-                                          _pdfViewerController.jumpToPage(1);
-                                        },
-                                        onDocumentLoadFailed: (details) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Preview PDF gagal dimuat: ${details.error}',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            child: InlinePdfPreviewPanel(
+                              key: _pdfPanelKey,
+                              filePath: _fileSertifikatPath!,
                             ),
                           ),
                         ],
                         const SizedBox(height: 24),
                         ElevatedButton(
-                          onPressed: _options.isEmpty ? null : _confirmAndSave,
+                          onPressed: _noSuratGroups.isEmpty
+                              ? null
+                              : _confirmAndSave,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -615,10 +670,11 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
                           ),
                           child: const Text('Simpan'),
                         ),
-                        if (_options.isEmpty) ...[
+                        if (_noSuratGroups.isEmpty) ...[
                           const SizedBox(height: 12),
                           const Text(
-                            'Tidak ada data yang memenuhi syarat (no sertifikat terisi & belum ada tanggal kirim sertifikat).',
+                            'Tidak ada data yang memenuhi syarat (no. sertifikat terisi, '
+                            'belum kirim sertifikat, dan memiliki no. surat dari Kirim Lab).',
                             textAlign: TextAlign.center,
                           ),
                         ],

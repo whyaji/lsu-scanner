@@ -1,49 +1,40 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
-import '../../scanner/utils/qr_parser.dart';
 import '../constants/pupuk_activity_types.dart';
+import '../models/pupuk_sampel_entry.dart';
 import 'sampel_pupuk_photo_capture_screen.dart';
 
 /// Form data to pass to photo capture and then confirmation.
 class SampelPupukFormData {
   final String activityType;
-  final int dataSampelPupukId;
-  final String kodeSampel;
+  final List<PupukSampelEntry> samples;
   final String tanggalKirimDariEstate;
   final String? namaPengirim;
   final String? noSurat;
-  final String? tanggalEstimasiKupa;
   final String tanggalKirimLab;
 
   SampelPupukFormData({
     required this.activityType,
-    required this.dataSampelPupukId,
-    required this.kodeSampel,
+    required this.samples,
     this.tanggalKirimDariEstate = '',
     this.namaPengirim,
     this.noSurat,
-    this.tanggalEstimasiKupa,
     this.tanggalKirimLab = '',
   });
+
+  bool get isMultiSample => samples.length > 1;
 }
 
 class SampelPupukActivityFormScreen extends StatefulWidget {
   final String activityType;
-  final int dataSampelPupukId;
-  final String kodeSampel;
-  final DataSampelPupuk? dataSampelPupuk;
-  final QRPupukData qrPupukData;
+  final List<PupukSampelEntry> samples;
 
-  const SampelPupukActivityFormScreen({
+  SampelPupukActivityFormScreen({
     super.key,
     required this.activityType,
-    required this.dataSampelPupukId,
-    required this.kodeSampel,
-    this.dataSampelPupuk,
-    required this.qrPupukData,
-  });
+    required this.samples,
+  }) : assert(samples.isNotEmpty, 'At least one sample is required');
 
   @override
   State<SampelPupukActivityFormScreen> createState() =>
@@ -54,11 +45,9 @@ class _SampelPupukActivityFormScreenState
     extends State<SampelPupukActivityFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  /// Fixed at form open; user cannot change (API: datetime with time, local consistency).
   late DateTime _fixedDateTime;
   String? _namaPengirim;
   String? _noSurat;
-  DateTime? _tanggalEstimasiKupa;
 
   @override
   void initState() {
@@ -70,11 +59,13 @@ class _SampelPupukActivityFormScreenState
   String get _dateTimeDisplay =>
       app_date_utils.DateUtils.formatDateTimeForDisplay(_fixedDateTime);
 
+  bool get _isKirimLabMulti =>
+      widget.activityType == kKirimLab && widget.samples.length > 1;
+
   SampelPupukFormData _buildFormData() {
     return SampelPupukFormData(
       activityType: widget.activityType,
-      dataSampelPupukId: widget.dataSampelPupukId,
-      kodeSampel: widget.kodeSampel,
+      samples: widget.samples,
       tanggalKirimDariEstate: widget.activityType == kKirimDariEstate
           ? _dateTimeIso
           : '',
@@ -82,10 +73,6 @@ class _SampelPupukActivityFormScreenState
           ? _namaPengirim
           : null,
       noSurat: widget.activityType == kKirimLab ? _noSurat : null,
-      tanggalEstimasiKupa:
-          widget.activityType == kKirimLab && _tanggalEstimasiKupa != null
-          ? _tanggalEstimasiKupa!.toIso8601String()
-          : null,
       tanggalKirimLab: widget.activityType == kKirimLab ? _dateTimeIso : '',
     );
   }
@@ -100,11 +87,8 @@ class _SampelPupukActivityFormScreenState
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => SampelPupukPhotoCaptureScreen(
-          formData: _buildFormData(),
-          dataSampelPupuk: widget.dataSampelPupuk,
-          qrPupukData: widget.qrPupukData,
-        ),
+        builder: (context) =>
+            SampelPupukPhotoCaptureScreen(formData: _buildFormData()),
       ),
     );
   }
@@ -125,6 +109,60 @@ class _SampelPupukActivityFormScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (_isKirimLabMulti) ...[
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sampel (${widget.samples.length})',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No. Surat dan foto berlaku untuk semua sampel berikut.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 12),
+                          ...widget.samples.map(
+                            (s) => Padding(
+                              padding: const EdgeInsets.only(bottom: 6),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 18,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      s.displayKodeSampel,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 const SizedBox(height: 8),
                 IgnorePointer(
                   child: InputDecorator(
@@ -155,55 +193,17 @@ class _SampelPupukActivityFormScreenState
                     onChanged: (v) =>
                         _noSurat = v.trim().isEmpty ? null : v.trim(),
                   ),
-                  const SizedBox(height: 16),
-                  InkWell(
-                    onTap: () async {
-                      final now = DateTime.now();
-                      final initial = _tanggalEstimasiKupa ?? now;
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: initial,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2100),
-                      );
-                      if (date == null || !context.mounted) return;
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.fromDateTime(initial),
-                      );
-                      if (time == null || !context.mounted) return;
-                      setState(() {
-                        _tanggalEstimasiKupa = DateTime(
-                          date.year,
-                          date.month,
-                          date.day,
-                          time.hour,
-                          time.minute,
-                        );
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: 'Tanggal Estimasi KUPA',
-                        border: const OutlineInputBorder(),
-                        errorText: _tanggalEstimasiKupa == null
-                            ? 'Tanggal Estimasi KUPA wajib diisi'
-                            : null,
-                        suffixIcon: const Icon(Icons.calendar_month),
-                      ),
-                      child: Text(
-                        _tanggalEstimasiKupa == null
-                            ? 'Pilih tanggal & waktu'
-                            : app_date_utils.DateUtils.formatDateTime(
-                                _tanggalEstimasiKupa!,
-                              ),
-                      ),
-                    ),
-                  ),
                 ],
                 if (widget.activityType == kKirimDariEstate) ...[
                   const SizedBox(height: 16),
+                  if (widget.samples.length == 1)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'Kode: ${widget.samples.first.displayKodeSampel}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
                   TextFormField(
                     decoration: const InputDecoration(
                       labelText: 'Nama Pengirim',
@@ -227,7 +227,11 @@ class _SampelPupukActivityFormScreenState
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Lanjutkan – Ambil Foto'),
+                  child: Text(
+                    _isKirimLabMulti
+                        ? 'Lanjutkan – Ambil Foto (semua sampel)'
+                        : 'Lanjutkan – Ambil Foto',
+                  ),
                 ),
               ],
             ),

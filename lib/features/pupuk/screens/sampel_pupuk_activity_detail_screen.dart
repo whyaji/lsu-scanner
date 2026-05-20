@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../widgets/inline_pdf_preview_panel.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
@@ -30,8 +30,8 @@ class SampelPupukActivityDetailScreen extends StatefulWidget {
 class _SampelPupukActivityDetailScreenState
     extends State<SampelPupukActivityDetailScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-  final PdfViewerController _pdfSertifikatViewerController =
-      PdfViewerController();
+  final GlobalKey<InlinePdfPreviewPanelState> _sertifikatPdfPanelKey =
+      GlobalKey<InlinePdfPreviewPanelState>();
   bool _loading = true;
   KirimDariEstate? _kirimEstate;
   KirimLab? _kirimLab;
@@ -76,12 +76,6 @@ class _SampelPupukActivityDetailScreenState
   void initState() {
     super.initState();
     _load();
-  }
-
-  @override
-  void dispose() {
-    _pdfSertifikatViewerController.dispose();
-    super.dispose();
   }
 
   Color _statusColor(String status) {
@@ -139,7 +133,23 @@ class _SampelPupukActivityDetailScreenState
         await _dbHelper.deleteKirimSertifikatEstate(widget.id);
         break;
     }
-    if (mounted) Navigator.of(context).pop(true);
+    if (!mounted) return;
+    await _popRoute(true);
+  }
+
+  Future<void> _popRoute([Object? result]) async {
+    await _sertifikatPdfPanelKey.currentState?.prepareForRoutePop();
+    if (!mounted) return;
+    Navigator.of(context).pop(result);
+  }
+
+  Future<void> _onBackPressed() async {
+    await _popRoute();
+  }
+
+  bool get _hasSertifikatPdf {
+    final path = _kirimSertifikat?.fileSertifikat.trim() ?? '';
+    return path.isNotEmpty && File(path).existsSync();
   }
 
   bool get _hasData =>
@@ -170,30 +180,63 @@ class _SampelPupukActivityDetailScreenState
     }
 
     final title = labelForPupukActivityType(widget.activityType);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete),
-            color: Colors.white,
-            onPressed: _confirmAndDelete,
-            tooltip: 'Hapus',
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _onBackPressed();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _onBackPressed,
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.delete),
+              color: Colors.white,
+              onPressed: _confirmAndDelete,
+              tooltip: 'Hapus',
+            ),
+          ],
+        ),
+        body: SafeArea(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (_kirimEstate != null) _buildKirimEstateContent(_kirimEstate!),
-              if (_kirimLab != null) _buildKirimLabContent(_kirimLab!),
-              if (_kirimSertifikat != null)
-                _buildKirimSertifikatContent(_kirimSertifikat!),
+              if (_hasSertifikatPdf)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: InlinePdfPreviewPanel(
+                    key: _sertifikatPdfPanelKey,
+                    filePath: _kirimSertifikat!.fileSertifikat.trim(),
+                    wrapInCard: true,
+                    titleStyle: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_kirimEstate != null)
+                        _buildKirimEstateContent(_kirimEstate!),
+                      if (_kirimLab != null) _buildKirimLabContent(_kirimLab!),
+                      if (_kirimSertifikat != null)
+                        _buildKirimSertifikatInfo(_kirimSertifikat!),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -384,14 +427,6 @@ class _SampelPupukActivityDetailScreenState
                     r.tanggalKirimLab,
                   ),
                 ),
-                if (r.tanggalEstimasiKupa != null &&
-                    r.tanggalEstimasiKupa!.trim().isNotEmpty)
-                  _buildInfoRow(
-                    'Tanggal Estimasi Kupa',
-                    app_date_utils.DateUtils.formatDateTimeFromIso(
-                      r.tanggalEstimasiKupa,
-                    ),
-                  ),
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),
@@ -422,94 +457,13 @@ class _SampelPupukActivityDetailScreenState
     );
   }
 
-  void _openSertifikatPdfFullScreen(String path) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Preview PDF Sertifikat'),
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-          ),
-          body: SfPdfViewer.file(
-            File(path),
-            canShowPaginationDialog: false,
-            canShowScrollHead: true,
-            canShowScrollStatus: true,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildKirimSertifikatContent(KirimSertifikatEstate r) {
+  Widget _buildKirimSertifikatInfo(KirimSertifikatEstate r) {
     final pdfPath = r.fileSertifikat.trim();
-    final pdfExists = pdfPath.isNotEmpty && File(pdfPath).existsSync();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (pdfExists) ...[
-          Card(
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Preview halaman pertama PDF',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () => _openSertifikatPdfFullScreen(pdfPath),
-                      icon: const Icon(Icons.open_in_full),
-                      label: const Text('Layar penuh'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 220,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: InkWell(
-                        onTap: () => _openSertifikatPdfFullScreen(pdfPath),
-                        child: SfPdfViewer.file(
-                          File(pdfPath),
-                          key: ValueKey(pdfPath),
-                          controller: _pdfSertifikatViewerController,
-                          canShowScrollHead: false,
-                          canShowScrollStatus: false,
-                          canShowPaginationDialog: false,
-                          onDocumentLoaded: (_) {
-                            _pdfSertifikatViewerController.jumpToPage(1);
-                          },
-                          onDocumentLoadFailed: (details) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Preview PDF gagal dimuat: ${details.error}',
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ] else if (pdfPath.isNotEmpty) ...[
+        if (!_hasSertifikatPdf && pdfPath.isNotEmpty) ...[
           Card(
             elevation: 2,
             child: Padding(

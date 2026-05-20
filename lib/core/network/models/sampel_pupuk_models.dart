@@ -48,6 +48,7 @@ class DataSampelPupukDto {
   final String? tanggalPengambilanSampel;
   final String? tanggalKirimDariEstate;
   final String? fotoKirimDariEstate;
+  final String? noSurat;
   final String? tanggalKirimLab;
   final String? fotoKirimLab;
   final String? kodeTracking;
@@ -80,6 +81,7 @@ class DataSampelPupukDto {
     this.tanggalPengambilanSampel,
     this.tanggalKirimDariEstate,
     this.fotoKirimDariEstate,
+    this.noSurat,
     this.tanggalKirimLab,
     this.fotoKirimLab,
     this.kodeTracking,
@@ -114,6 +116,7 @@ class DataSampelPupukDto {
       tanggalPengambilanSampel: json['tanggalPengambilanSampel'] as String?,
       tanggalKirimDariEstate: json['tanggalKirimDariEstate'] as String?,
       fotoKirimDariEstate: json['fotoKirimDariEstate'] as String?,
+      noSurat: json['noSurat'] as String?,
       tanggalKirimLab: json['tanggalKirimLab'] as String?,
       fotoKirimLab: json['fotoKirimLab'] as String?,
       kodeTracking: json['kodeTracking'] as String?,
@@ -150,6 +153,7 @@ class DataSampelPupukDto {
       'tanggalPengambilanSampel': tanggalPengambilanSampel,
       'tanggalKirimDariEstate': tanggalKirimDariEstate,
       'fotoKirimDariEstate': fotoKirimDariEstate,
+      'noSurat': noSurat,
       'tanggalKirimLab': tanggalKirimLab,
       'fotoKirimLab': fotoKirimLab,
       'kodeTracking': kodeTracking,
@@ -276,7 +280,6 @@ class KirimLabItem {
   final int dataSampelPupukId;
   final String kodeSampel;
   final String? noSurat;
-  final String? tanggalEstimasiKupa;
   final String tanggalKirimLab;
   final String? fotoKirimLab;
 
@@ -285,7 +288,6 @@ class KirimLabItem {
     required this.dataSampelPupukId,
     required this.kodeSampel,
     this.noSurat,
-    this.tanggalEstimasiKupa,
     required this.tanggalKirimLab,
     this.fotoKirimLab,
   });
@@ -295,7 +297,6 @@ class KirimLabItem {
     'dataSampelPupukId': dataSampelPupukId,
     'kodeSampel': kodeSampel,
     if (noSurat != null) 'noSurat': noSurat,
-    if (tanggalEstimasiKupa != null) 'tanggalEstimasiKupa': tanggalEstimasiKupa,
     'tanggalKirimLab': tanggalKirimLab,
     if (fotoKirimLab != null) 'fotoKirimLab': fotoKirimLab,
   };

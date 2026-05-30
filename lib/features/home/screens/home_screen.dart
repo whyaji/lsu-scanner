@@ -13,6 +13,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final hasLsu = user?.hasAnyLsuMobileAccess ?? false;
+    final hasPupuk = user?.hasAnyPupukMobileAccess ?? false;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -71,33 +74,47 @@ class HomeScreen extends ConsumerWidget {
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _SampleTypeCard(
-                    title: 'Sampel LSU',
-                    subtitle: 'Kelola sampel LSU',
-                    icon: Icons.eco,
-                    color: colorScheme.tertiary,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const LsuHomeScreen(),
+                  if (hasLsu) ...[
+                    _SampleTypeCard(
+                      title: 'Sampel LSU',
+                      subtitle: 'Kelola sampel LSU',
+                      icon: Icons.eco,
+                      color: colorScheme.tertiary,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const LsuHomeScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    if (hasPupuk) AppSpacing.gapMd,
+                  ],
+                  if (hasPupuk)
+                    _SampleTypeCard(
+                      title: 'Sampel Pupuk',
+                      subtitle: 'Kelola sampel pupuk',
+                      icon: Icons.science,
+                      color: colorScheme.primary,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const FertilizerHomeScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  if (!hasLsu && !hasPupuk)
+                    Padding(
+                      padding: AppSpacing.paddingMd,
+                      child: Text(
+                        'Anda belum memiliki izin mobile LSU atau Pupuk. Hubungi admin.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
-                      );
-                    },
-                  ),
-                  AppSpacing.gapMd,
-                  _SampleTypeCard(
-                    title: 'Sampel Pupuk',
-                    subtitle: 'Kelola sampel pupuk',
-                    icon: Icons.science,
-                    color: colorScheme.primary,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const FertilizerHomeScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                 ]),
               ),
             ),

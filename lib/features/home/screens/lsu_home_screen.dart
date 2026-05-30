@@ -77,6 +77,10 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final user = authState.user;
+    final hasAccess = user?.hasAnyLsuMobileAccess ?? false;
+    final canTerima = user?.hasLsuMobileTerima ?? false;
+    final canSelesai = user?.hasLsuMobileSelesai ?? false;
     final regionalState = ref.watch(regionalProvider);
     final syncState = ref.watch(syncProvider);
     ref.listen<int>(homeCountsRefreshProvider, (prev, next) {
@@ -85,6 +89,34 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    if (!hasAccess) {
+      return Scaffold(
+        appBar: AppBar(
+          leading: widget.showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                )
+              : null,
+          title: const Text('Sampel LSU'),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: AppSpacing.paddingXl,
+              child: Text(
+                'Anda tidak memiliki izin mobile LSU (terima/selesai). Hubungi admin.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -197,7 +229,7 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                 ),
                 AppSectionHeader(title: 'Aksi cepat'),
                 AppSpacing.gapSm,
-                if (authState.user?.isAdmin != true)
+                if (canTerima)
                   ElevatedButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(
@@ -209,8 +241,8 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                     icon: const Icon(Icons.qr_code_scanner, size: 24),
                     label: const Text('Pindai QR Terima'),
                   ),
-                if (authState.user?.isAdmin != true) AppSpacing.gapSm,
-                if (authState.user?.isAdmin == true)
+                if (canTerima && canSelesai) AppSpacing.gapSm,
+                if (canSelesai)
                   ElevatedButton.icon(
                     onPressed: () {
                       Navigator.of(context).push(
@@ -223,7 +255,7 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                     icon: const Icon(Icons.qr_code_scanner, size: 24),
                     label: const Text('Pindai QR Selesai'),
                   ),
-                if (authState.user?.isAdmin == true) AppSpacing.gapSm,
+                if (canTerima || canSelesai) AppSpacing.gapSm,
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context)

@@ -1,3 +1,4 @@
+import 'package:sampletrack/core/constants/permission_constants.dart';
 import 'package:sampletrack/core/database/models/aktivitas_sampel_pupuk.dart';
 import 'package:sampletrack/core/database/models/data_sampel_pupuk.dart';
 
@@ -25,13 +26,9 @@ String labelForPupukActivityType(String type) {
   }
 }
 
-/// Returns activity types allowed for user with given access list.
-///
-/// [dataSampelPupukFallback] is used for synced foto/tanggal fields when
-/// [aktivitasSampelPupuk] is null (e.g. QR-only flow). Local activity rows
-/// still require [aktivitasSampelPupuk] to be loaded from the DB.
+/// Returns activity types allowed for user permissions and record state.
 List<String> allowedPupukActivityTypes(
-  List<String>? access,
+  List<String>? permissions,
   AktivitasSampelPupuk? aktivitasSampelPupuk, {
   DataSampelPupuk? dataSampelPupukFallback,
 }) {
@@ -43,23 +40,28 @@ List<String> allowedPupukActivityTypes(
   final bool canKirimDariEstate =
       aktivitasSampelPupuk?.kirimDariEstate == null &&
       data?.fotoKirimDariEstate == null;
-
-  if (access == null || access.isEmpty) return [];
+  if (permissions == null || permissions.isEmpty) return [];
   final list = <String>[];
-  if (access.contains('pupuk:estate')) {
-    if (canKirimDariEstate) list.add(kKirimDariEstate);
+  if (permissions.contains(PermissionConstants.pupukMobileKirimEstate) &&
+      canKirimDariEstate) {
+    list.add(kKirimDariEstate);
   }
-  if (access.contains('pupuk:nt')) {
-    if (canKirimLab) list.add(kKirimLab);
+  if (permissions.contains(PermissionConstants.pupukMobileKirimLab) &&
+      canKirimLab) {
+    list.add(kKirimLab);
   }
   return list;
 }
 
-/// Activity types shown on home (by role access, before QR scan).
-List<String> homePupukActivityTypes(List<String>? access) {
-  if (access == null || access.isEmpty) return [];
+/// Activity types shown on home (QR scan shortcuts).
+List<String> homePupukActivityTypes(List<String>? permissions) {
+  if (permissions == null || permissions.isEmpty) return [];
   final list = <String>[];
-  if (access.contains('pupuk:estate')) list.add(kKirimDariEstate);
-  if (access.contains('pupuk:nt')) list.add(kKirimLab);
+  if (permissions.contains(PermissionConstants.pupukMobileKirimEstate)) {
+    list.add(kKirimDariEstate);
+  }
+  if (permissions.contains(PermissionConstants.pupukMobileKirimLab)) {
+    list.add(kKirimLab);
+  }
   return list;
 }

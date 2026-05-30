@@ -102,7 +102,7 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
       return;
     }
 
-    final access = ref.read(authProvider).user?.access;
+    final permissions = ref.read(authProvider).user?.permissions;
     final dbHelper = DatabaseHelper.instance;
     final DataSampelPupuk? synced = await dbHelper.getDataSampelPupukById(
       qrData.id,
@@ -112,7 +112,7 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
         : null;
 
     final allowed = allowedPupukActivityTypes(
-      access,
+      permissions,
       aktivitas,
       dataSampelPupukFallback: synced,
     );

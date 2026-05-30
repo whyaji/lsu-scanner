@@ -75,20 +75,20 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    if (user?.username != null) ...[
+                    if (user?.email.isNotEmpty ?? false) ...[
                       AppSpacing.gapXs,
                       Text(
-                        '@${user!.username}',
+                        user!.email,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
-                    if (user?.jabatan != null && user!.jabatan!.isNotEmpty) ...[
+                    if (user != null && user.jabatan.isNotEmpty) ...[
                       AppSpacing.gapSm,
                       _InfoChip(
                         icon: Icons.badge_outlined,
-                        label: user.jabatan!,
+                        label: user.jabatan,
                       ),
                     ],
                     if (user?.lokasiKerja != null &&

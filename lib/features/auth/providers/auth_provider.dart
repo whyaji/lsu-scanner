@@ -99,28 +99,45 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(clearSessionBanner: true);
   }
 
+  Future<void> _persistUser(User user) async {
+    await _dbHelper.setPreference('user_data', jsonEncode(user.toJson()));
+    await _dbHelper.setPreference('user_id', user.userId.toString());
+  }
+
   Future<void> _checkAuthStatus() async {
     try {
       final token = await _storage.getAccessToken();
-      if (token != null) {
-        final userDataStr = await _dbHelper.getPreference('user_data');
-        if (userDataStr != null) {
-          try {
-            final userData = jsonDecode(userDataStr) as Map<String, dynamic>;
-            final user = User.fromJson(userData);
-            state = state.copyWith(user: user);
-          } catch (e) {
-            final response = await _apiService.getCurrentUser();
-            if (response.success && response.data != null) {
-              state = state.copyWith(user: response.data);
-            }
-          }
-        } else {
-          final response = await _apiService.getCurrentUser();
-          if (response.success && response.data != null) {
-            state = state.copyWith(user: response.data);
-          }
+      if (token == null) return;
+
+      User? user;
+      final userDataStr = await _dbHelper.getPreference('user_data');
+      if (userDataStr != null) {
+        try {
+          final userData = jsonDecode(userDataStr) as Map<String, dynamic>;
+          user = User.fromJson(userData);
+        } catch (_) {
+          user = null;
         }
+      }
+
+      final needsRefresh =
+          user == null ||
+          user.permissions.isEmpty ||
+          userDataStr != null && !userDataStr.contains('"permissions"');
+
+      if (needsRefresh) {
+        final response = await _apiService.getCurrentUser();
+        final refreshed = response.data;
+        if (response.success && refreshed != null) {
+          user = refreshed;
+          await _persistUser(refreshed);
+        }
+      } else if (userDataStr != null && userDataStr.contains('"access"')) {
+        await _persistUser(user);
+      }
+
+      if (user != null) {
+        state = state.copyWith(user: user);
       }
     } catch (e) {
       // Not authenticated
@@ -148,11 +165,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             .millisecondsSinceEpoch;
         await _storage.saveAccessTokenExpiresAt(expiresAt.toString());
 
-        await _dbHelper.setPreference(
-          'user_data',
-          jsonEncode(loginData.user.toJson()),
-        );
-        await _dbHelper.setPreference('user_id', loginData.user.id.toString());
+        await _persistUser(loginData.user);
 
         state = state.copyWith(
           user: loginData.user,
@@ -191,7 +204,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   User? get currentUser => state.user;
 
   Future<void> updateUserFromSync(User user) async {
-    await _dbHelper.setPreference('user_data', jsonEncode(user.toJson()));
+    await _persistUser(user);
     state = state.copyWith(user: user);
   }
 }

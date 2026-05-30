@@ -92,10 +92,11 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final hasAccess = authState.user?.hasAnyPupukAccess ?? false;
+    final user = authState.user;
+    final hasAccess = user?.hasAnyPupukMobileAccess ?? false;
     final syncState = ref.watch(syncSampelPupukProvider);
     final regionalState = ref.watch(regionalProvider);
-    final homeActivities = homePupukActivityTypes(authState.user?.access);
+    final homeActivities = homePupukActivityTypes(user?.permissions);
     ref.listen<int>(fertilizerCountsRefreshProvider, (prev, next) {
       if (prev != null && next != prev && mounted) _loadCounts();
     });
@@ -149,7 +150,7 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                   ),
                   AppSpacing.gapSm,
                   Text(
-                    'Hubungi admin untuk mendapatkan akses pupuk:estate atau pupuk:nt.',
+                    'Hubungi admin untuk mendapatkan izin mobile Pupuk (kirim estate/lab/sertifikat).',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -299,7 +300,7 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                 ],
                 AppSectionHeader(title: 'Aksi cepat'),
                 AppSpacing.gapSm,
-                if (authState.user?.hasPupukNtAccess ?? false) ...[
+                if (user?.hasPupukMobileKirimSertifikat ?? false) ...[
                   OutlinedButton.icon(
                     onPressed: () {
                       Navigator.of(context)

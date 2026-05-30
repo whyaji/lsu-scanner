@@ -107,10 +107,10 @@ class AuthWrapper extends ConsumerWidget {
       return const RegionalSelectionScreen();
     }
 
-    // Dual access → bottom nav (LSU | Pupuk | Upload | Settings). Single access → single home.
-    final access = authState.user?.access;
-    final hasLsu = access != null && access.contains('lsu');
-    final hasPupuk = authState.user?.hasAnyPupukAccess ?? false;
+    // Dual module → bottom nav. Single module → dedicated home.
+    final user = authState.user;
+    final hasLsu = user?.hasAnyLsuMobileAccess ?? false;
+    final hasPupuk = user?.hasAnyPupukMobileAccess ?? false;
 
     if (hasLsu && hasPupuk) {
       return const BottomNavShell();

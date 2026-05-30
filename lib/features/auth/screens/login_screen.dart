@@ -98,6 +98,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       labelText: 'Nama pengguna',
                       prefixIcon: Icon(Icons.person),
                     ),
+                    keyboardType: TextInputType.emailAddress,
+                    autocorrect: false,
+                    enableSuggestions: false,
                     textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {

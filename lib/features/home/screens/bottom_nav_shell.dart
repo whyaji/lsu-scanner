@@ -8,10 +8,7 @@ import '../../settings/screens/settings_screen.dart';
 
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
 
-/// Shell with bottom navigation. Destinations depend on user access:
-/// - LSU tab if user has 'lsu' access
-/// - Pupuk tab if user has any access starting with 'pupuk' (e.g. pupuk:estate, pupuk:nt)
-/// - Upload and Settings always shown.
+/// Shell with bottom navigation. Destinations depend on mobile RBAC permissions.
 class BottomNavShell extends ConsumerStatefulWidget {
   const BottomNavShell({super.key});
 
@@ -23,9 +20,9 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-    final access = authState.user?.access;
-    final hasLsu = access != null && access.contains('lsu');
-    final hasPupuk = authState.user?.hasAnyPupukAccess ?? false;
+    final user = authState.user;
+    final hasLsu = user?.hasAnyLsuMobileAccess ?? false;
+    final hasPupuk = user?.hasAnyPupukMobileAccess ?? false;
 
     final destinations = <NavigationDestination>[];
     final children = <Widget>[];

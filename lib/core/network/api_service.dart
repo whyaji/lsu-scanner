@@ -7,6 +7,8 @@ import 'models/sync_models.dart';
 import 'models/upload_models.dart';
 import 'device_identity.dart';
 
+import 'models/notification_model.dart';
+
 class ApiService {
   final Dio _dio;
 
@@ -88,6 +90,66 @@ class ApiService {
         response.data,
         (data) => User.fromJson(data as Map<String, dynamic>),
       );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> updateFcmToken(
+    String fcmToken,
+  ) async {
+    try {
+      final response = await _dio.post(
+        ApiConstants.updateFcmToken,
+        data: {'fcmToken': fcmToken},
+      );
+      return ApiResponse.fromJson(response.data, null);
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<NotificationsListResponse>> getNotifications({
+    bool unreadOnly = false,
+    int limit = 30,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.getNotifications,
+        queryParameters: {
+          'unreadOnly': unreadOnly,
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+      return ApiResponse.fromJson(
+        response.data,
+        (data) =>
+            NotificationsListResponse.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> markNotificationAsRead(
+    int id,
+  ) async {
+    try {
+      final response = await _dio.patch(
+        ApiConstants.readNotification.replaceAll('{id}', id.toString()),
+      );
+      return ApiResponse.fromJson(response.data, null);
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> markAllNotificationsAsRead() async {
+    try {
+      final response = await _dio.patch(ApiConstants.readAllNotifications);
+      return ApiResponse.fromJson(response.data, null);
     } on DioException catch (e) {
       return _handleError(e);
     }

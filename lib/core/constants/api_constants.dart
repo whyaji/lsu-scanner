@@ -16,6 +16,10 @@ class ApiConstants {
   static const String mobileRefresh = '/auth/mobile-refresh';
   static const String mobileLogout = '/auth/mobile-logout';
   static const String getCurrentUser = '/auth/me';
+  static const String updateFcmToken = '/auth/mobile-fcm-token';
+  static const String getNotifications = '/notifications';
+  static const String readNotification = '/notifications/{id}/read';
+  static const String readAllNotifications = '/notifications/read-all';
 
   // Endpoint LSU Data
   static const String sync = '/mobile/sync-sampel-lsu';

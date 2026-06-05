@@ -16,6 +16,9 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/regional/providers/regional_provider.dart';
 import 'features/settings/providers/theme_provider.dart';
 import 'core/network/services/app_update_service.dart';
+import 'core/network/services/fcm_service.dart';
+import 'features/notifications/screens/notification_screen.dart';
+import 'features/notifications/providers/notification_provider.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -34,7 +37,12 @@ void main() async {
 }
 
 Future<void> _requestPermissions() async {
-  await [Permission.camera, Permission.storage, Permission.photos].request();
+  await [
+    Permission.camera,
+    Permission.storage,
+    Permission.photos,
+    Permission.notification,
+  ].request();
 }
 
 class MyApp extends ConsumerWidget {
@@ -45,6 +53,13 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider).themeMode;
 
     ref.listen<AuthState>(authProvider, (prev, next) {
+      if (next.isAuthenticated && !(prev?.isAuthenticated ?? false)) {
+        ref.read(fcmServiceProvider).uploadToken();
+        ref
+            .read(notificationProvider.notifier)
+            .fetchNotifications(silent: true);
+      }
+
       if (!next.shouldNavigateToLogin) return;
       void tryNavigate(int attempt) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,6 +98,7 @@ class MyApp extends ConsumerWidget {
         '/login': (context) => const LoginScreen(),
         '/regional': (context) => const RegionalSelectionScreen(),
         '/home': (context) => const HomeScreen(),
+        '/notifications': (context) => const NotificationScreen(),
       },
     );
   }
@@ -101,6 +117,11 @@ class AuthWrapper extends ConsumerWidget {
     if (!authState.isAuthenticated) {
       return const LoginScreen();
     }
+
+    // Initialize FCM when authenticated
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(fcmServiceProvider).init();
+    });
 
     // Check regional selection
     if (regionalState.selectedRegional == null) {

@@ -5,6 +5,8 @@ import '../../auth/providers/auth_provider.dart';
 import 'lsu_home_screen.dart';
 import 'fertilizer_home_screen.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../../notifications/providers/notification_provider.dart';
+import '../../notifications/screens/notification_screen.dart';
 
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -20,6 +22,8 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final notificationState = ref.watch(notificationProvider);
+    final unreadCount = notificationState.unreadCount;
     final user = authState.user;
     final hasLsu = user?.hasAnyLsuMobileAccess ?? false;
     final hasPupuk = user?.hasAnyPupukMobileAccess ?? false;
@@ -55,6 +59,24 @@ class _BottomNavShellState extends ConsumerState<BottomNavShell> {
         ),
       );
     }
+
+    // Add Notifikasi destination with Badge
+    destinations.add(
+      NavigationDestination(
+        icon: Badge(
+          label: unreadCount > 0 ? Text('$unreadCount') : null,
+          isLabelVisible: unreadCount > 0,
+          child: const Icon(Icons.notifications_outlined),
+        ),
+        selectedIcon: Badge(
+          label: unreadCount > 0 ? Text('$unreadCount') : null,
+          isLabelVisible: unreadCount > 0,
+          child: const Icon(Icons.notifications),
+        ),
+        label: 'Notifikasi',
+      ),
+    );
+    children.add(const NotificationScreen());
 
     destinations.add(
       const NavigationDestination(

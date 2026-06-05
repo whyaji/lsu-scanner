@@ -16,6 +16,8 @@ import '../../auth/providers/auth_provider.dart';
 import '../../sample/screens/received_list_screen.dart';
 import '../providers/home_counts_refresh_provider.dart';
 
+import '../../notifications/providers/notification_provider.dart';
+
 class LsuHomeScreen extends ConsumerStatefulWidget {
   const LsuHomeScreen({
     super.key,
@@ -77,6 +79,8 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final notificationState = ref.watch(notificationProvider);
+    final unreadCount = notificationState.unreadCount;
     final user = authState.user;
     final hasAccess = user?.hasAnyLsuMobileAccess ?? false;
     final canTerima = user?.hasLsuMobileTerima ?? false;
@@ -100,6 +104,30 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                 )
               : null,
           title: const Text('Sampel LSU'),
+          actions: [
+            if (widget.showSettingsInAppBar) ...[
+              IconButton(
+                icon: Badge(
+                  label: unreadCount > 0 ? Text('$unreadCount') : null,
+                  isLabelVisible: unreadCount > 0,
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/notifications');
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ],
         ),
         body: SafeArea(
           child: Center(
@@ -128,7 +156,17 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
             : null,
         title: const Text('Sampel LSU'),
         actions: [
-          if (widget.showSettingsInAppBar)
+          if (widget.showSettingsInAppBar) ...[
+            IconButton(
+              icon: Badge(
+                label: unreadCount > 0 ? Text('$unreadCount') : null,
+                isLabelVisible: unreadCount > 0,
+                child: const Icon(Icons.notifications_outlined),
+              ),
+              onPressed: () {
+                Navigator.of(context).pushNamed('/notifications');
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -139,8 +177,10 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                 );
               },
             ),
+          ],
         ],
       ),
+
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {

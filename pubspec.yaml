@@ -1,7 +1,7 @@
 name: sampletrack
 description: 'SampleTrack Mobile App'
 publish_to: 'none'
-version: 0.1.8+1008
+version: 0.1.9+1009
 
 environment:
   sdk: ^3.10.7
@@ -42,6 +42,8 @@ dependencies:
   shared_preferences: ^2.5.4
   shimmer: ^3.0.0
   sqflite: ^2.4.2
+  firebase_core: ^4.10.0
+  firebase_messaging: ^16.3.0
 
 dev_dependencies:
   flutter_test:

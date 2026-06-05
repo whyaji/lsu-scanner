@@ -7,12 +7,16 @@ import 'lsu_home_screen.dart';
 import 'fertilizer_home_screen.dart';
 import '../../settings/screens/settings_screen.dart';
 
+import '../../notifications/providers/notification_provider.dart';
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
+    final notificationState = ref.watch(notificationProvider);
+    final unreadCount = notificationState.unreadCount;
     final user = authState.user;
     final hasLsu = user?.hasAnyLsuMobileAccess ?? false;
     final hasPupuk = user?.hasAnyPupukMobileAccess ?? false;
@@ -24,6 +28,16 @@ class HomeScreen extends ConsumerWidget {
         title: Text(AppConstants.appName),
         actions: [
           IconButton(
+            icon: Badge(
+              label: unreadCount > 0 ? Text('$unreadCount') : null,
+              isLabelVisible: unreadCount > 0,
+              child: const Icon(Icons.notifications_outlined),
+            ),
+            onPressed: () {
+              Navigator.of(context).pushNamed('/notifications');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.of(context).push(
@@ -33,6 +47,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
+
       body: SafeArea(
         child: CustomScrollView(
           slivers: [

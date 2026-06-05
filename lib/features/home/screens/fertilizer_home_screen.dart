@@ -19,6 +19,8 @@ import '../../pupuk/screens/kirim_sertifikat_form_screen.dart';
 import '../../regional/providers/regional_provider.dart';
 import '../../settings/screens/settings_screen.dart';
 
+import '../../notifications/providers/notification_provider.dart';
+
 class FertilizerHomeScreen extends ConsumerStatefulWidget {
   const FertilizerHomeScreen({
     super.key,
@@ -92,6 +94,8 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final notificationState = ref.watch(notificationProvider);
+    final unreadCount = notificationState.unreadCount;
     final user = authState.user;
     final hasAccess = user?.hasAnyPupukMobileAccess ?? false;
     final syncState = ref.watch(syncSampelPupukProvider);
@@ -115,7 +119,17 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
               : null,
           title: const Text('Sampel Pupuk'),
           actions: [
-            if (widget.showSettingsInAppBar)
+            if (widget.showSettingsInAppBar) ...[
+              IconButton(
+                icon: Badge(
+                  label: unreadCount > 0 ? Text('$unreadCount') : null,
+                  isLabelVisible: unreadCount > 0,
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushNamed('/notifications');
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.settings),
                 onPressed: () {
@@ -126,6 +140,7 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                   );
                 },
               ),
+            ],
           ],
         ),
         body: SafeArea(
@@ -174,7 +189,17 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
             : null,
         title: const Text('Sampel Pupuk'),
         actions: [
-          if (widget.showSettingsInAppBar)
+          if (widget.showSettingsInAppBar) ...[
+            IconButton(
+              icon: Badge(
+                label: unreadCount > 0 ? Text('$unreadCount') : null,
+                isLabelVisible: unreadCount > 0,
+                child: const Icon(Icons.notifications_outlined),
+              ),
+              onPressed: () {
+                Navigator.of(context).pushNamed('/notifications');
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -185,6 +210,7 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                 );
               },
             ),
+          ],
         ],
       ),
       body: SafeArea(

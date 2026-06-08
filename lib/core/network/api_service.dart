@@ -255,6 +255,70 @@ class ApiService {
 
   // --- Sampel Pupuk endpoints ---
 
+  Future<ApiResponse<PaginatedDataSampelPupukResponse>> getDataSampelPupukList({
+    int page = 1,
+    int limit = 20,
+    String? progress,
+    String? search,
+    String sortBy = 'id',
+    String order = 'desc',
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.dataSampelPupuk,
+        queryParameters: {
+          'page': page,
+          'limit': limit,
+          'sort_by': sortBy,
+          'order': order,
+          if (progress != null && progress.isNotEmpty) 'progress': progress,
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
+        },
+      );
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => PaginatedDataSampelPupukResponse.fromJson(
+          data as Map<String, dynamic>,
+        ),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getDataSampelPupukProgressCounts({
+    String? search,
+  }) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.dataSampelPupukProgressCounts,
+        queryParameters: {
+          if (search != null && search.trim().isNotEmpty)
+            'search': search.trim(),
+        },
+      );
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => Map<String, dynamic>.from(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
+  Future<ApiResponse<DataSampelPupukDto>> getDataSampelPupukById(int id) async {
+    try {
+      final response = await _dio.get('${ApiConstants.dataSampelPupuk}/$id');
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => DataSampelPupukDto.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
   Future<ApiResponse<SyncSampelPupukResponse>> syncSampelPupuk(
     int regional,
   ) async {

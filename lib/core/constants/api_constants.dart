@@ -12,6 +12,14 @@ class ApiConstants {
   // Use development URL by default, change to production in release builds
   static String baseUrl = isDevelopmentMode ? baseUrlDev : baseUrlProd;
 
+  /// Server origin without `/api` — for protected static files (e.g. `/protected/pupuk/...`).
+  static String get baseUrlWithoutApi {
+    final url = baseUrl.trim();
+    if (url.endsWith('/api')) return url.substring(0, url.length - 4);
+    if (url.endsWith('/api/')) return url.substring(0, url.length - 5);
+    return url;
+  }
+
   static const String login = '/auth/mobile-login';
   static const String mobileRefresh = '/auth/mobile-refresh';
   static const String mobileLogout = '/auth/mobile-logout';
@@ -34,6 +42,9 @@ class ApiConstants {
   static const String areaEstate = '/area/estate';
   static const String uploadSampelPupuk = '/data-sampel-pupuk/upload';
   static const String uploadPhotoPupuk = '/upload/photo-pupuk';
+  static const String dataSampelPupuk = '/data-sampel-pupuk';
+  static const String dataSampelPupukProgressCounts =
+      '/data-sampel-pupuk/progress-counts';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);

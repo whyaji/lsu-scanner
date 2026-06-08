@@ -13,6 +13,7 @@ import '../../pupuk/constants/pupuk_activity_types.dart';
 import '../../pupuk/providers/sync_sampel_pupuk_provider.dart';
 import '../../pupuk/screens/pupuk_qr_scanner_screen.dart';
 import '../../pupuk/widgets/pupuk_activity_tile.dart';
+import '../../pupuk/screens/data_sampel_pupuk_list_screen.dart';
 import '../../pupuk/screens/sampel_pupuk_list_screen.dart';
 import '../../pupuk/screens/upload_sampel_pupuk_screen.dart';
 import '../../pupuk/screens/kirim_sertifikat_form_screen.dart';
@@ -239,22 +240,60 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                           ),
                         ),
                         AppSpacing.gapSm,
-                        if (regionalState.selectedRegional != null)
-                          Text(
-                            'Regional ${regionalState.selectedRegional}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (regionalState.selectedRegional != null)
+                                    Text(
+                                      'Regional ${regionalState.selectedRegional}',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  Text(
+                                    _formatDateTimeSync(
+                                      syncState.lastSyncTime != null
+                                          ? DateTime.parse(
+                                              syncState.lastSyncTime!,
+                                            )
+                                          : null,
+                                    ),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        Text(
-                          _formatDateTimeSync(
-                            syncState.lastSyncTime != null
-                                ? DateTime.parse(syncState.lastSyncTime!)
-                                : null,
-                          ),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                            const SizedBox(width: AppSpacing.sm),
+                            TextButton.icon(
+                              onPressed: syncState.isSyncing ? null : _sync,
+                              style: TextButton.styleFrom(
+                                backgroundColor: !syncState.isSyncing
+                                    ? colorScheme.primary
+                                    : colorScheme.surface,
+                                foregroundColor: !syncState.isSyncing
+                                    ? colorScheme.onPrimary
+                                    : colorScheme.onSurface,
+                              ),
+                              icon: syncState.isSyncing
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        // color: colorScheme.primary,
+                                      ),
+                                    )
+                                  : const Icon(Icons.sync, size: 18),
+                              label: const Text('Sync'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -360,25 +399,18 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                         : 'Unggah Sampel',
                   ),
                 ),
-                AppSectionHeader(title: 'Sinkronisasi'),
+                AppSectionHeader(title: 'Data'),
                 AppSpacing.gapSm,
-                ElevatedButton.icon(
-                  onPressed: syncState.isSyncing ? null : _sync,
-                  icon: syncState.isSyncing
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.onPrimary,
-                          ),
-                        )
-                      : const Icon(Icons.sync),
-                  label: Text(
-                    syncState.isSyncing
-                        ? 'Menyinkronkan…'
-                        : 'Sinkronkan Data Sampel Pupuk',
-                  ),
+                PupukActivityTile(
+                  label: 'Data Sampel Pupuk',
+                  icon: Icons.inventory_2_outlined,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DataSampelPupukListScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

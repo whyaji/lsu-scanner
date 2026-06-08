@@ -206,18 +206,54 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                           ),
                         ),
                         AppSpacing.gapSm,
-                        if (regionalState.selectedRegional != null)
-                          Text(
-                            'Regional ${regionalState.selectedRegional}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (regionalState.selectedRegional != null)
+                                    Text(
+                                      'Regional ${regionalState.selectedRegional}',
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  Text(
+                                    _formatDateTimeSync(syncState.lastSyncTime),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        Text(
-                          _formatDateTimeSync(syncState.lastSyncTime),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                            const SizedBox(width: AppSpacing.sm),
+                            TextButton.icon(
+                              onPressed: syncState.isLoading ? null : _sync,
+                              style: TextButton.styleFrom(
+                                backgroundColor: !syncState.isLoading
+                                    ? colorScheme.primary
+                                    : colorScheme.surface,
+                                foregroundColor: !syncState.isLoading
+                                    ? colorScheme.onPrimary
+                                    : colorScheme.onSurface,
+                              ),
+                              icon: syncState.isLoading
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: colorScheme.primary,
+                                      ),
+                                    )
+                                  : const Icon(Icons.sync, size: 18),
+                              label: const Text('Sync'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -308,26 +344,6 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                   },
                   icon: const Icon(Icons.cloud_upload, size: 24),
                   label: const Text('Unggah Sampel'),
-                ),
-                AppSectionHeader(title: 'Sinkronisasi'),
-                AppSpacing.gapSm,
-                ElevatedButton.icon(
-                  onPressed: syncState.isLoading ? null : _sync,
-                  icon: syncState.isLoading
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.onPrimary,
-                          ),
-                        )
-                      : const Icon(Icons.sync),
-                  label: Text(
-                    syncState.isLoading
-                        ? 'Menyinkronkan…'
-                        : 'Sinkronkan Data Sampel LSU',
-                  ),
                 ),
               ],
             ),

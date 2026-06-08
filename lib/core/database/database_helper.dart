@@ -27,126 +27,7 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    final db = await openDatabase(path, version: 1, onCreate: _createDB);
-    await _ensureSampelPupukTables(db);
-    return db;
-  }
-
-  static Future<void> _ensureSampelPupukTables(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS data_sampel_pupuk (
-        id INTEGER PRIMARY KEY,
-        kode_sampel TEXT,
-        jenis_pupuk_full TEXT,
-        jenis_pupuk TEXT,
-        merek TEXT,
-        no_kode_sampel INTEGER,
-        jumlah_sampel_zak INTEGER,
-        no_segel TEXT,
-        no_ba_sampel_pupuk TEXT,
-        supplier TEXT,
-        regional INTEGER,
-        wilayah INTEGER,
-        estate TEXT,
-        pt TEXT,
-        no_po TEXT,
-        no_bpb TEXT,
-        qty_partai_pengiriman INTEGER,
-        qty_terima INTEGER,
-        jenis_kendaraan TEXT,
-        tanggal_pengambilan_sampel TEXT,
-        tanggal_terima_dari_gudang TEXT,
-        foto_terima_dari_gudang TEXT,
-        tanggal_kirim_dari_estate TEXT,
-        foto_kirim_dari_estate TEXT,
-        tanggal_terima_dari_estate TEXT,
-        foto_terima_dari_estate TEXT,
-        tanggal_kirim_lab TEXT,
-        foto_kirim_lab TEXT,
-        kode_tracking TEXT,
-        no_sertifikat TEXT,
-        tanggal_kirim_sertifikat_estate TEXT,
-        rekomendasi TEXT,
-        created_at TEXT,
-        updated_at TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS terima_dari_gudang (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data_sampel_pupuk_id INTEGER NOT NULL,
-        kode_sampel TEXT NOT NULL,
-        tanggal_terima_dari_gudang TEXT NOT NULL,
-        foto_terima_dari_gudang TEXT,
-        status TEXT NOT NULL DEFAULT 'not_uploaded',
-        error_message TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS kirim_dari_estate (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data_sampel_pupuk_id INTEGER NOT NULL,
-        kode_sampel TEXT NOT NULL,
-        tanggal_kirim_dari_estate TEXT NOT NULL,
-        foto_kirim_dari_estate TEXT,
-        nama_pengirim TEXT,
-        status TEXT NOT NULL DEFAULT 'not_uploaded',
-        error_message TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS terima_dari_estate (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data_sampel_pupuk_id INTEGER NOT NULL,
-        kode_sampel TEXT NOT NULL,
-        tanggal_terima_dari_estate TEXT NOT NULL,
-        foto_terima_dari_estate TEXT,
-        status TEXT NOT NULL DEFAULT 'not_uploaded',
-        error_message TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS kirim_lab (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data_sampel_pupuk_id INTEGER NOT NULL,
-        kode_sampel TEXT NOT NULL,
-        no_surat TEXT,
-        tanggal_kirim_lab TEXT NOT NULL,
-        foto_kirim_lab TEXT,
-        status TEXT NOT NULL DEFAULT 'not_uploaded',
-        error_message TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS kirim_sertifikat_estate (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        data_sampel_pupuk_id INTEGER NOT NULL,
-        kode_sampel TEXT NOT NULL,
-        tanggal_kirim_sertifikat_estate TEXT NOT NULL,
-        rekomendasi TEXT,
-        file_sertifikat TEXT,
-        status TEXT NOT NULL DEFAULT 'not_uploaded',
-        error_message TEXT,
-        created_at TEXT NOT NULL,
-        updated_at TEXT
-      )
-    ''');
-    await db
-        .execute(
-          "ALTER TABLE kirim_sertifikat_estate ADD COLUMN file_sertifikat TEXT",
-        )
-        .catchError((_) {});
-    await db
-        .execute('ALTER TABLE data_sampel_pupuk ADD COLUMN no_surat TEXT')
-        .catchError((_) {});
+    return await openDatabase(path, version: 1, onCreate: _createDB);
   }
 
   Future _createDB(Database db, int version) async {
@@ -228,6 +109,134 @@ class DatabaseHelper {
       CREATE TABLE user_preferences (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE data_sampel_pupuk (
+        id INTEGER PRIMARY KEY,
+        kode_sampel TEXT,
+        jenis_pupuk_full TEXT,
+        jenis_pupuk TEXT,
+        merek TEXT,
+        no_kode_sampel INTEGER,
+        jumlah_sampel_zak INTEGER,
+        no_segel TEXT,
+        no_ba_sampel_pupuk TEXT,
+        supplier TEXT,
+        regional INTEGER,
+        wilayah INTEGER,
+        estate TEXT,
+        pt TEXT,
+        no_po TEXT,
+        no_bpb TEXT,
+        qty_partai_pengiriman INTEGER,
+        qty_terima INTEGER,
+        jenis_kendaraan TEXT,
+        tanggal_pengambilan_sampel TEXT,
+        check_logo_perusahaan TEXT,
+        check_kondisi_karung TEXT,
+        check_jahitan_karung TEXT,
+        check_kontaminan TEXT,
+        check_jenis_kontaminan TEXT,
+        check_persentase_kontaminan TEXT,
+        check_bekas_gancu TEXT,
+        diperiksa_estate_manager_nama TEXT,
+        diperiksa_ktu_nama TEXT,
+        disaksikan_supplier_nama TEXT,
+        diambil_kepala_gudang TEXT,
+        tanggal_terima_dari_gudang TEXT,
+        foto_terima_dari_gudang TEXT,
+        tanggal_kirim_dari_estate TEXT,
+        foto_kirim_dari_estate TEXT,
+        tanggal_terima_dari_estate TEXT,
+        foto_terima_dari_estate TEXT,
+        nama_pengirim TEXT,
+        no_surat TEXT,
+        tanggal_kirim_lab TEXT,
+        foto_kirim_lab TEXT,
+        tanggal_registrasi_lab TEXT,
+        foto_registrasi_lab TEXT,
+        tanggal_estimasi_kupa TEXT,
+        kode_tracking TEXT,
+        no_sertifikat TEXT,
+        tanggal_kirim_sertifikat_estate TEXT,
+        rekomendasi TEXT,
+        created_at TEXT,
+        updated_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE terima_dari_gudang (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        tanggal_terima_dari_gudang TEXT NOT NULL,
+        foto_terima_dari_gudang TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE kirim_dari_estate (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        tanggal_kirim_dari_estate TEXT NOT NULL,
+        foto_kirim_dari_estate TEXT,
+        nama_pengirim TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE terima_dari_estate (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        tanggal_terima_dari_estate TEXT NOT NULL,
+        foto_terima_dari_estate TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE kirim_lab (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        no_surat TEXT,
+        tanggal_kirim_lab TEXT NOT NULL,
+        foto_kirim_lab TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE kirim_sertifikat_estate (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        data_sampel_pupuk_id INTEGER NOT NULL,
+        kode_sampel TEXT NOT NULL,
+        tanggal_kirim_sertifikat_estate TEXT NOT NULL,
+        rekomendasi TEXT,
+        file_sertifikat TEXT,
+        status TEXT NOT NULL DEFAULT 'not_uploaded',
+        error_message TEXT,
+        created_at TEXT NOT NULL,
         updated_at TEXT
       )
     ''');
@@ -487,6 +496,19 @@ class DatabaseHelper {
       where: 'regional = ?',
       whereArgs: [regional],
     );
+  }
+
+  Future<List<DataSampelPupuk>> getAllDataSampelPupuk({int? regional}) async {
+    final db = await database;
+    final result = regional != null
+        ? await db.query(
+            'data_sampel_pupuk',
+            where: 'regional = ?',
+            whereArgs: [regional],
+            orderBy: 'kode_sampel ASC',
+          )
+        : await db.query('data_sampel_pupuk', orderBy: 'kode_sampel ASC');
+    return result.map((e) => DataSampelPupuk.fromJson(e)).toList();
   }
 
   Future<DataSampelPupuk?> getDataSampelPupukById(int id) async {

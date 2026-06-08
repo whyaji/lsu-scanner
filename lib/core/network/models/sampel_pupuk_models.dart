@@ -1,4 +1,39 @@
+import '../../database/models/data_sampel_pupuk.dart';
 import 'auth_models.dart';
+
+class PaginatedDataSampelPupukResponse {
+  final List<DataSampelPupuk> data;
+  final int total;
+  final int page;
+  final int limit;
+  final int totalPages;
+
+  PaginatedDataSampelPupukResponse({
+    required this.data,
+    required this.total,
+    required this.page,
+    required this.limit,
+    required this.totalPages,
+  });
+
+  factory PaginatedDataSampelPupukResponse.fromJson(Map<String, dynamic> json) {
+    final list = json['data'];
+    final items = list is List
+        ? list
+              .map(
+                (e) => DataSampelPupuk.fromApiJson(e as Map<String, dynamic>),
+              )
+              .toList()
+        : <DataSampelPupuk>[];
+    return PaginatedDataSampelPupukResponse(
+      data: items,
+      total: (json['total'] as num?)?.toInt() ?? items.length,
+      page: (json['page'] as num?)?.toInt() ?? 1,
+      limit: (json['limit'] as num?)?.toInt() ?? items.length,
+      totalPages: (json['totalPages'] as num?)?.toInt() ?? 1,
+    );
+  }
+}
 
 /// Sync response: dataSampelPupuk list + optional user (when auth sent).
 class SyncSampelPupukResponse {
@@ -46,11 +81,26 @@ class DataSampelPupukDto {
   final int? qtyTerima;
   final String? jenisKendaraan;
   final String? tanggalPengambilanSampel;
+  final String? checkLogoPerusahaan;
+  final String? checkKondisiKarung;
+  final String? checkJahitanKarung;
+  final String? checkKontaminan;
+  final String? checkJenisKontaminan;
+  final String? checkPersentaseKontaminan;
+  final String? checkBekasGancu;
+  final String? diperiksaEstateManagerNama;
+  final String? diperiksaKtuNama;
+  final String? disaksikanSupplierNama;
+  final String? diambilKepalaGudang;
   final String? tanggalKirimDariEstate;
   final String? fotoKirimDariEstate;
+  final String? namaPengirim;
   final String? noSurat;
   final String? tanggalKirimLab;
   final String? fotoKirimLab;
+  final String? tanggalRegistrasiLab;
+  final String? fotoRegistrasiLab;
+  final String? tanggalEstimasiKupa;
   final String? kodeTracking;
   final String? noSertifikat;
   final String? tanggalKirimSertifikatEstate;
@@ -79,11 +129,26 @@ class DataSampelPupukDto {
     this.qtyTerima,
     this.jenisKendaraan,
     this.tanggalPengambilanSampel,
+    this.checkLogoPerusahaan,
+    this.checkKondisiKarung,
+    this.checkJahitanKarung,
+    this.checkKontaminan,
+    this.checkJenisKontaminan,
+    this.checkPersentaseKontaminan,
+    this.checkBekasGancu,
+    this.diperiksaEstateManagerNama,
+    this.diperiksaKtuNama,
+    this.disaksikanSupplierNama,
+    this.diambilKepalaGudang,
     this.tanggalKirimDariEstate,
     this.fotoKirimDariEstate,
+    this.namaPengirim,
     this.noSurat,
     this.tanggalKirimLab,
     this.fotoKirimLab,
+    this.tanggalRegistrasiLab,
+    this.fotoRegistrasiLab,
+    this.tanggalEstimasiKupa,
     this.kodeTracking,
     this.noSertifikat,
     this.tanggalKirimSertifikatEstate,
@@ -114,11 +179,26 @@ class DataSampelPupukDto {
       qtyTerima: (json['qtyTerima'] as num?)?.toInt(),
       jenisKendaraan: json['jenisKendaraan'] as String?,
       tanggalPengambilanSampel: json['tanggalPengambilanSampel'] as String?,
+      checkLogoPerusahaan: json['checkLogoPerusahaan'] as String?,
+      checkKondisiKarung: json['checkKondisiKarung'] as String?,
+      checkJahitanKarung: json['checkJahitanKarung'] as String?,
+      checkKontaminan: json['checkKontaminan'] as String?,
+      checkJenisKontaminan: json['checkJenisKontaminan'] as String?,
+      checkPersentaseKontaminan: json['checkPersentaseKontaminan'] as String?,
+      checkBekasGancu: json['checkBekasGancu'] as String?,
+      diperiksaEstateManagerNama: json['diperiksaEstateManagerNama'] as String?,
+      diperiksaKtuNama: json['diperiksaKtuNama'] as String?,
+      disaksikanSupplierNama: json['disaksikanSupplierNama'] as String?,
+      diambilKepalaGudang: json['diambilKepalaGudang'] as String?,
       tanggalKirimDariEstate: json['tanggalKirimDariEstate'] as String?,
       fotoKirimDariEstate: json['fotoKirimDariEstate'] as String?,
+      namaPengirim: json['namaPengirim'] as String?,
       noSurat: json['noSurat'] as String?,
       tanggalKirimLab: json['tanggalKirimLab'] as String?,
       fotoKirimLab: json['fotoKirimLab'] as String?,
+      tanggalRegistrasiLab: json['tanggalRegistrasiLab'] as String?,
+      fotoRegistrasiLab: json['fotoRegistrasiLab'] as String?,
+      tanggalEstimasiKupa: json['tanggalEstimasiKupa'] as String?,
       kodeTracking: json['kodeTracking'] as String?,
       noSertifikat: json['noSertifikat'] as String?,
       tanggalKirimSertifikatEstate:
@@ -151,11 +231,26 @@ class DataSampelPupukDto {
       'qtyTerima': qtyTerima,
       'jenisKendaraan': jenisKendaraan,
       'tanggalPengambilanSampel': tanggalPengambilanSampel,
+      'checkLogoPerusahaan': checkLogoPerusahaan,
+      'checkKondisiKarung': checkKondisiKarung,
+      'checkJahitanKarung': checkJahitanKarung,
+      'checkKontaminan': checkKontaminan,
+      'checkJenisKontaminan': checkJenisKontaminan,
+      'checkPersentaseKontaminan': checkPersentaseKontaminan,
+      'checkBekasGancu': checkBekasGancu,
+      'diperiksaEstateManagerNama': diperiksaEstateManagerNama,
+      'diperiksaKtuNama': diperiksaKtuNama,
+      'disaksikanSupplierNama': disaksikanSupplierNama,
+      'diambilKepalaGudang': diambilKepalaGudang,
       'tanggalKirimDariEstate': tanggalKirimDariEstate,
       'fotoKirimDariEstate': fotoKirimDariEstate,
+      'namaPengirim': namaPengirim,
       'noSurat': noSurat,
       'tanggalKirimLab': tanggalKirimLab,
       'fotoKirimLab': fotoKirimLab,
+      'tanggalRegistrasiLab': tanggalRegistrasiLab,
+      'fotoRegistrasiLab': fotoRegistrasiLab,
+      'tanggalEstimasiKupa': tanggalEstimasiKupa,
       'kodeTracking': kodeTracking,
       'noSertifikat': noSertifikat,
       'tanggalKirimSertifikatEstate': tanggalKirimSertifikatEstate,

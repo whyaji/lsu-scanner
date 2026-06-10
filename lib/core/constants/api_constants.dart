@@ -12,15 +12,39 @@ class ApiConstants {
   // Use development URL by default, change to production in release builds
   static String baseUrl = isDevelopmentMode ? baseUrlDev : baseUrlProd;
 
-  // Endpoints
-  static const String login = '/auth/login';
-  static const String refreshToken = '/auth/refresh';
-  static const String logout = '/auth/logout';
+  /// Server origin without `/api` — for protected static files (e.g. `/protected/pupuk/...`).
+  static String get baseUrlWithoutApi {
+    final url = baseUrl.trim();
+    if (url.endsWith('/api')) return url.substring(0, url.length - 4);
+    if (url.endsWith('/api/')) return url.substring(0, url.length - 5);
+    return url;
+  }
+
+  static const String login = '/auth/mobile-login';
+  static const String mobileRefresh = '/auth/mobile-refresh';
+  static const String mobileLogout = '/auth/mobile-logout';
   static const String getCurrentUser = '/auth/me';
-  static const String sync = '/mobile/sync';
+  static const String updateFcmToken = '/auth/mobile-fcm-token';
+  static const String getNotifications = '/notifications';
+  static const String readNotification = '/notifications/{id}/read';
+  static const String readAllNotifications = '/notifications/read-all';
+
+  // Endpoint LSU Data
+  static const String sync = '/mobile/sync-sampel-lsu';
   static const String batchUpload = '/data-lsu/upload';
   static const String batchUploadComplete = '/data-lsu/upload-complete';
   static const String uploadPhoto = '/upload/photo';
+
+  // Endpoint Sampel Pupuk (Fertilizer)
+  static const String syncSampelPupuk = '/mobile/sync-sampel-pupuk';
+  static const String areaRegional = '/area/regional';
+  static const String areaWilayah = '/area/wilayah';
+  static const String areaEstate = '/area/estate';
+  static const String uploadSampelPupuk = '/data-sampel-pupuk/upload';
+  static const String uploadPhotoPupuk = '/upload/photo-pupuk';
+  static const String dataSampelPupuk = '/data-sampel-pupuk';
+  static const String dataSampelPupukProgressCounts =
+      '/data-sampel-pupuk/progress-counts';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);
@@ -32,4 +56,5 @@ class ApiConstants {
   static const String contentTypeHeader = 'Content-Type';
   static const String contentTypeJson = 'application/json';
   static const String contentTypeMultipart = 'multipart/form-data';
+  static const String userAgentHeader = 'User-Agent';
 }

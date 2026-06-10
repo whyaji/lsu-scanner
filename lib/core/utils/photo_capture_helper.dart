@@ -12,11 +12,11 @@ class PhotoCaptureHelper {
   PhotoCaptureHelper._();
 
   /// Returns the app pictures directory.
-  /// On Android: public Internal storage Pictures/LSU-Scanner (e.g. /storage/emulated/0/Pictures/LSU-Scanner).
-  /// On other platforms: [applicationDocumentsDirectory]/Pictures/LSU-Scanner.
+  /// On Android: public Internal storage Pictures/SampleTrack (e.g. /storage/emulated/0/Pictures/SampleTrack).
+  /// On other platforms: [applicationDocumentsDirectory]/Pictures/SampleTrack.
   /// Creates the directory if it does not exist.
   static Future<String> getAppPicturesDirectory() async {
-    const subDir = 'LSU-Scanner';
+    const subDir = 'SampleTrack';
     if (Platform.isAndroid) {
       final ext = await getExternalStorageDirectory();
       if (ext != null) {

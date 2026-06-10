@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/models/master_lsu.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import 'full_screen_image_preview_screen.dart';
 
 class CompletedSampleDetailScreen extends StatefulWidget {
@@ -154,7 +155,11 @@ class _CompletedSampleDetailScreenState
                       ? () {
                           final details = <String, String>{
                             'Kode': s.kode,
-                            'Tanggal selesai': s.tanggalSelesai,
+                            'Tanggal selesai':
+                                app_date_utils
+                                    .DateUtils.formatStoredDateForDisplay(
+                                  s.tanggalSelesai,
+                                ),
                             'Waktu selesai': s.waktuSelesai,
                             'Status': _statusLabel(s.status),
                             if (m != null && m.estate != null)
@@ -187,12 +192,16 @@ class _CompletedSampleDetailScreenState
                           )
                         : Container(
                             height: 220,
-                            color: AppColors.background,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             child: Center(
                               child: Icon(
                                 Icons.image_not_supported,
                                 size: 48,
-                                color: AppColors.textSecondary,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -212,12 +221,17 @@ class _CompletedSampleDetailScreenState
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow('Kode', s.kode),
-                      _buildInfoRow('Tanggal selesai', s.tanggalSelesai),
+                      _buildInfoRow(
+                        'Tanggal selesai',
+                        app_date_utils.DateUtils.formatStoredDateForDisplay(
+                          s.tanggalSelesai,
+                        ),
+                      ),
                       _buildInfoRow('Waktu selesai', s.waktuSelesai),
                       _buildInfoRow(
                         'Status',
@@ -248,7 +262,7 @@ class _CompletedSampleDetailScreenState
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -293,6 +307,7 @@ class _CompletedSampleDetailScreenState
   }
 
   Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -304,14 +319,14 @@ class _CompletedSampleDetailScreenState
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: valueColor ?? AppColors.textPrimary),
+              style: TextStyle(color: valueColor ?? colorScheme.onSurface),
             ),
           ),
         ],

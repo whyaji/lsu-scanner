@@ -4,6 +4,8 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/master_lsu.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/date_utils.dart' as app_date_utils;
 import 'full_screen_image_preview_screen.dart';
 
 class ReceivedSampleDetailScreen extends StatefulWidget {
@@ -44,14 +46,15 @@ class _ReceivedSampleDetailScreenState
     _load();
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(BuildContext context, String status) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (status) {
       case AppConstants.statusUploaded:
-        return AppColors.success;
+        return AppTheme.successColor(context);
       case AppConstants.statusError:
-        return AppColors.error;
+        return colorScheme.error;
       default:
-        return AppColors.warning;
+        return AppTheme.warningColor(context);
     }
   }
 
@@ -87,7 +90,9 @@ class _ReceivedSampleDetailScreenState
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Hapus'),
           ),
         ],
@@ -103,11 +108,7 @@ class _ReceivedSampleDetailScreenState
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Detail'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-        ),
+        appBar: AppBar(title: const Text('Detail')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -115,11 +116,7 @@ class _ReceivedSampleDetailScreenState
     final s = _sample;
     if (s == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Detail'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-        ),
+        appBar: AppBar(title: const Text('Detail')),
         body: const Center(child: Text('Sampel tidak ditemukan')),
       );
     }
@@ -129,13 +126,11 @@ class _ReceivedSampleDetailScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Detail sampel terima'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
         actions: [
           if (_canDelete(s.status))
             IconButton(
               icon: const Icon(Icons.delete),
-              color: AppColors.error,
+              color: Theme.of(context).colorScheme.error,
               onPressed: () => _confirmAndDelete(s),
               tooltip: 'Hapus',
             ),
@@ -155,7 +150,8 @@ class _ReceivedSampleDetailScreenState
                       ? () {
                           final details = <String, String>{
                             'Kode': s.kode,
-                            'Tanggal diterima': s.tanggalTerima,
+                            'Tanggal diterima': app_date_utils.DateUtils
+                                .formatStoredDateForDisplay(s.tanggalTerima),
                             'Waktu diterima': s.waktuTerima,
                             'Status': _statusLabel(s.status),
                             if (m != null && m.estate != null)
@@ -188,12 +184,16 @@ class _ReceivedSampleDetailScreenState
                           )
                         : Container(
                             height: 220,
-                            color: AppColors.background,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             child: Center(
                               child: Icon(
                                 Icons.image_not_supported,
                                 size: 48,
-                                color: AppColors.textSecondary,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -215,23 +215,28 @@ class _ReceivedSampleDetailScreenState
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow('Kode', s.kode),
-                      _buildInfoRow('Tanggal diterima', s.tanggalTerima),
+                      _buildInfoRow(
+                        'Tanggal diterima',
+                        app_date_utils.DateUtils.formatStoredDateForDisplay(
+                          s.tanggalTerima,
+                        ),
+                      ),
                       _buildInfoRow('Waktu diterima', s.waktuTerima),
                       _buildInfoRow(
                         'Status',
                         _statusLabel(s.status),
-                        valueColor: _statusColor(s.status),
+                        valueColor: _statusColor(context, s.status),
                       ),
                       if (s.errorMessage != null && s.errorMessage!.isNotEmpty)
                         _buildInfoRow(
                           'Kesalahan',
                           s.errorMessage!,
-                          valueColor: AppColors.error,
+                          valueColor: Theme.of(context).colorScheme.error,
                         ),
                     ],
                   ),
@@ -253,7 +258,7 @@ class _ReceivedSampleDetailScreenState
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -310,14 +315,16 @@ class _ReceivedSampleDetailScreenState
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: TextStyle(color: valueColor ?? AppColors.textPrimary),
+              style: TextStyle(
+                color: valueColor ?? Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
         ],

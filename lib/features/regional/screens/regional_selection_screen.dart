@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../providers/regional_provider.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../sync/providers/sync_provider.dart';
+import '../providers/regional_provider.dart';
 
 class RegionalSelectionScreen extends ConsumerStatefulWidget {
   const RegionalSelectionScreen({super.key});
@@ -18,19 +19,16 @@ class _RegionalSelectionScreenState
   Widget build(BuildContext context) {
     final regionalState = ref.watch(regionalProvider);
     final syncState = ref.watch(syncProvider);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pilih Regional'),
-        elevation: 0,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('Pilih Regional')),
       body: SafeArea(
         child: regionalState.isLoading || syncState.isLoading
             ? const Center(child: CircularProgressIndicator())
             : ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: AppSpacing.paddingScreen,
                 itemCount: AppConstants.regionalOptions.length,
                 itemBuilder: (context, index) {
                   final regional = AppConstants.regionalOptions[index];
@@ -40,32 +38,37 @@ class _RegionalSelectionScreenState
                     margin: const EdgeInsets.only(bottom: 12),
                     elevation: isSelected ? 4 : 1,
                     color: isSelected
-                        ? AppColors.primary.withValues(alpha: 0.1)
-                        : AppColors.surface,
+                        ? colorScheme.primaryContainer.withValues(alpha: 0.5)
+                        : colorScheme.surface,
                     child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
                       ),
                       title: Text(
                         'Regional $regional',
-                        style: TextStyle(
-                          fontSize: 18,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       subtitle: Text(
                         'Pilih untuk sinkron data Regional $regional',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       trailing: isSelected
                           ? Icon(
                               Icons.check_circle,
-                              color: AppColors.primary,
+                              color: colorScheme.primary,
                               size: 28,
                             )
-                          : const Icon(Icons.radio_button_unchecked, size: 28),
+                          : Icon(
+                              Icons.radio_button_unchecked,
+                              size: 28,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                       onTap: () async {
                         final navigator = Navigator.of(context);
                         final messenger = ScaffoldMessenger.of(context);
@@ -86,7 +89,7 @@ class _RegionalSelectionScreenState
                           messenger.showSnackBar(
                             SnackBar(
                               content: Text(errorMsg),
-                              backgroundColor: AppColors.error,
+                              backgroundColor: colorScheme.error,
                             ),
                           );
                           return;
@@ -98,7 +101,7 @@ class _RegionalSelectionScreenState
 
                         if (!mounted) return;
 
-                        navigator.pushReplacementNamed('/home');
+                        navigator.pushReplacementNamed('/');
                       },
                     ),
                   );

@@ -24,15 +24,20 @@ class ApiResponse<T> {
 class ApiError {
   final String code;
   final String message;
-  final Map<String, dynamic>? details;
+
+  /// Optional details (e.g. validation issues array or object). See AUTH_MOBILE_API_DOCS.md.
+  final dynamic details;
 
   ApiError({required this.code, required this.message, this.details});
+
+  /// Sync/upload return 409 when another device owns the mobile session.
+  bool get isSessionConflict => code == 'SESSION_CONFLICT';
 
   factory ApiError.fromJson(Map<String, dynamic> json) {
     return ApiError(
       code: json['code'] as String? ?? 'UNKNOWN_ERROR',
       message: json['message'] as String? ?? 'An error occurred',
-      details: json['details'] as Map<String, dynamic>?,
+      details: json['details'],
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../core/constants/app_constants.dart';
 
 /// Reusable image preview for a file path. Use [onTap] to open full screen or other actions.
 class AppImagePreview extends StatelessWidget {
@@ -32,9 +31,10 @@ class AppImagePreview extends StatelessWidget {
               height: height,
               width: width,
               fit: fit,
-              errorBuilder: (_, Object err, StackTrace? st) => _placeholder(),
+              errorBuilder: (_, Object err, StackTrace? st) =>
+                  _placeholder(context),
             )
-          : _placeholder(),
+          : _placeholder(context),
     );
 
     if (onTap != null) {
@@ -47,11 +47,13 @@ class AppImagePreview extends StatelessWidget {
     return child;
   }
 
-  Widget _placeholder() {
+  Widget _placeholder(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       height: height ?? 200,
       width: width,
-      color: AppColors.background,
+      color: colorScheme.surfaceContainerHighest,
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -59,12 +61,14 @@ class AppImagePreview extends StatelessWidget {
           Icon(
             Icons.broken_image_outlined,
             size: 48,
-            color: AppColors.textSecondary,
+            color: colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 8),
           Text(
             'Foto tidak ditemukan',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

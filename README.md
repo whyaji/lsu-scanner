@@ -1,3 +1,3 @@
-# lsu_scanner
+# sampletrack
 
 A new Flutter project.

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
 
 /// Full-screen image preview with optional details below.
 /// Use after taking a photo or when viewing an existing received sample.
@@ -46,7 +45,8 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
                           fit: BoxFit.contain,
                           width: double.infinity,
                           height: double.infinity,
-                          errorBuilder: (_, __, ___) => _buildPlaceholder(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildPlaceholder(),
                         )
                       : _buildPlaceholder(),
                 ),
@@ -79,17 +79,19 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
   }
 
   Widget _buildDetailsPanel(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Container(
       width: double.infinity,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.4,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: colorScheme.shadow.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -105,7 +107,7 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[400],
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -115,10 +117,9 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               'Detail',
-              style: TextStyle(
-                fontSize: 18,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
               ),
             ),
           ),
@@ -138,19 +139,17 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
                             width: 130,
                             child: Text(
                               e.key,
-                              style: TextStyle(
+                              style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
                           Expanded(
                             child: Text(
                               e.value,
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 14,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface,
                               ),
                             ),
                           ),

@@ -4,7 +4,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../constants/api_constants.dart';
 import 'interceptors/auth_interceptor.dart';
 
-const int _kMaxLogLines = 10;
+const int _kMaxLogLines = 50;
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -24,8 +24,8 @@ class ApiClient {
       ),
     );
 
-    // Add interceptors
-    _dio.interceptors.add(AuthInterceptor());
+    // Add interceptors (401 retry uses same Dio: clone FormData + run onRequest)
+    _dio.interceptors.add(AuthInterceptor(_dio));
 
     // State for truncating response body to first N lines (PrettyDioLogger calls logPrint once per line)
     var inBodySection = false;

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/legacy.dart';
 import '../../../core/network/api_service.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/network/interceptors/auth_interceptor.dart';
 import '../../../core/network/models/auth_models.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../core/database/database_helper.dart';
@@ -12,13 +13,41 @@ class AuthState {
   final bool isLoading;
   final String? error;
 
-  AuthState({this.user, this.isLoading = false, this.error});
+  /// Set when session ended via API (409 / refresh failure); main clears after navigation.
+  final bool shouldNavigateToLogin;
 
-  AuthState copyWith({User? user, bool? isLoading, String? error}) {
+  /// Show one-shot banner on login after forced session end (distinct from login failure).
+  final bool pendingSessionTerminationBanner;
+
+  AuthState({
+    this.user,
+    this.isLoading = false,
+    this.error,
+    this.shouldNavigateToLogin = false,
+    this.pendingSessionTerminationBanner = false,
+  });
+
+  static const Object _unset = Object();
+
+  AuthState copyWith({
+    User? user,
+    bool? isLoading,
+    Object? error = _unset,
+    bool? shouldNavigateToLogin,
+    bool clearUser = false,
+    bool clearNavigateFlag = false,
+    bool clearSessionBanner = false,
+  }) {
     return AuthState(
-      user: user ?? this.user,
+      user: clearUser ? null : (user ?? this.user),
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, _unset) ? this.error : error as String?,
+      shouldNavigateToLogin: clearNavigateFlag
+          ? false
+          : (shouldNavigateToLogin ?? this.shouldNavigateToLogin),
+      pendingSessionTerminationBanner: clearSessionBanner
+          ? false
+          : pendingSessionTerminationBanner,
     );
   }
 
@@ -32,33 +61,83 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   AuthNotifier(this._apiService, this._storage, this._dbHelper)
     : super(AuthState()) {
+    AuthInterceptor.configure(onForceLogout: forceLogoutFromApi);
     _checkAuthStatus();
+  }
+
+  Future<void> _clearLocalSession() async {
+    await _storage.clearTokens();
+    await _dbHelper.deletePreference('user_data');
+    await _dbHelper.deletePreference('user_id');
+    await _dbHelper.deletePreference(AppConstants.keySelectedRegional);
+    await _dbHelper.deletePreference(AppConstants.keyLastSyncTime);
+  }
+
+  /// Session invalid / other device logged in. Does not call mobile-logout.
+  Future<void> forceLogoutFromApi(String message) async {
+    await _clearLocalSession();
+    state = AuthState(
+      error: message,
+      shouldNavigateToLogin: true,
+      pendingSessionTerminationBanner: true,
+    );
+  }
+
+  void acknowledgeSessionTerminatedNavigation() {
+    if (!state.shouldNavigateToLogin) return;
+    state = AuthState(
+      user: state.user,
+      isLoading: state.isLoading,
+      error: state.error,
+      shouldNavigateToLogin: false,
+      pendingSessionTerminationBanner: state.pendingSessionTerminationBanner,
+    );
+  }
+
+  void clearSessionTerminationBanner() {
+    if (!state.pendingSessionTerminationBanner) return;
+    state = state.copyWith(clearSessionBanner: true);
+  }
+
+  Future<void> _persistUser(User user) async {
+    await _dbHelper.setPreference('user_data', jsonEncode(user.toJson()));
+    await _dbHelper.setPreference('user_id', user.userId.toString());
   }
 
   Future<void> _checkAuthStatus() async {
     try {
       final token = await _storage.getAccessToken();
-      if (token != null) {
-        final userDataStr = await _dbHelper.getPreference('user_data');
-        if (userDataStr != null) {
-          try {
-            final userData = jsonDecode(userDataStr) as Map<String, dynamic>;
-            final user = User.fromJson(userData);
-            state = state.copyWith(user: user);
-          } catch (e) {
-            // If parsing fails, try to get from API
-            final response = await _apiService.getCurrentUser();
-            if (response.success && response.data != null) {
-              state = state.copyWith(user: response.data);
-            }
-          }
-        } else {
-          // Try to get from API
-          final response = await _apiService.getCurrentUser();
-          if (response.success && response.data != null) {
-            state = state.copyWith(user: response.data);
-          }
+      if (token == null) return;
+
+      User? user;
+      final userDataStr = await _dbHelper.getPreference('user_data');
+      if (userDataStr != null) {
+        try {
+          final userData = jsonDecode(userDataStr) as Map<String, dynamic>;
+          user = User.fromJson(userData);
+        } catch (_) {
+          user = null;
         }
+      }
+
+      final needsRefresh =
+          user == null ||
+          user.permissions.isEmpty ||
+          userDataStr != null && !userDataStr.contains('"permissions"');
+
+      if (needsRefresh) {
+        final response = await _apiService.getCurrentUser();
+        final refreshed = response.data;
+        if (response.success && refreshed != null) {
+          user = refreshed;
+          await _persistUser(refreshed);
+        }
+      } else if (userDataStr != null && userDataStr.contains('"access"')) {
+        await _persistUser(user);
+      }
+
+      if (user != null) {
+        state = state.copyWith(user: user);
       }
     } catch (e) {
       // Not authenticated
@@ -66,7 +145,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<bool> login(String username, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      shouldNavigateToLogin: false,
+      clearSessionBanner: true,
+    );
 
     try {
       final response = await _apiService.login(username, password);
@@ -74,7 +158,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (response.success && response.data != null) {
         final loginData = response.data!;
 
-        // Save tokens
         await _storage.saveAccessToken(loginData.accessToken);
         await _storage.saveRefreshToken(loginData.refreshToken);
         final expiresAt = DateTime.now()
@@ -82,14 +165,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
             .millisecondsSinceEpoch;
         await _storage.saveAccessTokenExpiresAt(expiresAt.toString());
 
-        // Save user data
-        await _dbHelper.setPreference(
-          'user_data',
-          jsonEncode(loginData.user.toJson()),
-        );
-        await _dbHelper.setPreference('user_id', loginData.user.id.toString());
+        await _persistUser(loginData.user);
 
-        state = state.copyWith(user: loginData.user, isLoading: false);
+        state = state.copyWith(
+          user: loginData.user,
+          isLoading: false,
+          error: null,
+        );
 
         return true;
       } else {
@@ -100,7 +182,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         return false;
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: 'Terjadi kesalahan jaringan');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Terjadi kesalahan jaringan',
+      );
       return false;
     }
   }
@@ -109,20 +194,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _apiService.logout();
     } catch (e) {
-      // Continue with logout even if API call fails
+      // Continue clearing local session
     }
 
-    // Clear storage
-    await _storage.clearTokens();
-    await _dbHelper.deletePreference('user_data');
-    await _dbHelper.deletePreference('user_id');
-    await _dbHelper.deletePreference(AppConstants.keySelectedRegional);
-    await _dbHelper.deletePreference(AppConstants.keyLastSyncTime);
-
+    await _clearLocalSession();
     state = AuthState();
   }
 
   User? get currentUser => state.user;
+
+  Future<void> updateUserFromSync(User user) async {
+    await _persistUser(user);
+    state = state.copyWith(user: user);
+  }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {

@@ -1,0 +1,109 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import '../../auth/providers/auth_provider.dart';
+import 'lsu_home_screen.dart';
+import 'fertilizer_home_screen.dart';
+import '../../settings/screens/settings_screen.dart';
+import '../../notifications/providers/notification_provider.dart';
+import '../../notifications/screens/notification_screen.dart';
+
+final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
+
+/// Shell with bottom navigation. Destinations depend on mobile RBAC permissions.
+class BottomNavShell extends ConsumerStatefulWidget {
+  const BottomNavShell({super.key});
+
+  @override
+  ConsumerState<BottomNavShell> createState() => _BottomNavShellState();
+}
+
+class _BottomNavShellState extends ConsumerState<BottomNavShell> {
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final notificationState = ref.watch(notificationProvider);
+    final unreadCount = notificationState.unreadCount;
+    final user = authState.user;
+    final hasLsu = user?.hasAnyLsuMobileAccess ?? false;
+    final hasPupuk = user?.hasAnyPupukMobileAccess ?? false;
+
+    final destinations = <NavigationDestination>[];
+    final children = <Widget>[];
+
+    if (hasLsu) {
+      destinations.add(
+        const NavigationDestination(
+          icon: Icon(Icons.eco_outlined),
+          selectedIcon: Icon(Icons.eco),
+          label: 'LSU',
+        ),
+      );
+      children.add(
+        const LsuHomeScreen(showBackButton: false, showSettingsInAppBar: false),
+      );
+    }
+
+    if (hasPupuk) {
+      destinations.add(
+        const NavigationDestination(
+          icon: Icon(Icons.science_outlined),
+          selectedIcon: Icon(Icons.science),
+          label: 'Pupuk',
+        ),
+      );
+      children.add(
+        const FertilizerHomeScreen(
+          showBackButton: false,
+          showSettingsInAppBar: false,
+        ),
+      );
+    }
+
+    // Add Notifikasi destination with Badge
+    destinations.add(
+      NavigationDestination(
+        icon: Badge(
+          label: unreadCount > 0 ? Text('$unreadCount') : null,
+          isLabelVisible: unreadCount > 0,
+          child: const Icon(Icons.notifications_outlined),
+        ),
+        selectedIcon: Badge(
+          label: unreadCount > 0 ? Text('$unreadCount') : null,
+          isLabelVisible: unreadCount > 0,
+          child: const Icon(Icons.notifications),
+        ),
+        label: 'Notifikasi',
+      ),
+    );
+    children.add(const NotificationScreen());
+
+    destinations.add(
+      const NavigationDestination(
+        icon: Icon(Icons.settings_outlined),
+        selectedIcon: Icon(Icons.settings),
+        label: 'Pengaturan',
+      ),
+    );
+    children.add(const SettingsScreen(showBackButton: false));
+
+    var index = ref.watch(bottomNavIndexProvider);
+    if (index >= children.length) {
+      index = children.isNotEmpty ? children.length - 1 : 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(bottomNavIndexProvider.notifier).state = index;
+      });
+    }
+
+    return Scaffold(
+      body: IndexedStack(index: index, children: children),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: index,
+        onDestinationSelected: (i) {
+          ref.read(bottomNavIndexProvider.notifier).state = i;
+        },
+        destinations: destinations,
+      ),
+    );
+  }
+}

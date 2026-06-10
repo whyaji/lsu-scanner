@@ -44,6 +44,7 @@ dependencies:
   sqflite: ^2.4.2
   firebase_core: ^4.10.0
   firebase_messaging: ^16.3.0
+  audioplayers: ^6.7.1
 
 dev_dependencies:
   flutter_test:
@@ -58,3 +59,5 @@ flutter:
     - assets/images/ic.png
     - assets/images/ic_background.png
     - assets/images/ic_foreground.png
+    - assets/sounds/notification.wav
+    - assets/sounds/notification2.wav

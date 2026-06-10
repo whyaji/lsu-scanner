@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../main.dart';
 import '../../network/api_client.dart';
 import '../../network/api_service.dart';
+import '../../services/notification_sound_service.dart';
 import '../../../features/notifications/providers/notification_provider.dart';
 
 @pragma('vm:entry-point')
@@ -67,6 +68,7 @@ class FcmService {
           log(
             'Message also contained a notification: ${message.notification!.title}',
           );
+          NotificationSoundService.instance.play(message.data['sound']);
           _showForegroundBanner(message);
         }
 

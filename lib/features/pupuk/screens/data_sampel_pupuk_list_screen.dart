@@ -287,17 +287,6 @@ class _DataSampelPupukListScreenState
             isLoading: _loading && _isOnline,
             onChanged: _onProgressChanged,
           ),
-          if (_isOnline && !_loading)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Text(
-                'Halaman $_page dari $_totalPages',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: _loading
                 ? const AppLoadingState(itemCount: 8)
@@ -323,17 +312,37 @@ class _DataSampelPupukListScreenState
                             controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: AppSpacing.paddingScreen,
-                            itemCount: items.length + (_loadingMore ? 1 : 0),
+                            itemCount:
+                                items.length +
+                                (_loadingMore ? 1 : 0) +
+                                (_isOnline ? 1 : 0),
                             separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.sm),
                             itemBuilder: (context, index) {
                               if (index >= items.length) {
-                                return const Padding(
-                                  padding: EdgeInsets.symmetric(
+                                if (_loadingMore && index == items.length) {
+                                  return const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: AppSpacing.md,
+                                    ),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                }
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
                                     vertical: AppSpacing.md,
                                   ),
                                   child: Center(
-                                    child: CircularProgressIndicator(),
+                                    child: Text(
+                                      'Halaman $_page dari $_totalPages (${items.length} data)',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
                                   ),
                                 );
                               }

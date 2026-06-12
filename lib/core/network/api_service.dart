@@ -307,6 +307,18 @@ class ApiService {
     }
   }
 
+  Future<ApiResponse<NextNoSuratResponse>> getNextNoSurat() async {
+    try {
+      final response = await _dio.get(ApiConstants.dataSampelPupukNextNoSurat);
+      return ApiResponse.fromJson(
+        response.data,
+        (data) => NextNoSuratResponse.fromJson(data as Map<String, dynamic>),
+      );
+    } on DioException catch (e) {
+      return _handleError(e);
+    }
+  }
+
   Future<ApiResponse<DataSampelPupukDto>> getDataSampelPupukById(int id) async {
     try {
       final response = await _dio.get('${ApiConstants.dataSampelPupuk}/$id');

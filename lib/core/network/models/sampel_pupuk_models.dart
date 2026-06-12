@@ -539,3 +539,17 @@ class PhotoPupukUploadResponse {
     );
   }
 }
+
+class NextNoSuratResponse {
+  final String noSurat;
+  final int sequence;
+
+  NextNoSuratResponse({required this.noSurat, required this.sequence});
+
+  factory NextNoSuratResponse.fromJson(Map<String, dynamic> json) {
+    return NextNoSuratResponse(
+      noSurat: json['noSurat'] as String? ?? '',
+      sequence: (json['sequence'] as num?)?.toInt() ?? 0,
+    );
+  }
+}

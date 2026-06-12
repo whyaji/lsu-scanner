@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_service.dart';
+import '../../../core/network/models/api_response.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../constants/pupuk_activity_types.dart';
 import '../models/pupuk_sampel_entry.dart';
@@ -44,15 +47,67 @@ class SampelPupukActivityFormScreen extends StatefulWidget {
 class _SampelPupukActivityFormScreenState
     extends State<SampelPupukActivityFormScreen> {
   final _formKey = GlobalKey<FormState>();
-
+  final _apiService = ApiService(ApiClient().dio);
+  final _noSuratController = TextEditingController();
   late DateTime _fixedDateTime;
   String? _namaPengirim;
   String? _noSurat;
+  bool _isOnline = false;
+  bool _loadingNoSurat = false;
 
   @override
   void initState() {
     super.initState();
     _fixedDateTime = DateTime.now();
+    if (widget.activityType == kKirimLab) {
+      _checkOnline();
+    }
+  }
+
+  @override
+  void dispose() {
+    _noSuratController.dispose();
+    super.dispose();
+  }
+
+  bool _isNetworkFailure<T>(ApiResponse<T> response) {
+    return !response.success &&
+        (response.error?.code == 'NETWORK_ERROR' ||
+            response.error?.message.toLowerCase().contains('network') == true);
+  }
+
+  Future<void> _checkOnline() async {
+    final response = await _apiService.getCurrentUser();
+    if (!mounted) return;
+    setState(() {
+      _isOnline = response.success && !_isNetworkFailure(response);
+    });
+  }
+
+  Future<void> _fetchNextNoSurat() async {
+    setState(() => _loadingNoSurat = true);
+    final response = await _apiService.getNextNoSurat();
+    if (!mounted) return;
+
+    setState(() => _loadingNoSurat = false);
+
+    if (response.success && response.data != null) {
+      final noSurat = response.data!.noSurat.trim();
+      if (noSurat.isNotEmpty) {
+        _noSuratController.text = noSurat;
+        _noSurat = noSurat;
+        _formKey.currentState?.validate();
+      }
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.error?.message ?? 'Gagal mendapatkan no. surat otomatis',
+        ),
+      ),
+    );
   }
 
   String get _dateTimeIso => _fixedDateTime.toIso8601String();
@@ -176,7 +231,26 @@ class _SampelPupukActivityFormScreenState
                 ),
                 if (widget.activityType == kKirimLab) ...[
                   const SizedBox(height: 16),
+                  if (_isOnline) ...[
+                    OutlinedButton.icon(
+                      onPressed: _loadingNoSurat ? null : _fetchNextNoSurat,
+                      icon: _loadingNoSurat
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.numbers_outlined),
+                      label: Text(
+                        _loadingNoSurat
+                            ? 'Mengambil no. surat...'
+                            : 'Dapatkan no surat otomatis',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   TextFormField(
+                    controller: _noSuratController,
                     decoration: const InputDecoration(
                       labelText: 'No. Surat',
                       border: OutlineInputBorder(),
@@ -189,7 +263,6 @@ class _SampelPupukActivityFormScreenState
                       return null;
                     },
                     onSaved: (v) => _noSurat = v?.trim(),
-                    initialValue: _noSurat,
                     onChanged: (v) =>
                         _noSurat = v.trim().isEmpty ? null : v.trim(),
                   ),

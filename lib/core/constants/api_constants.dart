@@ -45,6 +45,8 @@ class ApiConstants {
   static const String dataSampelPupuk = '/data-sampel-pupuk';
   static const String dataSampelPupukProgressCounts =
       '/data-sampel-pupuk/progress-counts';
+  static const String dataSampelPupukNextNoSurat =
+      '/data-sampel-pupuk/next-no-surat';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 30);

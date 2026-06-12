@@ -118,9 +118,12 @@ class AuthWrapper extends ConsumerWidget {
       return const LoginScreen();
     }
 
-    // Initialize FCM when authenticated
+    // Initialize FCM when authenticated, then handle any notification tap
+    // that launched the app while it was closed.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(fcmServiceProvider).init();
+      final fcm = ref.read(fcmServiceProvider);
+      fcm.init();
+      fcm.processPendingNotificationTap();
     });
 
     // Check regional selection

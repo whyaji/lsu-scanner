@@ -8,8 +8,10 @@ import '../../../main.dart';
 import '../../network/api_client.dart';
 import '../../network/api_service.dart';
 import '../../services/notification_sound_service.dart';
+import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/notifications/providers/notification_provider.dart';
 import '../../../features/notifications/utils/notification_navigation.dart';
+import '../../../features/regional/providers/regional_provider.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -21,6 +23,8 @@ class FcmService {
   final Ref _ref;
   final ApiService _apiService;
   bool _initialized = false;
+  bool _tapListenersRegistered = false;
+  RemoteMessage? _pendingTapMessage;
 
   FcmService(this._ref) : _apiService = ApiService(ApiClient().dio);
 
@@ -33,6 +37,8 @@ class FcmService {
       FirebaseMessaging.onBackgroundMessage(
         _firebaseMessagingBackgroundHandler,
       );
+
+      _registerTapListeners();
 
       // Set up foreground notification presentation options
       await FirebaseMessaging.instance
@@ -115,21 +121,86 @@ class FcmService {
     }
   }
 
+  void _registerTapListeners() {
+    if (_tapListenersRegistered) return;
+    _tapListenersRegistered = true;
+
+    _ref.listen<AuthState>(authProvider, (_, __) {
+      processPendingNotificationTap();
+    });
+    _ref.listen<RegionalState>(regionalProvider, (_, __) {
+      processPendingNotificationTap();
+    });
+  }
+
+  bool _isAppReadyForNotificationNavigation() {
+    final auth = _ref.read(authProvider);
+    if (!auth.isAuthenticated || auth.isLoading) return false;
+
+    final regional = _ref.read(regionalProvider);
+    if (regional.selectedRegional == null) return false;
+
+    return appNavigatorKey.currentState != null;
+  }
+
   void _handleMessageClick(RemoteMessage message) {
+    log(
+      'Notification tap queued: id=${message.messageId}, data=${message.data}',
+    );
+    _pendingTapMessage = message;
+    processPendingNotificationTap();
+  }
+
+  /// Navigate to the screen for a notification tap once auth + navigator are ready.
+  void processPendingNotificationTap({int attempt = 0}) {
+    final message = _pendingTapMessage;
+    if (message == null) return;
+
+    if (!_isAppReadyForNotificationNavigation()) {
+      if (attempt < 120) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          processPendingNotificationTap(attempt: attempt + 1);
+        });
+      }
+      return;
+    }
+
+    final context = appNavigatorKey.currentContext;
+    final nav = appNavigatorKey.currentState;
+    if (context == null || nav == null) {
+      if (attempt < 120) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          processPendingNotificationTap(attempt: attempt + 1);
+        });
+      }
+      return;
+    }
+
+    _pendingTapMessage = null;
+
+    final data = Map<String, dynamic>.from(message.data);
+    final title =
+        message.notification?.title ??
+        data['title']?.toString() ??
+        'Notifikasi';
+    final body = message.notification?.body ?? data['body']?.toString() ?? '';
+    final type = data['type']?.toString() ?? '';
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final context = appNavigatorKey.currentContext;
-      final data = Map<String, dynamic>.from(message.data);
-      if (context != null && parseNotificationSampleIds(data).isNotEmpty) {
+      if (!context.mounted) return;
+
+      if (parseNotificationSampleIds(data).isNotEmpty) {
         await openNotificationDataTarget(
           context,
           data,
-          title: message.notification?.title ?? 'Notifikasi',
-          body: message.notification?.body ?? '',
-          type: data['type']?.toString() ?? '',
+          title: title,
+          body: body,
+          type: type,
         );
         return;
       }
-      appNavigatorKey.currentState?.pushNamed('/notifications');
+
+      await nav.pushNamed('/notifications');
     });
   }
 
@@ -191,20 +262,7 @@ class FcmService {
         action: SnackBarAction(
           label: 'VIEW',
           onPressed: () {
-            final data = Map<String, dynamic>.from(message.data);
-            final navContext = appNavigatorKey.currentContext;
-            if (navContext != null &&
-                parseNotificationSampleIds(data).isNotEmpty) {
-              openNotificationDataTarget(
-                navContext,
-                data,
-                title: message.notification?.title ?? 'Notifikasi',
-                body: message.notification?.body ?? '',
-                type: data['type']?.toString() ?? '',
-              );
-              return;
-            }
-            appNavigatorKey.currentState?.pushNamed('/notifications');
+            _handleMessageClick(message);
           },
         ),
       ),

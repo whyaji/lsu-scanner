@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import '../providers/notification_provider.dart';
 import '../../../core/network/models/notification_model.dart';
+import '../constants/notification_type_ui.dart';
+import '../utils/notification_navigation.dart';
 
 class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
@@ -168,7 +170,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: Text(
-                  'Semua notifikasi terkait estimasi KUPA dan sertifikat pupuk akan muncul di sini.',
+                  'Semua notifikasi terkait alur sampel pupuk akan muncul di sini.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.grey,
@@ -199,22 +201,16 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     ThemeData theme,
   ) {
     final isUnread = !notification.isRead;
-
-    // Choose icon and color based on notification type
-    IconData iconData = Icons.notifications;
-    Color iconColor = theme.colorScheme.primary;
-    if (notification.type == 'estimasi_kupa') {
-      iconData = Icons.analytics_outlined;
-      iconColor = Colors.orange;
-    } else if (notification.type == 'sertifikat') {
-      iconData = Icons.verified_user_outlined;
-      iconColor = Colors.green;
-    }
+    final typeUi = notificationTypeUiFor(notification.type);
+    final hasTarget = parseNotificationSampleIds(notification.data).isNotEmpty;
 
     return InkWell(
-      onTap: () {
+      onTap: () async {
         if (isUnread) {
           ref.read(notificationProvider.notifier).markAsRead(notification.id);
+        }
+        if (hasTarget && context.mounted) {
+          await openNotificationTarget(context, notification);
         }
       },
       child: Container(
@@ -232,10 +228,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
+                    color: typeUi.color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(iconData, color: iconColor, size: 24),
+                  child: Icon(typeUi.icon, color: typeUi.color, size: 24),
                 ),
                 if (isUnread)
                   Positioned(
@@ -299,6 +295,26 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                       height: 1.4,
                     ),
                   ),
+                  if (hasTarget) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.open_in_new,
+                          size: 14,
+                          color: theme.colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Ketuk untuk lihat detail',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

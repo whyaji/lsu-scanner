@@ -8,6 +8,7 @@ enum DataSampelPupukProgress {
   dikirimEstate,
   dikirimLab,
   registrasiLab,
+  estimasiKupa,
   sertifikatLabRilis,
   sertifikatTerkirim,
 }
@@ -58,6 +59,12 @@ const dataSampelPupukProgressTabs = <DataSampelPupukProgressTab>[
     color: Colors.purple,
   ),
   DataSampelPupukProgressTab(
+    id: DataSampelPupukProgress.estimasiKupa,
+    label: 'Estimasi KUPA',
+    icon: Icons.analytics_outlined,
+    color: Colors.orange,
+  ),
+  DataSampelPupukProgressTab(
     id: DataSampelPupukProgress.sertifikatLabRilis,
     label: 'Sertifikat Lab Rilis',
     icon: Icons.workspace_premium_outlined,
@@ -85,8 +92,11 @@ DataSampelPupukProgress resolveDataSampelPupukProgress(DataSampelPupuk item) {
   if (_isEmptyDate(item.tanggalRegistrasiLab)) {
     return DataSampelPupukProgress.dikirimLab;
   }
-  if (!_hasText(item.noSertifikat)) {
+  if (_isEmptyDate(item.tanggalEstimasiKupa)) {
     return DataSampelPupukProgress.registrasiLab;
+  }
+  if (!_hasText(item.noSertifikat)) {
+    return DataSampelPupukProgress.estimasiKupa;
   }
   if (_isEmptyDate(item.tanggalKirimSertifikatEstate)) {
     return DataSampelPupukProgress.sertifikatLabRilis;
@@ -134,6 +144,8 @@ String? progressToApiParam(DataSampelPupukProgress progress) {
       return 'dikirim-lab';
     case DataSampelPupukProgress.registrasiLab:
       return 'registrasi-lab';
+    case DataSampelPupukProgress.estimasiKupa:
+      return 'estimasi-kupa';
     case DataSampelPupukProgress.sertifikatLabRilis:
       return 'sertifikat-lab-rilis';
     case DataSampelPupukProgress.sertifikatTerkirim:
@@ -151,6 +163,8 @@ DataSampelPupukProgress? progressFromApiParam(String? value) {
       return DataSampelPupukProgress.dikirimLab;
     case 'registrasi-lab':
       return DataSampelPupukProgress.registrasiLab;
+    case 'estimasi-kupa':
+      return DataSampelPupukProgress.estimasiKupa;
     case 'sertifikat-lab-rilis':
       return DataSampelPupukProgress.sertifikatLabRilis;
     case 'sertifikat-terkirim':
@@ -177,6 +191,8 @@ Map<DataSampelPupukProgress, int> parseProgressCountsFromApi(
         (json['dikirim-lab'] as num?)?.toInt() ?? 0,
     DataSampelPupukProgress.registrasiLab:
         (json['registrasi-lab'] as num?)?.toInt() ?? 0,
+    DataSampelPupukProgress.estimasiKupa:
+        (json['estimasi-kupa'] as num?)?.toInt() ?? 0,
     DataSampelPupukProgress.sertifikatLabRilis:
         (json['sertifikat-lab-rilis'] as num?)?.toInt() ?? 0,
     DataSampelPupukProgress.sertifikatTerkirim:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../widgets/app_footer.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -76,10 +77,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(
-                    Icons.qr_code_scanner,
-                    size: 80,
-                    color: colorScheme.primary,
+                  Center(
+                    child: Image.asset(
+                      'assets/images/ic_foreground.png',
+                      height: 160,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   AppSpacing.gapMd,
                   Text(
@@ -156,6 +159,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           )
                         : const Text('Masuk'),
                   ),
+                  AppSpacing.gapXl,
+                  const Center(child: AppFooter()),
+                  AppSpacing.gapMd,
                 ],
               ),
             ),

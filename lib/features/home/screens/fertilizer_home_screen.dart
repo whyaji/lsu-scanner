@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/database_helper.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../widgets/app_footer.dart';
 import '../../../widgets/app_stat_card.dart';
 import '../../../widgets/app_section_header.dart';
 import '../../../widgets/sync_progress_modal.dart';
@@ -145,36 +146,46 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
           ],
         ),
         body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: AppSpacing.paddingXl,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.lock_outline,
-                    size: 64,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  AppSpacing.gapLg,
-                  Text(
-                    'Anda tidak memiliki akses Sampel Pupuk.',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: AppSpacing.paddingXl,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 64,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        AppSpacing.gapLg,
+                        Text(
+                          'Anda tidak memiliki akses Sampel Pupuk.',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        AppSpacing.gapSm,
+                        Text(
+                          'Hubungi admin untuk mendapatkan izin mobile Pupuk (kirim estate/lab/sertifikat).',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                  AppSpacing.gapSm,
-                  Text(
-                    'Hubungi admin untuk mendapatkan izin mobile Pupuk (kirim estate/lab/sertifikat).',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                ),
               ),
-            ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.md),
+                child: AppFooter(),
+              ),
+            ],
           ),
         ),
       );
@@ -412,6 +423,9 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                     );
                   },
                 ),
+                AppSpacing.gapLg,
+                const Center(child: AppFooter()),
+                AppSpacing.gapMd,
               ],
             ),
           ),

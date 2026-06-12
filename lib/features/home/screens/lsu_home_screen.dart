@@ -4,6 +4,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/database_helper.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../widgets/app_footer.dart';
 import '../../../widgets/app_stat_card.dart';
 import '../../../widgets/app_section_header.dart';
 import '../../../widgets/sync_progress_modal.dart';
@@ -130,17 +131,27 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
           ],
         ),
         body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: AppSpacing.paddingXl,
-              child: Text(
-                'Anda tidak memiliki izin mobile LSU (terima/selesai). Hubungi admin.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: AppSpacing.paddingXl,
+                    child: Text(
+                      'Anda tidak memiliki izin mobile LSU (terima/selesai). Hubungi admin.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 ),
-                textAlign: TextAlign.center,
               ),
-            ),
+              const Padding(
+                padding: EdgeInsets.only(bottom: AppSpacing.md),
+                child: AppFooter(),
+              ),
+            ],
           ),
         ),
       );
@@ -345,6 +356,9 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                   icon: const Icon(Icons.cloud_upload, size: 24),
                   label: const Text('Unggah Sampel'),
                 ),
+                AppSpacing.gapLg,
+                const Center(child: AppFooter()),
+                AppSpacing.gapMd,
               ],
             ),
           ),

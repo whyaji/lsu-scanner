@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/network/services/app_update_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../widgets/app_settings_tile.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -7,14 +9,66 @@ import '../../regional/providers/regional_provider.dart';
 import '../../regional/screens/regional_selection_screen.dart';
 import '../../sync/providers/sync_provider.dart';
 import '../providers/theme_provider.dart';
+import '../../../widgets/app_alert.dart';
+import '../../../widgets/app_footer.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.showBackButton = true});
 
   final bool showBackButton;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _isCheckingUpdate = false;
+
+  Future<void> _onManualUpdateCheck() async {
+    if (_isCheckingUpdate) return;
+    setState(() => _isCheckingUpdate = true);
+    try {
+      final outcome = await AppUpdateService.manualCheckForUpdate();
+      if (!mounted) return;
+      switch (outcome) {
+        case ManualUpdateOutcome.platformNotSupported:
+          AppAlerts.info(
+            context,
+            'Pembaruan dalam aplikasi hanya tersedia di perangkat Android.',
+          );
+          break;
+        case ManualUpdateOutcome.debugBuild:
+          AppAlerts.info(
+            context,
+            'Pemeriksaan pembaruan tidak dijalankan pada build pengembangan (debug).',
+          );
+          break;
+        case ManualUpdateOutcome.noUpdateAvailable:
+          AppAlerts.success(
+            context,
+            'Aplikasi sudah menggunakan versi terbaru.',
+          );
+          break;
+        case ManualUpdateOutcome.updateFlowStarted:
+          AppAlerts.info(
+            context,
+            'Ikuti langkah di layar untuk menyelesaikan pembaruan.',
+          );
+          break;
+        case ManualUpdateOutcome.error:
+          AppAlerts.error(
+            context,
+            'Gagal memeriksa pembaruan. Periksa koneksi atau coba lagi nanti.',
+          );
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _isCheckingUpdate = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final regionalState = ref.watch(regionalProvider);
     final user = authState.user;
@@ -26,7 +80,7 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pengaturan'),
-        leading: showBackButton
+        leading: widget.showBackButton
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.of(context).pop(),
@@ -150,6 +204,37 @@ class SettingsScreen extends ConsumerWidget {
               ),
               AppSpacing.gapLg,
 
+              // App section
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
+                child: Text(
+                  'Aplikasi',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              AppSettingsTile(
+                icon: Icons.system_update_outlined,
+                title: 'Periksa Pembaruan',
+                subtitle: AppConstants.appVersion.isNotEmpty
+                    ? 'Versi ${AppConstants.appVersion}'
+                    : 'Periksa versi terbaru di Play Store',
+                onTap: _onManualUpdateCheck,
+                trailing: _isCheckingUpdate
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.primary,
+                        ),
+                      )
+                    : null,
+              ),
+              AppSpacing.gapLg,
+
               // Logout
               AppSettingsTile(
                 icon: Icons.logout,
@@ -159,6 +244,9 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => _showLogoutConfirmation(context, ref),
                 isDestructive: true,
               ),
+              AppSpacing.gapLg,
+              const Center(child: AppFooter()),
+              AppSpacing.gapMd,
             ],
           ),
         ),

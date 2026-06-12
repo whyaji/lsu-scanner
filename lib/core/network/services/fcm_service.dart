@@ -9,6 +9,7 @@ import '../../network/api_client.dart';
 import '../../network/api_service.dart';
 import '../../services/notification_sound_service.dart';
 import '../../../features/notifications/providers/notification_provider.dart';
+import '../../../features/notifications/utils/notification_navigation.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -115,7 +116,19 @@ class FcmService {
   }
 
   void _handleMessageClick(RemoteMessage message) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final context = appNavigatorKey.currentContext;
+      final data = Map<String, dynamic>.from(message.data);
+      if (context != null && parseNotificationSampleIds(data).isNotEmpty) {
+        await openNotificationDataTarget(
+          context,
+          data,
+          title: message.notification?.title ?? 'Notifikasi',
+          body: message.notification?.body ?? '',
+          type: data['type']?.toString() ?? '',
+        );
+        return;
+      }
       appNavigatorKey.currentState?.pushNamed('/notifications');
     });
   }
@@ -178,6 +191,19 @@ class FcmService {
         action: SnackBarAction(
           label: 'VIEW',
           onPressed: () {
+            final data = Map<String, dynamic>.from(message.data);
+            final navContext = appNavigatorKey.currentContext;
+            if (navContext != null &&
+                parseNotificationSampleIds(data).isNotEmpty) {
+              openNotificationDataTarget(
+                navContext,
+                data,
+                title: message.notification?.title ?? 'Notifikasi',
+                body: message.notification?.body ?? '',
+                type: data['type']?.toString() ?? '',
+              );
+              return;
+            }
             appNavigatorKey.currentState?.pushNamed('/notifications');
           },
         ),

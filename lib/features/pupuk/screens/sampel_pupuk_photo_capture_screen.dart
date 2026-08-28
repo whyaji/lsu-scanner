@@ -63,9 +63,7 @@ class _SampelPupukPhotoCaptureScreenState
     }
 
     final kodes = samples.map((s) => s.displayKodeSampel).toList();
-    final kodeLine = kodes.length <= 2
-        ? kodes.join(', ')
-        : '${kodes.take(2).join(', ')} +${kodes.length - 2} lainnya';
+    final kodeLine = kodes.join('\n');
     return 'SAMPEL PUPUK\n$typeLabel\n$kodeLine\n${samples.length} sampel\n$part';
   }
 

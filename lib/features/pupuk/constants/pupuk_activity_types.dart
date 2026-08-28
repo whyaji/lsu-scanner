@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sampletrack/core/constants/permission_constants.dart';
 import 'package:sampletrack/core/database/models/aktivitas_sampel_pupuk.dart';
 import 'package:sampletrack/core/database/models/data_sampel_pupuk.dart';
@@ -31,15 +32,53 @@ List<String> allowedPupukActivityTypes(
   List<String>? permissions,
   AktivitasSampelPupuk? aktivitasSampelPupuk, {
   DataSampelPupuk? dataSampelPupukFallback,
+  String? individualKodeSampel,
 }) {
   final DataSampelPupuk? data =
       aktivitasSampelPupuk?.dataSampelPupuk ?? dataSampelPupukFallback;
 
-  final bool canKirimLab =
+  bool canKirimLab =
       aktivitasSampelPupuk?.kirimLab == null && data?.fotoKirimLab == null;
-  final bool canKirimDariEstate =
+  bool canKirimDariEstate =
       aktivitasSampelPupuk?.kirimDariEstate == null &&
       data?.fotoKirimDariEstate == null;
+
+  if (individualKodeSampel != null) {
+    canKirimLab = aktivitasSampelPupuk?.kirimLab == null;
+    canKirimDariEstate = aktivitasSampelPupuk?.kirimDariEstate == null;
+
+    if (data?.trackingSampelPupuk != null) {
+      try {
+        final List<dynamic> trackingList = jsonDecode(
+          data!.trackingSampelPupuk!,
+        );
+        final entry = trackingList.firstWhere(
+          (item) =>
+              item is List &&
+              item.isNotEmpty &&
+              item[0] == individualKodeSampel,
+          orElse: () => null,
+        );
+        if (entry != null) {
+          final String? waktuKirimEstate = entry.length > 2
+              ? entry[2] as String?
+              : null;
+          final String? waktuKirimLab = entry.length > 3
+              ? entry[3] as String?
+              : null;
+
+          canKirimDariEstate =
+              canKirimDariEstate &&
+              (waktuKirimEstate == null || waktuKirimEstate.isEmpty);
+          canKirimLab =
+              canKirimLab && (waktuKirimLab == null || waktuKirimLab.isEmpty);
+        }
+      } catch (e) {
+        // fallback
+      }
+    }
+  }
+
   if (permissions == null || permissions.isEmpty) return [];
   final list = <String>[];
   if (permissions.contains(PermissionConstants.pupukMobileKirimEstate) &&

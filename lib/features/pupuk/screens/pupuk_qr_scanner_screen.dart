@@ -8,7 +8,7 @@ import '../../auth/providers/auth_provider.dart';
 import '../../scanner/utils/qr_parser.dart';
 import '../constants/pupuk_activity_types.dart';
 import '../models/pupuk_sampel_entry.dart';
-import 'kirim_lab_sampel_collection_screen.dart';
+import 'kirim_sampel_collection_screen.dart';
 import 'sampel_pupuk_detail_screen.dart';
 
 class PupukQRScannerScreen extends ConsumerStatefulWidget {
@@ -16,7 +16,7 @@ class PupukQRScannerScreen extends ConsumerStatefulWidget {
     super.key,
     required this.activityType,
     this.addToCollection = false,
-    this.existingSampleIds = const {},
+    this.existingSampleCodes = const {},
   });
 
   final String activityType;
@@ -24,8 +24,8 @@ class PupukQRScannerScreen extends ConsumerStatefulWidget {
   /// When true, pops with [PupukSampelEntry] instead of opening a new screen.
   final bool addToCollection;
 
-  /// Sample IDs already in the Kirim Lab batch (duplicate check).
-  final Set<int> existingSampleIds;
+  /// Sample codes already in the batch (duplicate check).
+  final Set<String> existingSampleCodes;
 
   @override
   ConsumerState<PupukQRScannerScreen> createState() =>
@@ -92,11 +92,11 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
       return;
     }
 
-    if (widget.existingSampleIds.contains(qrData.id)) {
+    if (widget.existingSampleCodes.contains(qrData.kodeSampel)) {
       if (mounted) {
         await _showErrorAndStop(
           'Sampel Sudah Ada',
-          'Sampel ini sudah ada dalam daftar Kirim Lab.',
+          'Sampel ini sudah ada dalam daftar.',
         );
       }
       return;
@@ -108,13 +108,17 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
       qrData.id,
     );
     final aktivitas = synced != null
-        ? await dbHelper.getAktivitasSampelPupukByDataSampelPupukId(qrData.id)
+        ? await dbHelper.getAktivitasSampelPupukByDataSampelPupukId(
+            qrData.id,
+            individualKodeSampel: qrData.kodeSampel,
+          )
         : null;
 
     final allowed = allowedPupukActivityTypes(
       permissions,
       aktivitas,
       dataSampelPupukFallback: synced,
+      individualKodeSampel: qrData.kodeSampel,
     );
 
     if (!allowed.contains(widget.activityType)) {
@@ -140,11 +144,14 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
       return;
     }
 
-    if (widget.activityType == kKirimLab) {
+    if (widget.activityType == kKirimLab ||
+        widget.activityType == kKirimDariEstate) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) =>
-              KirimLabSampelCollectionScreen(initialSamples: [entry]),
+          builder: (context) => KirimSampelCollectionScreen(
+            activityType: widget.activityType,
+            initialSamples: [entry],
+          ),
         ),
       );
       return;

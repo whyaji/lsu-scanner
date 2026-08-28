@@ -7,22 +7,24 @@ import '../widgets/pupuk_sampel_info_card.dart';
 import 'pupuk_qr_scanner_screen.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
 
-/// Collects multiple sampel for one Kirim Lab submission (shared no. surat & foto).
-class KirimLabSampelCollectionScreen extends StatefulWidget {
-  const KirimLabSampelCollectionScreen({
+/// Collects multiple sampel for one Kirim Lab or Kirim Estate submission (shared photo & fields).
+class KirimSampelCollectionScreen extends StatefulWidget {
+  const KirimSampelCollectionScreen({
     super.key,
+    required this.activityType,
     required this.initialSamples,
   });
 
+  final String activityType;
   final List<PupukSampelEntry> initialSamples;
 
   @override
-  State<KirimLabSampelCollectionScreen> createState() =>
-      _KirimLabSampelCollectionScreenState();
+  State<KirimSampelCollectionScreen> createState() =>
+      _KirimSampelCollectionScreenState();
 }
 
-class _KirimLabSampelCollectionScreenState
-    extends State<KirimLabSampelCollectionScreen> {
+class _KirimSampelCollectionScreenState
+    extends State<KirimSampelCollectionScreen> {
   late List<PupukSampelEntry> _samples;
 
   @override
@@ -31,15 +33,15 @@ class _KirimLabSampelCollectionScreenState
     _samples = List.from(widget.initialSamples);
   }
 
-  Set<int> get _sampleIds => _samples.map((s) => s.dataSampelPupukId).toSet();
+  Set<String> get _sampleCodes => _samples.map((s) => s.kodeSampel).toSet();
 
   Future<void> _addSample() async {
     final added = await Navigator.of(context).push<PupukSampelEntry>(
       MaterialPageRoute(
         builder: (context) => PupukQRScannerScreen(
-          activityType: kKirimLab,
+          activityType: widget.activityType,
           addToCollection: true,
-          existingSampleIds: _sampleIds,
+          existingSampleCodes: _sampleCodes,
         ),
       ),
     );
@@ -63,7 +65,7 @@ class _KirimLabSampelCollectionScreenState
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SampelPupukActivityFormScreen(
-          activityType: kKirimLab,
+          activityType: widget.activityType,
           samples: List.unmodifiable(_samples),
         ),
       ),
@@ -72,8 +74,14 @@ class _KirimLabSampelCollectionScreenState
 
   @override
   Widget build(BuildContext context) {
+    final isLab = widget.activityType == kKirimLab;
+    final title = isLab ? 'Konfirmasi Kirim Lab' : 'Konfirmasi Kirim Estate';
+    final desc = isLab
+        ? 'No. Surat dan foto akan sama untuk semua sampel di bawah. Anda dapat menambah sampel lain dengan memindai QR.'
+        : 'Nama pengirim dan foto akan sama untuk semua sampel di bawah. Anda dapat menambah sampel lain dengan memindai QR.';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Konfirmasi Kirim Lab')),
+      appBar: AppBar(title: Text(title)),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -93,8 +101,7 @@ class _KirimLabSampelCollectionScreenState
                       ),
                       AppSpacing.gapSm,
                       Text(
-                        'No. Surat dan foto akan sama untuk semua sampel di bawah. '
-                        'Anda dapat menambah sampel lain dengan memindai QR.',
+                        desc,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),

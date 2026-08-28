@@ -132,18 +132,19 @@ class _SampelPupukConfirmationScreenState
 
       switch (widget.formData.activityType) {
         case kKirimDariEstate:
-          final sample = widget.formData.samples.first;
-          await _dbHelper.insertKirimDariEstate(
-            KirimDariEstate(
-              dataSampelPupukId: sample.dataSampelPupukId,
-              kodeSampel: sample.displayKodeSampel,
-              tanggalKirimDariEstate: widget.formData.tanggalKirimDariEstate,
-              fotoKirimDariEstate: widget.photoPath,
-              namaPengirim: widget.formData.namaPengirim,
-              status: AppConstants.statusNotUploaded,
-              createdAt: now,
-            ),
-          );
+          for (final sample in widget.formData.samples) {
+            await _dbHelper.insertKirimDariEstate(
+              KirimDariEstate(
+                dataSampelPupukId: sample.dataSampelPupukId,
+                kodeSampel: sample.displayKodeSampel,
+                tanggalKirimDariEstate: widget.formData.tanggalKirimDariEstate,
+                fotoKirimDariEstate: widget.photoPath,
+                namaPengirim: widget.formData.namaPengirim,
+                status: AppConstants.statusNotUploaded,
+                createdAt: now,
+              ),
+            );
+          }
           break;
         case kKirimLab:
           for (final sample in widget.formData.samples) {

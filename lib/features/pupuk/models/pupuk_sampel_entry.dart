@@ -21,7 +21,7 @@ class PupukSampelEntry {
     required QRPupukData qrPupukData,
     DataSampelPupuk? dataSampelPupuk,
   }) {
-    final kode = dataSampelPupuk?.kodeSampel ?? qrPupukData.kodeSampel;
+    final kode = qrPupukData.kodeSampel;
     return PupukSampelEntry(
       dataSampelPupukId: dataSampelPupuk?.id ?? qrPupukData.id,
       kodeSampel: kode.isEmpty ? qrPupukData.kodeSampel : kode,

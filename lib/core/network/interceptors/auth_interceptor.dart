@@ -11,6 +11,7 @@ class AuthInterceptor extends Interceptor {
 
   final Dio _dio;
   final SecureStorage _storage = SecureStorage();
+  Future<bool>? _refreshFuture;
 
   /// Optional callback, configured from the auth layer, to clear local
   /// auth state and trigger a logout when refresh can no longer recover
@@ -46,6 +47,18 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     if (!_isUnauthenticatedAuthPath(options.path)) {
+      final expiresAtStr = await _storage.getAccessTokenExpiresAt();
+      if (expiresAtStr != null && expiresAtStr.isNotEmpty) {
+        final expiresAt = int.tryParse(expiresAtStr);
+        if (expiresAt != null) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          // Refresh if token expires in less than 15 seconds
+          if (expiresAt - now < 15000) {
+            await _refreshToken(options.baseUrl);
+          }
+        }
+      }
+
       final token = await _storage.getAccessToken();
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
@@ -161,6 +174,19 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<bool> _refreshToken(String baseUrl) async {
+    if (_refreshFuture != null) {
+      return _refreshFuture!;
+    }
+    final future = _doRefreshToken(baseUrl);
+    _refreshFuture = future;
+    try {
+      return await future;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
+
+  Future<bool> _doRefreshToken(String baseUrl) async {
     try {
       final refreshToken = await _storage.getRefreshToken();
       if (refreshToken == null || refreshToken.isEmpty) return false;

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Local mirror of sync payload for Data Sampel Pupuk (lookup by id after QR scan).
 class DataSampelPupuk {
   final int id;
@@ -48,6 +50,7 @@ class DataSampelPupuk {
   final String? noSertifikat;
   final String? tanggalKirimSertifikatEstate;
   final String? rekomendasi;
+  final String? trackingSampelPupuk;
   final String? createdAt;
   final String? updatedAt;
 
@@ -100,6 +103,7 @@ class DataSampelPupuk {
     this.noSertifikat,
     this.tanggalKirimSertifikatEstate,
     this.rekomendasi,
+    this.trackingSampelPupuk,
     this.createdAt,
     this.updatedAt,
   });
@@ -155,6 +159,9 @@ class DataSampelPupuk {
       tanggalKirimSertifikatEstate:
           json['tanggalKirimSertifikatEstate'] as String?,
       rekomendasi: json['rekomendasi'] as String?,
+      trackingSampelPupuk: json['trackingSampelPupuk'] != null
+          ? jsonEncode(json['trackingSampelPupuk'])
+          : null,
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
     );
@@ -212,6 +219,7 @@ class DataSampelPupuk {
       tanggalKirimSertifikatEstate:
           json['tanggal_kirim_sertifikat_estate'] as String?,
       rekomendasi: json['rekomendasi'] as String?,
+      trackingSampelPupuk: json['tracking_sampel_pupuk'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
     );
@@ -267,6 +275,7 @@ class DataSampelPupuk {
       'no_sertifikat': noSertifikat,
       'tanggal_kirim_sertifikat_estate': tanggalKirimSertifikatEstate,
       'rekomendasi': rekomendasi,
+      'tracking_sampel_pupuk': trackingSampelPupuk,
       'created_at': createdAt,
       'updated_at': updatedAt,
     };

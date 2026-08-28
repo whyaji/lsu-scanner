@@ -27,7 +27,24 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute(
+          'ALTER TABLE data_sampel_pupuk ADD COLUMN tracking_sampel_pupuk TEXT',
+        );
+      } catch (e) {
+        // column might exist
+      }
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -163,6 +180,7 @@ class DatabaseHelper {
         no_sertifikat TEXT,
         tanggal_kirim_sertifikat_estate TEXT,
         rekomendasi TEXT,
+        tracking_sampel_pupuk TEXT,
         created_at TEXT,
         updated_at TEXT
       )
@@ -525,8 +543,9 @@ class DatabaseHelper {
   /// Loads [DataSampelPupuk] and the latest local row per activity table for
   /// this sample (used for activity visibility on the detail screen).
   Future<AktivitasSampelPupuk?> getAktivitasSampelPupukByDataSampelPupukId(
-    int dataSampelPupukId,
-  ) async {
+    int dataSampelPupukId, {
+    String? individualKodeSampel,
+  }) async {
     final data = await getDataSampelPupukById(dataSampelPupukId);
     if (data == null) return null;
 
@@ -538,8 +557,12 @@ class DatabaseHelper {
     ) async {
       final rows = await db.query(
         table,
-        where: 'data_sampel_pupuk_id = ?',
-        whereArgs: [dataSampelPupukId],
+        where: individualKodeSampel != null
+            ? 'data_sampel_pupuk_id = ? AND kode_sampel = ?'
+            : 'data_sampel_pupuk_id = ?',
+        whereArgs: individualKodeSampel != null
+            ? [dataSampelPupukId, individualKodeSampel]
+            : [dataSampelPupukId],
         orderBy: 'id DESC',
         limit: 1,
       );
@@ -547,7 +570,7 @@ class DatabaseHelper {
       return parse(rows.first);
     }
 
-    final kode = data.kodeSampel ?? '';
+    final kode = individualKodeSampel ?? data.kodeSampel ?? '';
 
     return AktivitasSampelPupuk(
       id: data.id,

@@ -1,0 +1,4 @@
+BASE_URL_DEV=http://10.9.116.175:5656/api
+BASE_URL_LOCAL_DEV=http://10.9.116.175:5656/api
+BASE_URL_PROD=https://sampletrack.srs-ssms.com/api
+BASE_URL_LOCAL_PROD=http://10.9.116.175:5656/api

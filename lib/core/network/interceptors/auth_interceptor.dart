@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../constants/api_constants.dart';
 import '../../storage/secure_storage.dart';
 import '../device_identity.dart';
+import 'fallback_interceptor.dart';
 
 class AuthInterceptor extends Interceptor {
   /// Same [Dio] instance the interceptor is attached to — used for 401 retries so
@@ -203,6 +204,7 @@ class AuthInterceptor extends Interceptor {
           },
         ),
       );
+      dio.interceptors.add(FallbackInterceptor(dio));
       final response = await dio.post(
         ApiConstants.mobileRefresh,
         data: {'refreshToken': refreshToken, 'platformId': platformId},

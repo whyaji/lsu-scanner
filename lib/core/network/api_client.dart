@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../constants/api_constants.dart';
 import 'interceptors/auth_interceptor.dart';
+import 'interceptors/fallback_interceptor.dart';
 
 const int _kMaxLogLines = 50;
 
@@ -24,7 +25,13 @@ class ApiClient {
       ),
     );
 
+    // Sync the primary Dio baseUrl when a fallback is detected by any interceptor instance
+    FallbackInterceptor.onFallbackDetected = (fallbackUrl) {
+      _dio.options.baseUrl = fallbackUrl;
+    };
+
     // Add interceptors (401 retry uses same Dio: clone FormData + run onRequest)
+    _dio.interceptors.add(FallbackInterceptor(_dio));
     _dio.interceptors.add(AuthInterceptor(_dio));
 
     // State for truncating response body to first N lines (PrettyDioLogger calls logPrint once per line)

@@ -6,15 +6,37 @@ class ApiConstants {
   // Base URLs
   static String baseUrlDev =
       dotenv.env['BASE_URL_DEV'] ?? 'http://localhost:3000/api';
+  static String baseUrlLocalDev =
+      dotenv.env['BASE_URL_LOCAL_DEV'] ?? 'http://localhost:3000/api';
   static String baseUrlProd =
       dotenv.env['BASE_URL_PROD'] ?? 'https://api.example.com/api';
+  static String baseUrlLocalProd =
+      dotenv.env['BASE_URL_LOCAL_PROD'] ?? 'http://localhost:3000/api';
 
-  // Use development URL by default, change to production in release builds
+  // Active Base URL initialized based on environment mode
   static String baseUrl = isDevelopmentMode ? baseUrlDev : baseUrlProd;
+
+  static String get mainBaseUrl => isDevelopmentMode ? baseUrlDev : baseUrlProd;
+  static String get fallbackBaseUrl =>
+      isDevelopmentMode ? baseUrlLocalDev : baseUrlLocalProd;
 
   /// Server origin without `/api` — for protected static files (e.g. `/protected/pupuk/...`).
   static String get baseUrlWithoutApi {
     final url = baseUrl.trim();
+    if (url.endsWith('/api')) return url.substring(0, url.length - 4);
+    if (url.endsWith('/api/')) return url.substring(0, url.length - 5);
+    return url;
+  }
+
+  static String get mainBaseUrlWithoutApi {
+    final url = mainBaseUrl.trim();
+    if (url.endsWith('/api')) return url.substring(0, url.length - 4);
+    if (url.endsWith('/api/')) return url.substring(0, url.length - 5);
+    return url;
+  }
+
+  static String get fallbackBaseUrlWithoutApi {
+    final url = fallbackBaseUrl.trim();
     if (url.endsWith('/api')) return url.substring(0, url.length - 4);
     if (url.endsWith('/api/')) return url.substring(0, url.length - 5);
     return url;

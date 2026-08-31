@@ -12,6 +12,7 @@ import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/notifications/providers/notification_provider.dart';
 import '../../../features/notifications/utils/notification_navigation.dart';
 import '../../../features/regional/providers/regional_provider.dart';
+import '../../database/database_helper.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -105,13 +106,35 @@ class FcmService {
   }
 
   Future<void> uploadToken() async {
+    final auth = _ref.read(authProvider);
+    if (!auth.isAuthenticated) {
+      log('Skipping FCM token upload: User is not authenticated.');
+      return;
+    }
+
+    final userId = auth.user?.userId;
+    if (userId == null) return;
+
     try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp();
+      }
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
+        final dbHelper = DatabaseHelper.instance;
+        final cacheKey = 'fcm_token_$userId';
+        final cachedToken = await dbHelper.getPreference(cacheKey);
+
+        if (cachedToken == token) {
+          log('FCM Token is already up to date for user $userId.');
+          return;
+        }
+
         log('FCM Token: $token');
         final response = await _apiService.updateFcmToken(token);
         if (response.success) {
           log('FCM Token uploaded successfully.');
+          await dbHelper.setPreference(cacheKey, token);
         } else {
           log('Failed to upload FCM Token: ${response.error?.message}');
         }

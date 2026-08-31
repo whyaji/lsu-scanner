@@ -81,7 +81,9 @@ class _SampelPupukPhotoCaptureScreenState
         return;
       }
 
-      final dir = await PhotoCaptureHelper.getAppPicturesDirectory();
+      final dir = await PhotoCaptureHelper.getAppPicturesDirectory(
+        feature: 'Pupuk',
+      );
       final userId = ref.read(authProvider).user?.id.toString();
       final first = widget.formData.samples.first;
       final fileName = PhotoCaptureHelper.newCaptureFileName(
@@ -104,6 +106,7 @@ class _SampelPupukPhotoCaptureScreenState
       }
 
       await PhotoCaptureHelper.notifyGallery(savedPath);
+      await PhotoCaptureHelper.handleAutoDownload(savedPath, feature: 'Pupuk');
       if (mounted) {
         setState(() {
           _savedImagePath = savedPath;

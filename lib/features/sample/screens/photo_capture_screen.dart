@@ -86,7 +86,9 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
         return;
       }
 
-      final dir = await PhotoCaptureHelper.getAppPicturesDirectory();
+      final dir = await PhotoCaptureHelper.getAppPicturesDirectory(
+        feature: 'LSU',
+      );
       final userId = ref.read(authProvider).user?.id.toString();
       final fileName = PhotoCaptureHelper.newCaptureFileName(
         userId: userId,
@@ -105,6 +107,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
       }
 
       await PhotoCaptureHelper.notifyGallery(savedPath);
+      await PhotoCaptureHelper.handleAutoDownload(savedPath, feature: 'LSU');
       if (mounted) {
         setState(() {
           _savedImagePath = savedPath;

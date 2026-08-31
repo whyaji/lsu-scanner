@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import '../features/sample/screens/full_screen_image_preview_screen.dart';
 
-/// Reusable image preview for a file path. Use [onTap] to open full screen or other actions.
+/// Reusable image preview for a file path. Use [onTap] to open custom actions,
+/// or leave it null to automatically launch the full screen preview (with zoom, share, download).
 class AppImagePreview extends StatelessWidget {
   final String imagePath;
   final double? height;
@@ -20,6 +23,21 @@ class AppImagePreview extends StatelessWidget {
     this.onTap,
   });
 
+  String _getFileSize(String path) {
+    try {
+      final file = File(path);
+      if (file.existsSync()) {
+        final bytes = file.lengthSync();
+        if (bytes <= 0) return '0 B';
+        if (bytes < 1024) return '$bytes B';
+        if (bytes < 1024 * 1024)
+          return '${(bytes / 1024).toStringAsFixed(1)} KB';
+        return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+      }
+    } catch (_) {}
+    return '0 B';
+  }
+
   @override
   Widget build(BuildContext context) {
     final file = File(imagePath);
@@ -37,14 +55,29 @@ class AppImagePreview extends StatelessWidget {
           : _placeholder(context),
     );
 
-    if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: child,
-      );
-    }
-    return child;
+    return InkWell(
+      onTap:
+          onTap ??
+          () {
+            final isLsu = imagePath.contains('LSU');
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => FullScreenImagePreviewScreen(
+                  imagePath: imagePath,
+                  title: isLsu ? 'LSU Sample' : 'Pupuk Sample',
+                  showDetails: true,
+                  details: {
+                    'Kategori': isLsu ? 'LSU (Sample)' : 'Pupuk (Fertilizer)',
+                    'Nama File': p.basename(imagePath),
+                    'Ukuran File': _getFileSize(imagePath),
+                  },
+                ),
+              ),
+            );
+          },
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: child,
+    );
   }
 
   Widget _placeholder(BuildContext context) {
@@ -53,7 +86,7 @@ class AppImagePreview extends StatelessWidget {
     return Container(
       height: height ?? 200,
       width: width,
-      color: colorScheme.surfaceContainerHighest,
+      color: colorScheme.surfaceVariant,
       alignment: Alignment.center,
       child: Column(
         mainAxisSize: MainAxisSize.min,

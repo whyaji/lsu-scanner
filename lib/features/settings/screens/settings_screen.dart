@@ -11,6 +11,8 @@ import '../../sync/providers/sync_provider.dart';
 import '../providers/theme_provider.dart';
 import '../../../widgets/app_alert.dart';
 import '../../../widgets/app_footer.dart';
+import 'file_feature_screen.dart';
+import 'auto_download_settings_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.showBackButton = true});
@@ -132,7 +134,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     if (user?.email.isNotEmpty ?? false) ...[
                       AppSpacing.gapXs,
                       Text(
-                        user!.email,
+                        user?.email ?? '',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -198,6 +200,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const RegionalSelectionScreen(),
+                    ),
+                  );
+                },
+              ),
+              AppSpacing.gapLg,
+
+              // File & Penyimpanan section
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
+                child: Text(
+                  'File & Penyimpanan',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              AppSettingsTile(
+                icon: Icons.download_for_offline_outlined,
+                title: 'Auto Download Foto',
+                subtitle: 'Simpan otomatis foto ke folder Download perangkat',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AutoDownloadSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              AppSpacing.gapSm,
+              AppSettingsTile(
+                icon: Icons.folder_open_outlined,
+                title: 'Penyimpanan & Pembersihan',
+                subtitle:
+                    'Kelola penyimpanan file dan bersihkan file foto lama',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const FileFeatureScreen(),
                     ),
                   );
                 },

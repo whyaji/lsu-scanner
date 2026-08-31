@@ -19,12 +19,16 @@ class AuthState {
   /// Show one-shot banner on login after forced session end (distinct from login failure).
   final bool pendingSessionTerminationBanner;
 
+  /// True during the initial check of stored credentials from secure storage/database.
+  final bool isCheckingAuth;
+
   AuthState({
     this.user,
     this.isLoading = false,
     this.error,
     this.shouldNavigateToLogin = false,
     this.pendingSessionTerminationBanner = false,
+    this.isCheckingAuth = true,
   });
 
   static const Object _unset = Object();
@@ -34,6 +38,7 @@ class AuthState {
     bool? isLoading,
     Object? error = _unset,
     bool? shouldNavigateToLogin,
+    bool? isCheckingAuth,
     bool clearUser = false,
     bool clearNavigateFlag = false,
     bool clearSessionBanner = false,
@@ -48,6 +53,7 @@ class AuthState {
       pendingSessionTerminationBanner: clearSessionBanner
           ? false
           : pendingSessionTerminationBanner,
+      isCheckingAuth: isCheckingAuth ?? this.isCheckingAuth,
     );
   }
 
@@ -80,6 +86,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       error: message,
       shouldNavigateToLogin: true,
       pendingSessionTerminationBanner: true,
+      isCheckingAuth: false,
     );
   }
 
@@ -91,6 +98,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       error: state.error,
       shouldNavigateToLogin: false,
       pendingSessionTerminationBanner: state.pendingSessionTerminationBanner,
+      isCheckingAuth: false,
     );
   }
 
@@ -107,7 +115,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _checkAuthStatus() async {
     try {
       final token = await _storage.getAccessToken();
-      if (token == null) return;
+      if (token == null) {
+        state = state.copyWith(isCheckingAuth: false);
+        return;
+      }
 
       User? user;
       final userDataStr = await _dbHelper.getPreference('user_data');
@@ -131,16 +142,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
         if (response.success && refreshed != null) {
           user = refreshed;
           await _persistUser(refreshed);
+        } else {
+          // If refresh fails, we should clear the session and token so the user is logged out.
+          user = null;
+          await _clearLocalSession();
         }
       } else if (userDataStr != null && userDataStr.contains('"access"')) {
         await _persistUser(user);
       }
 
-      if (user != null) {
-        state = state.copyWith(user: user);
-      }
+      state = state.copyWith(user: user, isCheckingAuth: false);
     } catch (e) {
       // Not authenticated
+      await _clearLocalSession();
+      state = state.copyWith(isCheckingAuth: false, user: null);
     }
   }
 
@@ -198,7 +213,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     await _clearLocalSession();
-    state = AuthState();
+    state = AuthState(isCheckingAuth: false);
   }
 
   User? get currentUser => state.user;

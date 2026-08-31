@@ -37,12 +37,7 @@ void main() async {
 }
 
 Future<void> _requestPermissions() async {
-  await [
-    Permission.camera,
-    Permission.storage,
-    Permission.photos,
-    Permission.notification,
-  ].request();
+  await [Permission.camera, Permission.notification].request();
 }
 
 class MyApp extends ConsumerWidget {
@@ -54,7 +49,11 @@ class MyApp extends ConsumerWidget {
 
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.isAuthenticated && !(prev?.isAuthenticated ?? false)) {
-        ref.read(fcmServiceProvider).uploadToken();
+        // Skip uploading token on startup because FcmService.init() already uploads it.
+        // On manual login, prev.isCheckingAuth is false, so it will execute normally.
+        if (prev == null || !prev.isCheckingAuth) {
+          ref.read(fcmServiceProvider).uploadToken();
+        }
         ref
             .read(notificationProvider.notifier)
             .fetchNotifications(silent: true);
@@ -112,6 +111,11 @@ class AuthWrapper extends ConsumerWidget {
     ref.watch(appUpdateCheckProvider);
     final authState = ref.watch(authProvider);
     final regionalState = ref.watch(regionalProvider);
+
+    // Show loading spinner during the initial auth check
+    if (authState.isCheckingAuth) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     // Check authentication
     if (!authState.isAuthenticated) {

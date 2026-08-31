@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
 import 'package:media_scanner/media_scanner.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 
 /// Helpers for the camera-only capture flow: Pictures dir, compress, gallery, watermark.
@@ -12,26 +14,16 @@ class PhotoCaptureHelper {
   PhotoCaptureHelper._();
 
   /// Returns the app pictures directory.
-  /// On Android: public Internal storage Pictures/SampleTrack (e.g. /storage/emulated/0/Pictures/SampleTrack).
-  /// On other platforms: [applicationDocumentsDirectory]/Pictures/SampleTrack.
+  /// Stored securely inside the application's documents directory.
+  /// If [feature] is provided, it returns the folder under that feature subdirectory (e.g. LSU or Pupuk).
   /// Creates the directory if it does not exist.
-  static Future<String> getAppPicturesDirectory() async {
+  static Future<String> getAppPicturesDirectory({String? feature}) async {
     const subDir = 'SampleTrack';
-    if (Platform.isAndroid) {
-      final ext = await getExternalStorageDirectory();
-      if (ext != null) {
-        final parts = ext.path.split(RegExp(r'[/\\]'));
-        final idx = parts.indexWhere((e) => e == 'Android');
-        if (idx > 0) {
-          final rootPath = parts.sublist(0, idx).join('/');
-          final dir = p.join(rootPath, 'Pictures', subDir);
-          await Directory(dir).create(recursive: true);
-          return dir;
-        }
-      }
-    }
     final base = await getApplicationDocumentsDirectory();
-    final dir = p.join(base.path, 'Pictures', subDir);
+    String dir = p.join(base.path, 'Pictures', subDir);
+    if (feature != null && feature.isNotEmpty) {
+      dir = p.join(dir, feature);
+    }
     await Directory(dir).create(recursive: true);
     return dir;
   }
@@ -56,8 +48,17 @@ class PhotoCaptureHelper {
   }
 
   /// Notifies the system so the saved image appears in the user gallery.
+  /// Note: Only attempts to scan if it's stored in public/external storage.
   static Future<void> notifyGallery(String filePath) async {
-    await MediaScanner.loadMedia(path: filePath);
+    try {
+      // Private internal storage files cannot/should not be scanned by system media scanner.
+      if (filePath.contains('app_flutter') || filePath.contains('data/user')) {
+        return;
+      }
+      await MediaScanner.loadMedia(path: filePath);
+    } catch (_) {
+      // Fail silently for internal/private paths
+    }
   }
 
   /// Applies a three-line text watermark at bottom-right using [image] package.
@@ -192,5 +193,55 @@ class PhotoCaptureHelper {
         '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_'
         '${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
     return '$part$sufix.jpg';
+  }
+
+  /// Exports a saved image file to the public storage/Downloads directory.
+  /// On Android: `/storage/emulated/0/Download/SampleTrack/[feature]`.
+  /// On iOS/other: application documents directory under `SampleTrack/[feature]`.
+  static Future<String?> exportToDownloads(
+    String sourcePath, {
+    required String feature,
+  }) async {
+    try {
+      final file = File(sourcePath);
+      if (!await file.exists()) return null;
+
+      String targetDir;
+      if (Platform.isAndroid) {
+        targetDir = '/storage/emulated/0/Download/SampleTrack/$feature';
+      } else {
+        final base = await getApplicationDocumentsDirectory();
+        targetDir = p.join(base.path, 'SampleTrack', feature);
+      }
+
+      await Directory(targetDir).create(recursive: true);
+      final fileName = p.basename(sourcePath);
+      final targetPath = p.join(targetDir, fileName);
+
+      await file.copy(targetPath);
+
+      // Call media scanner on the public exported file so it is visible in the Gallery.
+      if (Platform.isAndroid) {
+        await notifyGallery(targetPath);
+      }
+      return targetPath;
+    } catch (e) {
+      debugPrint('Failed to export photo: $e');
+      return null;
+    }
+  }
+
+  /// Checks if auto-download is enabled and automatically exports the photo.
+  static Future<void> handleAutoDownload(
+    String savedPath, {
+    required String feature,
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isEnabled = prefs.getBool('auto_download_enabled') ?? false;
+      if (isEnabled) {
+        await exportToDownloads(savedPath, feature: feature);
+      }
+    } catch (_) {}
   }
 }

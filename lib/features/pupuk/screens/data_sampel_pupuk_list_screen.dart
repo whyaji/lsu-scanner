@@ -3,15 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/data_sampel_pupuk_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_service.dart';
+import '../../../core/network/api/pupuk_api.dart';
+import '../../../core/network/api_providers.dart';
 import '../../../core/network/models/api_response.dart';
-import '../../../core/network/models/sampel_pupuk_models.dart';
+import '../../../core/network/models/sync_sampel_pupuk_models.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../widgets/app_empty_state.dart';
-import '../../../widgets/app_loading_state.dart';
+import '../../../widgets/display/app_empty_state.dart';
+import '../../../widgets/display/app_loading_state.dart';
 import '../../regional/providers/regional_provider.dart';
 import '../constants/data_sampel_pupuk_progress.dart';
 import '../providers/sync_sampel_pupuk_provider.dart';
@@ -28,8 +29,9 @@ class DataSampelPupukListScreen extends ConsumerStatefulWidget {
 
 class _DataSampelPupukListScreenState
     extends ConsumerState<DataSampelPupukListScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-  final ApiService _apiService = ApiService(ApiClient().dio);
+  DataSampelPupukDao get _dataSampelPupukDao =>
+      ref.read(dataSampelPupukDaoProvider);
+  PupukApi get _pupukApi => ref.read(pupukApiProvider);
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -91,14 +93,14 @@ class _DataSampelPupukListScreenState
     final search = _searchController.text.trim();
     final progressParam = progressToApiParam(_activeProgress);
 
-    final listFuture = _apiService.getDataSampelPupukList(
+    final listFuture = _pupukApi.getDataSampelPupukList(
       page: _page,
       limit: dataSampelPupukListPageSize,
       progress: progressParam,
       search: search.isEmpty ? null : search,
     );
     final countsFuture = reset
-        ? _apiService.getDataSampelPupukProgressCounts(
+        ? _pupukApi.getDataSampelPupukProgressCounts(
             search: search.isEmpty ? null : search,
           )
         : Future.value(
@@ -154,7 +156,7 @@ class _DataSampelPupukListScreenState
 
   Future<void> _loadOffline() async {
     final regional = ref.read(regionalProvider).selectedRegional;
-    final allItems = await _dbHelper.getAllDataSampelPupuk(regional: regional);
+    final allItems = await _dataSampelPupukDao.getAll(regional: regional);
     final query = _searchController.text;
     final filtered = allItems
         .where((item) => matchesProgressFilter(item, _activeProgress))
@@ -301,6 +303,7 @@ class _DataSampelPupukListScreenState
                                 height:
                                     MediaQuery.of(context).size.height * 0.35,
                                 child: AppEmptyState(
+                                  icon: Icons.inventory_2_outlined,
                                   title: _isOnline
                                       ? 'Tidak ada data pada filter ini.'
                                       : 'Belum ada data lokal. Sinkronkan atau sambungkan internet.',

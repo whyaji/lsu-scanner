@@ -1,15 +1,17 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/models/master_lsu.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/completed_sample.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import 'photo_capture_screen.dart';
 import 'full_screen_image_preview_screen.dart';
 
-class SampleDetailScreen extends StatefulWidget {
+class SampleDetailScreen extends ConsumerStatefulWidget {
   final int dataLsuId;
   final int masterLsuId;
   final String kode;
@@ -26,11 +28,11 @@ class SampleDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<SampleDetailScreen> createState() => _SampleDetailScreenState();
+  ConsumerState<SampleDetailScreen> createState() => _SampleDetailScreenState();
 }
 
-class _SampleDetailScreenState extends State<SampleDetailScreen> {
-  static final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+class _SampleDetailScreenState extends ConsumerState<SampleDetailScreen> {
+  LsuDao get _lsuDao => ref.read(lsuDaoProvider);
   ReceivedSample? _existingReceived;
   CompletedSample? _existingCompleted;
   bool _loading = true;
@@ -44,7 +46,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
   Future<void> _loadExisting() async {
     try {
       if (widget.isCompleteSample) {
-        final existing = await _dbHelper.getCompletedSampleByDataLsuId(
+        final existing = await _lsuDao.completed.getByDataLsuId(
           widget.dataLsuId,
         );
         if (mounted) {
@@ -54,7 +56,7 @@ class _SampleDetailScreenState extends State<SampleDetailScreen> {
           });
         }
       } else {
-        final existing = await _dbHelper.getReceivedSampleByDataLsuId(
+        final existing = await _lsuDao.received.getByDataLsuId(
           widget.dataLsuId,
         );
         if (mounted) {

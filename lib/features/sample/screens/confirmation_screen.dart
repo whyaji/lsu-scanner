@@ -3,14 +3,15 @@ import 'dart:io';
 import '../../../core/database/models/master_lsu.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/completed_sample.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../home/providers/home_counts_refresh_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'full_screen_image_preview_screen.dart';
+import '../../../widgets/feedback/app_dialog.dart';
 
 class ConfirmationScreen extends ConsumerStatefulWidget {
   final int dataLsuId;
@@ -35,7 +36,7 @@ class ConfirmationScreen extends ConsumerStatefulWidget {
 }
 
 class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  LsuDao get _lsuDao => ref.read(lsuDaoProvider);
   bool _isSaving = false;
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
@@ -50,28 +51,26 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
   Future<void> _saveSample() async {
     try {
       if (widget.isCompleteSample) {
-        final existing = await _dbHelper.getCompletedSampleByDataLsuId(
+        final existing = await _lsuDao.completed.getByDataLsuId(
           widget.dataLsuId,
         );
         if (existing != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Sampel ini sudah selesai'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          await AppDialog.error(
+            context,
+            title: 'Sampel sudah selesai',
+            message: 'Sampel ini sudah selesai.',
           );
           return;
         }
       } else {
-        final existing = await _dbHelper.getReceivedSampleByDataLsuId(
+        final existing = await _lsuDao.received.getByDataLsuId(
           widget.dataLsuId,
         );
         if (existing != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Sampel ini sudah diterima'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
+          await AppDialog.error(
+            context,
+            title: 'Sampel sudah diterima',
+            message: 'Sampel ini sudah diterima.',
           );
           return;
         }
@@ -105,7 +104,7 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
           createdAt: DateTime.now().toIso8601String(),
           masterLsu: widget.masterLsu,
         );
-        await _dbHelper.insertCompletedSample(sample);
+        await _lsuDao.completed.insert(sample);
       } else {
         final sample = ReceivedSample(
           dataLsuId: widget.dataLsuId,
@@ -119,30 +118,27 @@ class _ConfirmationScreenState extends ConsumerState<ConfirmationScreen> {
           createdAt: DateTime.now().toIso8601String(),
           masterLsu: widget.masterLsu,
         );
-        await _dbHelper.insertReceivedSample(sample);
+        await _lsuDao.received.insert(sample);
       }
 
       if (mounted) {
         ref.read(homeCountsRefreshProvider.notifier).state++;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.isCompleteSample
-                  ? 'Sampel selesai berhasil disimpan'
-                  : 'Sampel berhasil disimpan',
-            ),
-            backgroundColor: AppTheme.successColor(context),
-          ),
+        await AppDialog.success(
+          context,
+          title: 'Sampel tersimpan',
+          message: widget.isCompleteSample
+              ? 'Sampel selesai berhasil disimpan.'
+              : 'Sampel berhasil disimpan.',
         );
+        if (!mounted) return;
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan sampel: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        await AppDialog.error(
+          context,
+          title: 'Penyimpanan gagal',
+          message: 'Sampel tidak tersimpan: $e',
         );
       }
     } finally {

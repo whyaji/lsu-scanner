@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/upload_provider.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/completed_sample.dart';
 import '../../../core/constants/app_constants.dart';
@@ -14,7 +15,7 @@ class UploadScreen extends ConsumerStatefulWidget {
 }
 
 class _UploadScreenState extends ConsumerState<UploadScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  LsuDao get _lsuDao => ref.read(lsuDaoProvider);
   List<ReceivedSample> _pendingSamples = [];
   List<CompletedSample> _pendingCompleteSamples = [];
 
@@ -30,12 +31,12 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
   }
 
   Future<void> _loadPendingSamples() async {
-    final samples = await _dbHelper.getPendingUploads();
+    final samples = await _lsuDao.received.getPending();
     if (mounted) setState(() => _pendingSamples = samples);
   }
 
   Future<void> _loadPendingCompleteSamples() async {
-    final samples = await _dbHelper.getPendingCompleteUploads();
+    final samples = await _lsuDao.completed.getPending();
     if (mounted) setState(() => _pendingCompleteSamples = samples);
   }
 

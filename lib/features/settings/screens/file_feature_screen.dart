@@ -5,8 +5,9 @@ import 'package:path/path.dart' as p;
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/photo_capture_helper.dart';
 import '../../../core/utils/date_utils.dart' as du;
-import '../../../widgets/app_empty_state.dart';
-import '../../../widgets/app_alert.dart';
+import '../../../widgets/display/app_empty_state.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
 import '../../sample/screens/full_screen_image_preview_screen.dart';
 
 class LocalFileItem {
@@ -160,7 +161,11 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
         setState(() => _isLoading = false);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            AppAlerts.error(context, 'Gagal memuat file lokal: $e');
+            AppToast.show(
+              context,
+              'Gagal memuat file lokal: $e',
+              type: AppNoticeType.error,
+            );
           }
         });
       }
@@ -210,12 +215,20 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
           await item.file.delete();
         }
         if (mounted) {
-          AppAlerts.success(context, 'Foto berhasil dihapus');
+          AppToast.show(
+            context,
+            'Foto berhasil dihapus.',
+            type: AppNoticeType.success,
+          );
         }
         _loadFiles();
       } catch (e) {
         if (mounted) {
-          AppAlerts.error(context, 'Gagal menghapus file: $e');
+          AppToast.show(
+            context,
+            'Gagal menghapus file: $e',
+            type: AppNoticeType.error,
+          );
         }
       }
     }
@@ -277,18 +290,23 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
       }
 
       if (mounted) {
-        AppAlerts.success(
+        AppToast.show(
           context,
           deletedCount > 0
               ? 'Berhasil membersihkan $deletedCount file lama'
               : 'Tidak ada file lama yang perlu dibersihkan',
+          type: AppNoticeType.success,
         );
         _loadFiles();
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppAlerts.error(context, 'Gagal melakukan pembersihan: $e');
+        AppToast.show(
+          context,
+          'Gagal melakukan pembersihan: $e',
+          type: AppNoticeType.error,
+        );
       }
     }
   }
@@ -359,7 +377,7 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
                         hasScrollBody: false,
                         child: AppEmptyState(
                           title: 'Tidak ada foto',
-                          subtitle: _selectedCategory == 'Semua'
+                          message: _selectedCategory == 'Semua'
                               ? 'Belum ada foto yang diambil oleh aplikasi ini.'
                               : 'Tidak ada foto di kategori $_selectedCategory.',
                           icon: Icons.photo_library_outlined,
@@ -415,11 +433,11 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
     return Container(
       padding: AppSpacing.paddingMd,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.04),
+            color: colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -559,11 +577,11 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
     return Container(
       padding: AppSpacing.paddingMd,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.04),
+            color: colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -590,7 +608,7 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<int>(
-                  value: _retentionDays,
+                  initialValue: _retentionDays,
                   decoration: const InputDecoration(
                     labelText: 'Ambang Batas',
                     isDense: true,
@@ -688,7 +706,7 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: colorScheme.outline.withOpacity(0.5),
+            color: colorScheme.outline.withValues(alpha: 0.5),
             width: 1,
           ),
           color: colorScheme.surface,
@@ -702,7 +720,7 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
               item.file,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
-                color: colorScheme.surfaceVariant,
+                color: colorScheme.surfaceContainerHighest,
                 child: Icon(
                   Icons.broken_image_outlined,
                   color: colorScheme.error,
@@ -718,8 +736,8 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: (item.isLsu ? Colors.blue : Colors.green).withOpacity(
-                    0.85,
+                  color: (item.isLsu ? Colors.blue : Colors.green).withValues(
+                    alpha: 0.85,
                   ),
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -781,7 +799,7 @@ class _FileFeatureScreenState extends ConsumerState<FileFeatureScreen> {
                     Text(
                       p.basenameWithoutExtension(item.path).split('_').first,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 8,
                       ),
                       overflow: TextOverflow.ellipsis,

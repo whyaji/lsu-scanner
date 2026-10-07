@@ -19,6 +19,7 @@ import 'core/network/services/app_update_service.dart';
 import 'core/network/services/fcm_service.dart';
 import 'features/notifications/screens/notification_screen.dart';
 import 'features/notifications/providers/notification_provider.dart';
+import 'widgets/feedback/app_feedback_host.dart';
 
 final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -33,6 +34,7 @@ void main() async {
   // Request permissions
   await _requestPermissions();
 
+  AppFeedbackHost.register(appNavigatorKey);
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -111,6 +113,7 @@ class AuthWrapper extends ConsumerWidget {
     ref.watch(appUpdateCheckProvider);
     final authState = ref.watch(authProvider);
     final regionalState = ref.watch(regionalProvider);
+    final regionalRequired = ref.watch(regionalRequiredProvider);
 
     // Show loading spinner during the initial auth check
     if (authState.isCheckingAuth) {
@@ -130,8 +133,8 @@ class AuthWrapper extends ConsumerWidget {
       fcm.processPendingNotificationTap();
     });
 
-    // Check regional selection
-    if (regionalState.selectedRegional == null) {
+    // Check regional selection (Pupuk Lab only accounts skip it)
+    if (regionalRequired && regionalState.selectedRegional == null) {
       return const RegionalSelectionScreen();
     }
 

@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'feedback/app_notice_type.dart';
+import 'feedback/app_toast.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 import '../core/constants/app_constants.dart';
@@ -127,9 +129,11 @@ class InlinePdfPreviewPanelState extends State<InlinePdfPreviewPanel> {
 
   void _onLoadFailed(String error) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
+    AppToast.show(
       context,
-    ).showSnackBar(SnackBar(content: Text('Preview PDF gagal dimuat: $error')));
+      'Pratinjau PDF gagal dimuat: $error',
+      type: AppNoticeType.error,
+    );
   }
 
   Widget _buildPreviewArea() {

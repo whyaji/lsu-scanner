@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/data_sampel_pupuk_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_service.dart';
+import '../../../core/network/api/pupuk_api.dart';
+import '../../../core/network/api_providers.dart';
 import '../../../core/network/models/api_response.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
-import '../../../widgets/app_loading_state.dart';
+import '../../../widgets/display/app_loading_state.dart';
 import '../constants/data_sampel_pupuk_progress.dart';
 import '../widgets/detail_field_grid.dart';
 import '../widgets/detail_photo_gallery.dart';
 
-class DataSampelPupukDetailScreen extends StatefulWidget {
+class DataSampelPupukDetailScreen extends ConsumerStatefulWidget {
   const DataSampelPupukDetailScreen({
     super.key,
     required this.id,
@@ -23,14 +25,15 @@ class DataSampelPupukDetailScreen extends StatefulWidget {
   final bool preferOnline;
 
   @override
-  State<DataSampelPupukDetailScreen> createState() =>
+  ConsumerState<DataSampelPupukDetailScreen> createState() =>
       _DataSampelPupukDetailScreenState();
 }
 
 class _DataSampelPupukDetailScreenState
-    extends State<DataSampelPupukDetailScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
-  final ApiService _apiService = ApiService(ApiClient().dio);
+    extends ConsumerState<DataSampelPupukDetailScreen> {
+  DataSampelPupukDao get _dataSampelPupukDao =>
+      ref.read(dataSampelPupukDaoProvider);
+  PupukApi get _pupukApi => ref.read(pupukApiProvider);
   DataSampelPupuk? _data;
   bool _loading = true;
   bool _isOnline = false;
@@ -53,16 +56,16 @@ class _DataSampelPupukDetailScreenState
     var isOnline = false;
 
     if (widget.preferOnline) {
-      final response = await _apiService.getDataSampelPupukById(widget.id);
+      final response = await _pupukApi.getDataSampelPupukById(widget.id);
       if (!_isNetworkFailure(response) &&
           response.success &&
           response.data != null) {
-        row = DataSampelPupuk.fromApiJson(response.data!.toJson());
+        row = response.data!;
         isOnline = true;
       }
     }
 
-    row ??= await _dbHelper.getDataSampelPupukById(widget.id);
+    row ??= await _dataSampelPupukDao.getById(widget.id);
 
     if (!mounted) return;
     setState(() {

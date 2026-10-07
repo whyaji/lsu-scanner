@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../widgets/app_footer.dart';
+import '../../../widgets/buttons/app_button.dart';
+import '../../../widgets/feedback/app_dialog.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
+import '../../../widgets/forms/app_text_field.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -16,7 +21,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -34,11 +38,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (success && mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ref.read(authProvider).error ?? 'Login gagal'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        await AppDialog.error(
+          context,
+          title: 'Masuk gagal',
+          message:
+              ref.read(authProvider).error ??
+              'Nama pengguna atau kata sandi tidak valid.',
         );
       }
     }
@@ -56,12 +61,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         ref.read(authProvider.notifier).clearSessionTerminationBanner();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            backgroundColor: colorScheme.errorContainer,
-            duration: const Duration(seconds: 8),
-          ),
+        AppToast.show(
+          context,
+          msg,
+          type: AppNoticeType.warning,
+          duration: const Duration(seconds: 8),
         );
       });
     });
@@ -95,15 +99,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   AppSpacing.gapXl,
 
-                  TextFormField(
+                  AppTextField(
                     controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nama pengguna',
-                      prefixIcon: Icon(Icons.person),
-                    ),
+                    label: 'Nama pengguna',
+                    required: true,
+                    prefixIcon: Icons.person,
                     keyboardType: TextInputType.emailAddress,
-                    autocorrect: false,
-                    enableSuggestions: false,
                     textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -114,27 +115,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   AppSpacing.gapMd,
 
-                  TextFormField(
+                  AppTextField(
                     controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: 'Kata sandi',
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscurePassword = !_obscurePassword;
-                          });
-                        },
-                      ),
-                    ),
+                    label: 'Kata sandi',
+                    required: true,
+                    prefixIcon: Icons.lock,
+                    obscureText: true,
                     textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _handleLogin(),
+                    onSubmitted: (_) => _handleLogin(),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Masukkan kata sandi Anda';
@@ -144,20 +132,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   AppSpacing.gapXl,
 
-                  ElevatedButton(
+                  AppButton(
+                    label: 'Masuk',
                     onPressed: authState.isLoading ? null : _handleLogin,
-                    child: authState.isLoading
-                        ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                colorScheme.onPrimary,
-                              ),
-                            ),
-                          )
-                        : const Text('Masuk'),
+                    loading: authState.isLoading,
+                    fullWidth: true,
                   ),
                   AppSpacing.gapXl,
                   const Center(child: AppFooter()),

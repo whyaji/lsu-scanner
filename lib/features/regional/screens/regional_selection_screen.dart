@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../sync/providers/sync_provider.dart';
+import '../../../widgets/feedback/app_dialog.dart';
 import '../providers/regional_provider.dart';
 
 class RegionalSelectionScreen extends ConsumerStatefulWidget {
@@ -71,7 +72,6 @@ class _RegionalSelectionScreenState
                             ),
                       onTap: () async {
                         final navigator = Navigator.of(context);
-                        final messenger = ScaffoldMessenger.of(context);
                         final syncNotifier = ref.read(syncProvider.notifier);
 
                         // Sync first. Do not call selectRegional yet, or AuthWrapper
@@ -86,11 +86,11 @@ class _RegionalSelectionScreenState
                           final errorMsg =
                               ref.read(syncProvider).error ??
                               'Gagal menyinkronkan data';
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(errorMsg),
-                              backgroundColor: colorScheme.error,
-                            ),
+                          if (!context.mounted) return;
+                          await AppDialog.error(
+                            context,
+                            title: 'Sinkronisasi gagal',
+                            message: errorMsg,
                           );
                           return;
                         }

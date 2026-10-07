@@ -1,18 +1,24 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import '../../../core/constants/app_constants.dart';
 import '../../../widgets/inline_pdf_preview_panel.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/kirim_dari_estate_dao.dart';
+import '../../../core/database/daos/kirim_lab_dao.dart';
+import '../../../core/database/daos/kirim_sertifikat_estate_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../../sample/screens/full_screen_image_preview_screen.dart';
 import '../constants/pupuk_activity_types.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
+import '../../../widgets/feedback/app_dialog.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
 
-class SampelPupukActivityDetailScreen extends StatefulWidget {
+class SampelPupukActivityDetailScreen extends ConsumerStatefulWidget {
   final String activityType;
   final int id;
 
@@ -23,13 +29,17 @@ class SampelPupukActivityDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<SampelPupukActivityDetailScreen> createState() =>
+  ConsumerState<SampelPupukActivityDetailScreen> createState() =>
       _SampelPupukActivityDetailScreenState();
 }
 
 class _SampelPupukActivityDetailScreenState
-    extends State<SampelPupukActivityDetailScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+    extends ConsumerState<SampelPupukActivityDetailScreen> {
+  KirimDariEstateDao get _kirimDariEstateDao =>
+      ref.read(kirimDariEstateDaoProvider);
+  KirimLabDao get _kirimLabDao => ref.read(kirimLabDaoProvider);
+  KirimSertifikatEstateDao get _kirimSertifikatEstateDao =>
+      ref.read(kirimSertifikatEstateDaoProvider);
   final GlobalKey<InlinePdfPreviewPanelState> _sertifikatPdfPanelKey =
       GlobalKey<InlinePdfPreviewPanelState>();
   bool _loading = true;
@@ -41,7 +51,7 @@ class _SampelPupukActivityDetailScreenState
     setState(() => _loading = true);
     switch (widget.activityType) {
       case kKirimDariEstate:
-        final row = await _dbHelper.getKirimDariEstateById(widget.id);
+        final row = await _kirimDariEstateDao.getById(widget.id);
         if (mounted) {
           setState(() {
             _kirimEstate = row;
@@ -50,7 +60,7 @@ class _SampelPupukActivityDetailScreenState
         }
         break;
       case kKirimLab:
-        final row = await _dbHelper.getKirimLabById(widget.id);
+        final row = await _kirimLabDao.getById(widget.id);
         if (mounted) {
           setState(() {
             _kirimLab = row;
@@ -59,7 +69,7 @@ class _SampelPupukActivityDetailScreenState
         }
         break;
       case kKirimSertifikatEstate:
-        final row = await _dbHelper.getKirimSertifikatEstateById(widget.id);
+        final row = await _kirimSertifikatEstateDao.getById(widget.id);
         if (mounted) {
           setState(() {
             _kirimSertifikat = row;
@@ -78,14 +88,15 @@ class _SampelPupukActivityDetailScreenState
     _load();
   }
 
-  Color _statusColor(String status) {
+  Color _statusColor(BuildContext context, String status) {
+    final scheme = Theme.of(context).colorScheme;
     switch (status) {
       case AppConstants.statusUploaded:
-        return AppColors.success;
+        return AppNoticeType.success.resolve(context).accent;
       case AppConstants.statusError:
-        return AppColors.error;
+        return scheme.error;
       default:
-        return AppColors.warning;
+        return AppNoticeType.warning.resolve(context).accent;
     }
   }
 
@@ -101,36 +112,24 @@ class _SampelPupukActivityDetailScreenState
   }
 
   Future<void> _confirmAndDelete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hapus data'),
-        content: const Text(
-          'Yakin ingin menghapus data sampel pupuk ini? Tindakan ini tidak dapat dibatalkan.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+    final confirmed = await AppDialog.confirm(
+      context,
+      title: 'Hapus data?',
+      message:
+          'Data sampel pupuk akan dihapus dari perangkat dan tidak dapat dipulihkan.',
+      confirmLabel: 'Hapus',
+      tone: AppDialogTone.destructive,
     );
     if (confirmed != true || !mounted) return;
     switch (widget.activityType) {
       case kKirimDariEstate:
-        await _dbHelper.deleteKirimDariEstate(widget.id);
+        await _kirimDariEstateDao.delete(widget.id);
         break;
       case kKirimLab:
-        await _dbHelper.deleteKirimLab(widget.id);
+        await _kirimLabDao.delete(widget.id);
         break;
       case kKirimSertifikatEstate:
-        await _dbHelper.deleteKirimSertifikatEstate(widget.id);
+        await _kirimSertifikatEstateDao.delete(widget.id);
         break;
     }
     if (!mounted) return;
@@ -161,8 +160,8 @@ class _SampelPupukActivityDetailScreenState
       return Scaffold(
         appBar: AppBar(
           title: const Text('Detail'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
         ),
         body: const Center(child: CircularProgressIndicator()),
       );
@@ -172,8 +171,8 @@ class _SampelPupukActivityDetailScreenState
       return Scaffold(
         appBar: AppBar(
           title: const Text('Detail'),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
         ),
         body: const Center(child: Text('Data tidak ditemukan')),
       );
@@ -189,8 +188,8 @@ class _SampelPupukActivityDetailScreenState
       child: Scaffold(
         appBar: AppBar(
           title: Text(title),
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: _onBackPressed,
@@ -369,13 +368,13 @@ class _SampelPupukActivityDetailScreenState
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),
-                  valueColor: _statusColor(r.status),
+                  valueColor: _statusColor(context, r.status),
                 ),
                 if (r.errorMessage != null && r.errorMessage!.isNotEmpty)
                   _buildInfoRow(
                     'Kesalahan',
                     r.errorMessage!,
-                    valueColor: AppColors.error,
+                    valueColor: Theme.of(context).colorScheme.error,
                   ),
                 _buildInfoRow(
                   'Dibuat',
@@ -430,13 +429,13 @@ class _SampelPupukActivityDetailScreenState
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),
-                  valueColor: _statusColor(r.status),
+                  valueColor: _statusColor(context, r.status),
                 ),
                 if (r.errorMessage != null && r.errorMessage!.isNotEmpty)
                   _buildInfoRow(
                     'Kesalahan',
                     r.errorMessage!,
-                    valueColor: AppColors.error,
+                    valueColor: Theme.of(context).colorScheme.error,
                   ),
                 _buildInfoRow(
                   'Dibuat',
@@ -470,7 +469,10 @@ class _SampelPupukActivityDetailScreenState
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: AppColors.warning),
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppNoticeType.warning.resolve(context).accent,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -515,13 +517,13 @@ class _SampelPupukActivityDetailScreenState
                 _buildInfoRow(
                   'Status',
                   _statusLabel(r.status),
-                  valueColor: _statusColor(r.status),
+                  valueColor: _statusColor(context, r.status),
                 ),
                 if (r.errorMessage != null && r.errorMessage!.isNotEmpty)
                   _buildInfoRow(
                     'Kesalahan',
                     r.errorMessage!,
-                    valueColor: AppColors.error,
+                    valueColor: Theme.of(context).colorScheme.error,
                   ),
                 _buildInfoRow(
                   'Dibuat',

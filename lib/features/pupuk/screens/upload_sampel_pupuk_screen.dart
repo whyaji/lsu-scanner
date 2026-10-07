@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/kirim_dari_estate_dao.dart';
+import '../../../core/database/daos/kirim_lab_dao.dart';
+import '../../../core/database/daos/kirim_sertifikat_estate_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
+import '../../pupuk_lab/models/pupuk_lab.dart';
+import '../../pupuk_lab/providers/pupuk_lab_providers.dart';
+import '../../pupuk_lab/screens/pupuk_lab_detail_screen.dart';
 import '../constants/pupuk_activity_types.dart';
 import '../providers/upload_sampel_pupuk_provider.dart';
+import '../../../widgets/feedback/app_dialog.dart';
 import 'sampel_pupuk_activity_detail_screen.dart';
 
 class UploadSampelPupukScreen extends ConsumerStatefulWidget {
@@ -20,20 +27,27 @@ class UploadSampelPupukScreen extends ConsumerStatefulWidget {
 
 class _UploadSampelPupukScreenState
     extends ConsumerState<UploadSampelPupukScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  KirimDariEstateDao get _kirimDariEstateDao =>
+      ref.read(kirimDariEstateDaoProvider);
+  KirimLabDao get _kirimLabDao => ref.read(kirimLabDaoProvider);
+  KirimSertifikatEstateDao get _kirimSertifikatEstateDao =>
+      ref.read(kirimSertifikatEstateDaoProvider);
   List<KirimDariEstate> _pendingKirimEstate = [];
   List<KirimLab> _pendingKirimLab = [];
   List<KirimSertifikatEstate> _pendingKirimSertifikat = [];
+  List<PupukLab> _pendingPupukLab = [];
 
   Future<void> _loadAll() async {
-    final t2 = await _dbHelper.getPendingKirimDariEstate();
-    final t4 = await _dbHelper.getPendingKirimLab();
-    final t5 = await _dbHelper.getPendingKirimSertifikatEstate();
+    final t2 = await _kirimDariEstateDao.getPending();
+    final t4 = await _kirimLabDao.getPending();
+    final t5 = await _kirimSertifikatEstateDao.getPending();
+    final lab = await ref.read(pupukLabDaoProvider).getPending();
     if (mounted) {
       setState(() {
         _pendingKirimEstate = t2;
         _pendingKirimLab = t4;
         _pendingKirimSertifikat = t5;
+        _pendingPupukLab = lab;
       });
     }
   }
@@ -50,40 +64,36 @@ class _UploadSampelPupukScreenState
     if (!mounted) return;
     final state = ref.read(uploadSampelPupukProvider);
     if (state.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.error!), backgroundColor: AppColors.error),
+      await AppDialog.error(
+        context,
+        title: 'Unggah gagal',
+        message: state.error!,
       );
       return;
     }
     // Same as LSU: show result modal with Berhasil / Gagal counts.
     final successCount = state.lastSuccessCount ?? 0;
     final failedCount = state.lastFailedCount ?? 0;
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unggah Selesai'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Berhasil: $successCount'),
-            Text('Gagal: $failedCount'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+    await AppDialog.info(
+      context,
+      title: 'Unggah selesai',
+      message: 'Berhasil: $successCount. Gagal: $failedCount.',
     );
   }
 
+  /// Rows the next upload will send. A Terima Lab receipt that SmartLab
+  /// rejected stays out of it until the user edits the receipt.
   int get _totalPending =>
       _pendingKirimEstate.length +
       _pendingKirimLab.length +
-      _pendingKirimSertifikat.length;
+      _pendingKirimSertifikat.length +
+      _pendingPupukLab.where((row) => !row.needsEdit).length;
+
+  int get _totalListed =>
+      _pendingKirimEstate.length +
+      _pendingKirimLab.length +
+      _pendingKirimSertifikat.length +
+      _pendingPupukLab.length;
 
   /// Distinct photo uploads for Kirim Lab (same no. surat + foto = one upload).
   int get _kirimLabDistinctPhotoUploads {
@@ -221,6 +231,21 @@ class _UploadSampelPupukScreenState
                         extraLine: 'Rekomendasi: ${row.rekomendasi}',
                       ),
                     ),
+                    _buildSection<PupukLab>(
+                      'Terima Lab',
+                      kPupukLab,
+                      _pendingPupukLab,
+                      (row) => row.id!,
+                      (row) => _PendingRow(
+                        kodeSampel: 'Terima Lab ${row.noSurat}',
+                        dateText: row.createdAt,
+                        status: row.status,
+                        errorMessage: row.errorMessage,
+                        extraLine: row.needsEdit
+                            ? '${row.samples.length} sampel. Ubah penerimaan sebelum diunggah lagi.'
+                            : '${row.samples.length} sampel, ${row.fotoPaths.length} foto',
+                      ),
+                    ),
                     if (_totalPending > 0)
                       Padding(
                         padding: const EdgeInsets.all(16),
@@ -257,7 +282,7 @@ class _UploadSampelPupukScreenState
                                 ),
                         ),
                       ),
-                    if (_totalPending == 0)
+                    if (_totalListed == 0)
                       Padding(
                         padding: const EdgeInsets.all(24),
                         child: Center(
@@ -329,10 +354,12 @@ class _UploadSampelPupukScreenState
                   Navigator.of(context)
                       .push(
                         MaterialPageRoute(
-                          builder: (_) => SampelPupukActivityDetailScreen(
-                            activityType: activityType,
-                            id: id,
-                          ),
+                          builder: (_) => activityType == kPupukLab
+                              ? PupukLabDetailScreen(id: id)
+                              : SampelPupukActivityDetailScreen(
+                                  activityType: activityType,
+                                  id: id,
+                                ),
                         ),
                       )
                       .then((_) => _loadAll());

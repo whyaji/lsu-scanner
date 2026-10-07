@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/kirim_dari_estate_dao.dart';
+import '../../../core/database/daos/kirim_lab_dao.dart';
+import '../../../core/database/daos/kirim_sertifikat_estate_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../widgets/app_footer.dart';
-import '../../../widgets/app_stat_card.dart';
+import '../../../widgets/display/app_stat_card.dart';
+import '../../../widgets/layout/app_card.dart';
 import '../../../widgets/app_section_header.dart';
 import '../../../widgets/sync_progress_modal.dart';
 import '../providers/home_counts_refresh_provider.dart';
@@ -18,6 +22,8 @@ import '../../pupuk/screens/data_sampel_pupuk_list_screen.dart';
 import '../../pupuk/screens/sampel_pupuk_list_screen.dart';
 import '../../pupuk/screens/upload_sampel_pupuk_screen.dart';
 import '../../pupuk/screens/kirim_sertifikat_form_screen.dart';
+import '../../pupuk_lab/providers/pupuk_lab_providers.dart';
+import '../../pupuk_lab/screens/pupuk_lab_receive_screen.dart';
 import '../../regional/providers/regional_provider.dart';
 import '../../settings/screens/settings_screen.dart';
 
@@ -39,7 +45,11 @@ class FertilizerHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  KirimDariEstateDao get _kirimDariEstateDao =>
+      ref.read(kirimDariEstateDaoProvider);
+  KirimLabDao get _kirimLabDao => ref.read(kirimLabDaoProvider);
+  KirimSertifikatEstateDao get _kirimSertifikatEstateDao =>
+      ref.read(kirimSertifikatEstateDaoProvider);
   int _pendingCount = 0;
   int _uploadedCount = 0;
 
@@ -51,13 +61,20 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
   }
 
   Future<void> _loadCounts() async {
-    final t2Pending = await _dbHelper.getPendingKirimDariEstate();
-    final t4Pending = await _dbHelper.getPendingKirimLab();
-    final t5Pending = await _dbHelper.getPendingKirimSertifikatEstate();
-    final t1All = await _dbHelper.getAllKirimDariEstate();
-    final t2All = await _dbHelper.getAllKirimLab();
-    final t3All = await _dbHelper.getAllKirimSertifikatEstate();
-    final pending = t2Pending.length + t4Pending.length + t5Pending.length;
+    final t2Pending = await _kirimDariEstateDao.getPending();
+    final t4Pending = await _kirimLabDao.getPending();
+    final t5Pending = await _kirimSertifikatEstateDao.getPending();
+    final pupukLabDao = ref.read(pupukLabDaoProvider);
+    final labPending = await pupukLabDao.getPending();
+    final labAll = await pupukLabDao.getAll();
+    final t1All = await _kirimDariEstateDao.getAll();
+    final t2All = await _kirimLabDao.getAll();
+    final t3All = await _kirimSertifikatEstateDao.getAll();
+    final pending =
+        t2Pending.length +
+        t4Pending.length +
+        t5Pending.length +
+        labPending.length;
     int uploaded = 0;
     for (final row in t1All) {
       if (row.status == AppConstants.statusUploaded) uploaded++;
@@ -67,6 +84,9 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
     }
     for (final row in t3All) {
       if (row.status == AppConstants.statusUploaded) uploaded++;
+    }
+    for (final row in labAll) {
+      if (row.isUploaded) uploaded++;
     }
     if (mounted) {
       setState(() {
@@ -237,77 +257,73 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Card(
-                  child: Padding(
-                    padding: AppSpacing.paddingMd,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Selamat datang, ${authState.user?.nama ?? "Pengguna"}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Selamat datang, ${authState.user?.nama ?? "Pengguna"}',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
                         ),
-                        AppSpacing.gapSm,
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (regionalState.selectedRegional != null)
-                                    Text(
-                                      'Regional ${regionalState.selectedRegional}',
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
+                      ),
+                      AppSpacing.gapSm,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (regionalState.selectedRegional != null)
                                   Text(
-                                    _formatDateTimeSync(
-                                      syncState.lastSyncTime != null
-                                          ? DateTime.parse(
-                                              syncState.lastSyncTime!,
-                                            )
-                                          : null,
-                                    ),
-                                    style: theme.textTheme.bodySmall?.copyWith(
+                                    'Regional ${regionalState.selectedRegional}',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
-                                ],
-                              ),
+                                Text(
+                                  _formatDateTimeSync(
+                                    syncState.lastSyncTime != null
+                                        ? DateTime.parse(
+                                            syncState.lastSyncTime!,
+                                          )
+                                        : null,
+                                  ),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: AppSpacing.sm),
-                            TextButton.icon(
-                              onPressed: syncState.isSyncing ? null : _sync,
-                              style: TextButton.styleFrom(
-                                backgroundColor: !syncState.isSyncing
-                                    ? colorScheme.primary
-                                    : colorScheme.surface,
-                                foregroundColor: !syncState.isSyncing
-                                    ? colorScheme.onPrimary
-                                    : colorScheme.onSurface,
-                              ),
-                              icon: syncState.isSyncing
-                                  ? SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        // color: colorScheme.primary,
-                                      ),
-                                    )
-                                  : const Icon(Icons.sync, size: 18),
-                              label: const Text('Sync'),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          TextButton.icon(
+                            onPressed: syncState.isSyncing ? null : _sync,
+                            style: TextButton.styleFrom(
+                              backgroundColor: !syncState.isSyncing
+                                  ? colorScheme.primary
+                                  : colorScheme.surface,
+                              foregroundColor: !syncState.isSyncing
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.onSurface,
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                            icon: syncState.isSyncing
+                                ? SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colorScheme.primary,
+                                    ),
+                                  )
+                                : const Icon(Icons.sync, size: 18),
+                            label: const Text('Sync'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 AppSpacing.gapMd,
@@ -318,7 +334,6 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                       child: AppStatCard(
                         label: 'Menunggu',
                         value: _pendingCount.toString(),
-                        color: colorScheme.tertiary,
                         icon: Icons.pending,
                         onTap: () {
                           Navigator.of(context)
@@ -338,7 +353,6 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                       child: AppStatCard(
                         label: 'Terunggah',
                         value: _uploadedCount.toString(),
-                        color: colorScheme.primary,
                         icon: Icons.cloud_done,
                         onTap: () {
                           Navigator.of(context)
@@ -365,8 +379,9 @@ class _FertilizerHomeScreenState extends ConsumerState<FertilizerHomeScreen> {
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
-                                PupukQRScannerScreen(activityType: type),
+                            builder: (context) => type == kPupukLab
+                                ? const PupukLabReceiveScreen()
+                                : PupukQRScannerScreen(activityType: type),
                           ),
                         );
                       },

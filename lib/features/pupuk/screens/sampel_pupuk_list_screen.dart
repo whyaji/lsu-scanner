@@ -1,14 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/kirim_dari_estate_dao.dart';
+import '../../../core/database/daos/kirim_lab_dao.dart';
+import '../../../core/database/daos/kirim_sertifikat_estate_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
-import '../../../widgets/app_empty_state.dart';
-import '../../../widgets/app_loading_state.dart';
+import '../../../widgets/display/app_empty_state.dart';
+import '../../../widgets/display/app_loading_state.dart';
+import '../../pupuk_lab/models/pupuk_lab.dart';
+import '../../pupuk_lab/providers/pupuk_lab_providers.dart';
+import '../../pupuk_lab/screens/pupuk_lab_detail_screen.dart';
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_detail_screen.dart';
 
@@ -39,17 +46,22 @@ class _PupukListEntry {
   });
 }
 
-class SampelPupukListScreen extends StatefulWidget {
+class SampelPupukListScreen extends ConsumerStatefulWidget {
   final bool isPending;
 
   const SampelPupukListScreen({super.key, required this.isPending});
 
   @override
-  State<SampelPupukListScreen> createState() => _SampelPupukListScreenState();
+  ConsumerState<SampelPupukListScreen> createState() =>
+      _SampelPupukListScreenState();
 }
 
-class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+class _SampelPupukListScreenState extends ConsumerState<SampelPupukListScreen> {
+  KirimDariEstateDao get _kirimDariEstateDao =>
+      ref.read(kirimDariEstateDaoProvider);
+  KirimLabDao get _kirimLabDao => ref.read(kirimLabDaoProvider);
+  KirimSertifikatEstateDao get _kirimSertifikatEstateDao =>
+      ref.read(kirimSertifikatEstateDaoProvider);
   List<_PupukListEntry> _entries = [];
   bool _loading = true;
 
@@ -58,16 +70,19 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
     final List<_PupukListEntry> combined = [];
 
     if (widget.isPending) {
-      final t2 = await _dbHelper.getPendingKirimDariEstate();
-      final t4 = await _dbHelper.getPendingKirimLab();
-      final t5 = await _dbHelper.getPendingKirimSertifikatEstate();
+      final t2 = await _kirimDariEstateDao.getPending();
+      final t4 = await _kirimLabDao.getPending();
+      final t5 = await _kirimSertifikatEstateDao.getPending();
       _addKirimEstate(combined, t2);
       _addKirimLab(combined, t4);
       _addKirimSertifikat(combined, t5);
+      for (final row in await ref.read(pupukLabDaoProvider).getPending()) {
+        if (row.id != null) combined.add(_entryFromPupukLab(row));
+      }
     } else {
-      final t2 = await _dbHelper.getAllKirimDariEstate();
-      final t4 = await _dbHelper.getAllKirimLab();
-      final t5 = await _dbHelper.getAllKirimSertifikatEstate();
+      final t2 = await _kirimDariEstateDao.getAll();
+      final t4 = await _kirimLabDao.getAll();
+      final t5 = await _kirimSertifikatEstateDao.getAll();
       for (final row in t2) {
         if (row.status == AppConstants.statusUploaded && row.id != null) {
           combined.add(_entryFromKirimEstate(row));
@@ -81,6 +96,11 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
       for (final row in t5) {
         if (row.status == AppConstants.statusUploaded && row.id != null) {
           combined.add(_entryFromKirimSertifikat(row));
+        }
+      }
+      for (final row in await ref.read(pupukLabDaoProvider).getAll()) {
+        if (row.isUploaded && row.id != null) {
+          combined.add(_entryFromPupukLab(row));
         }
       }
     }
@@ -131,6 +151,22 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
       createdAt: row.createdAt,
       fotoPath: row.fotoKirimLab,
       extraSubtitle: ns != null && ns.isNotEmpty ? 'No. Surat: $ns' : null,
+    );
+  }
+
+  _PupukListEntry _entryFromPupukLab(PupukLab row) {
+    final first = row.samples.first.kodeSampel;
+    final more = row.samples.length - 1;
+    return _PupukListEntry(
+      activityType: kPupukLab,
+      id: row.id!,
+      kodeSampel: more > 0 ? '$first (+$more)' : first,
+      dateText: row.createdAt,
+      status: row.status,
+      errorMessage: row.errorMessage,
+      createdAt: row.createdAt,
+      fotoPath: row.fotoPaths.isEmpty ? null : row.fotoPaths.first,
+      extraSubtitle: 'No. Surat: ${row.noSurat}',
     );
   }
 
@@ -205,6 +241,7 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                         SizedBox(
                           height: MediaQuery.of(context).size.height * 0.5,
                           child: AppEmptyState(
+                            icon: Icons.inventory_2_outlined,
                             title: 'Tidak ada data sampel pupuk $title',
                           ),
                         ),
@@ -223,10 +260,12 @@ class _SampelPupukListScreenState extends State<SampelPupukListScreen> {
                                   .push(
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          SampelPupukActivityDetailScreen(
-                                            activityType: e.activityType,
-                                            id: e.id,
-                                          ),
+                                          e.activityType == kPupukLab
+                                          ? PupukLabDetailScreen(id: e.id)
+                                          : SampelPupukActivityDetailScreen(
+                                              activityType: e.activityType,
+                                              id: e.id,
+                                            ),
                                     ),
                                   )
                                   .then((_) => _loadEntries());

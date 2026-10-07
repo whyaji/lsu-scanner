@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_semantic_colors.dart';
+
 /// Design tokens and theme for SampleTrack.
 /// All UI must use Theme.of(context).colorScheme / textTheme — no hardcoded colors.
 class AppTheme {
@@ -81,6 +83,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       brightness: brightness,
+      extensions: [isDark ? AppSemanticColors.dark : AppSemanticColors.light],
       scaffoldBackgroundColor: scaffoldBg,
       cardTheme: CardThemeData(
         elevation: isDark ? 0 : 2,
@@ -121,8 +124,8 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: colorScheme.error,
-          foregroundColor: colorScheme.onError,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -177,12 +180,6 @@ class AppTheme {
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      ),
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: colorScheme.inverseSurface,
-        contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       dialogTheme: DialogThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

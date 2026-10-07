@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../../core/database/database_helper.dart';
-import '../../../widgets/app_error_dialog.dart';
+import '../../../core/database/database_providers.dart';
+import '../../../widgets/feedback/app_dialog.dart';
 import '../../sample/screens/sample_detail_screen.dart';
 import '../utils/qr_parser.dart';
 
-class QRScannerScreen extends StatefulWidget {
+class QRScannerScreen extends ConsumerStatefulWidget {
   /// When true, flow saves to completed_sample (tanggal_selesai/waktu_selesai).
   final bool isCompleteSample;
 
   const QRScannerScreen({super.key, this.isCompleteSample = false});
 
   @override
-  State<QRScannerScreen> createState() => _QRScannerScreenState();
+  ConsumerState<QRScannerScreen> createState() => _QRScannerScreenState();
 }
 
-class _QRScannerScreenState extends State<QRScannerScreen> {
+class _QRScannerScreenState extends ConsumerState<QRScannerScreen> {
   final MobileScannerController _controller = MobileScannerController();
   bool _isProcessing = false;
   bool _isShowingDialog = false;
@@ -40,7 +41,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     if (!mounted || _isShowingDialog) return;
     _isShowingDialog = true;
     _controller.stop();
-    await AppErrorDialog.show(
+    await AppDialog.error(
       context,
       title: title,
       message: message,
@@ -65,8 +66,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       return;
     }
 
-    final dbHelper = DatabaseHelper.instance;
-    final masterLsu = await dbHelper.getMasterLsuById(qrData.masterLsuId);
+    final masterLsu = await ref
+        .read(lsuDaoProvider)
+        .getMasterLsuById(qrData.masterLsuId);
 
     if (masterLsu == null) {
       if (mounted) {

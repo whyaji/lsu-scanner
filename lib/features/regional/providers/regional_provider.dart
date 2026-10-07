@@ -1,6 +1,18 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import '../../../core/database/database_helper.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/database/daos/preferences_dao.dart';
+import '../../../core/database/database_providers.dart';
+import '../../../core/network/models/auth_models.dart';
+import '../../auth/providers/auth_provider.dart';
+
+/// Single rule for whether a user has to pick a regional: every module except
+/// a Pupuk Lab-only account, whose samples span all regionals.
+bool requiresRegional(User? user) => user == null || !user.isPupukLabOnly;
+
+final regionalRequiredProvider = Provider<bool>(
+  (ref) => requiresRegional(ref.watch(authProvider).user),
+);
 
 class RegionalState {
   final int? selectedRegional;
@@ -17,14 +29,14 @@ class RegionalState {
 }
 
 class RegionalNotifier extends StateNotifier<RegionalState> {
-  final DatabaseHelper _dbHelper;
+  final PreferencesDao _preferences;
 
-  RegionalNotifier(this._dbHelper) : super(RegionalState()) {
+  RegionalNotifier(this._preferences) : super(RegionalState()) {
     _loadSelectedRegional();
   }
 
   Future<void> _loadSelectedRegional() async {
-    final regionalStr = await _dbHelper.getPreference(
+    final regionalStr = await _preferences.get(
       AppConstants.keySelectedRegional,
     );
     if (regionalStr != null) {
@@ -45,7 +57,7 @@ class RegionalNotifier extends StateNotifier<RegionalState> {
 
     state = state.copyWith(selectedRegional: regional, isLoading: true);
 
-    await _dbHelper.setPreference(
+    await _preferences.set(
       AppConstants.keySelectedRegional,
       regional.toString(),
     );
@@ -57,8 +69,5 @@ class RegionalNotifier extends StateNotifier<RegionalState> {
 }
 
 final regionalProvider = StateNotifierProvider<RegionalNotifier, RegionalState>(
-  (ref) {
-    final dbHelper = DatabaseHelper.instance;
-    return RegionalNotifier(dbHelper);
-  },
+  (ref) => RegionalNotifier(ref.watch(preferencesDaoProvider)),
 );

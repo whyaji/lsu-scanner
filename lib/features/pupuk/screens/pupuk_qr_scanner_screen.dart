@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
-import '../../../widgets/app_error_dialog.dart';
+import '../../../widgets/feedback/app_dialog.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../pupuk_lab/providers/pupuk_lab_providers.dart';
 import '../../scanner/utils/qr_parser.dart';
 import '../constants/pupuk_activity_types.dart';
 import '../models/pupuk_sampel_entry.dart';
@@ -57,7 +58,7 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
     if (!mounted || _isShowingDialog) return;
     _isShowingDialog = true;
     _controller.stop();
-    await AppErrorDialog.show(
+    await AppDialog.error(
       context,
       title: title,
       message: message,
@@ -103,12 +104,12 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
     }
 
     final permissions = ref.read(authProvider).user?.permissions;
-    final dbHelper = DatabaseHelper.instance;
-    final DataSampelPupuk? synced = await dbHelper.getDataSampelPupukById(
-      qrData.id,
-    );
+    final reservedPupukLabKodes =
+        ref.read(reservedPupukLabKodeProvider).value ?? const <String>{};
+    final dataSampelPupukDao = ref.read(dataSampelPupukDaoProvider);
+    final DataSampelPupuk? synced = await dataSampelPupukDao.getById(qrData.id);
     final aktivitas = synced != null
-        ? await dbHelper.getAktivitasSampelPupukByDataSampelPupukId(
+        ? await dataSampelPupukDao.getAktivitas(
             qrData.id,
             individualKodeSampel: qrData.kodeSampel,
           )
@@ -119,6 +120,7 @@ class _PupukQRScannerScreenState extends ConsumerState<PupukQRScannerScreen> {
       aktivitas,
       dataSampelPupukFallback: synced,
       individualKodeSampel: qrData.kodeSampel,
+      pendingPupukLabKodes: reservedPupukLabKodes,
     );
 
     if (!allowed.contains(widget.activityType)) {

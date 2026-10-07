@@ -2,8 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/kirim_dari_estate_dao.dart';
+import '../../../core/database/daos/kirim_lab_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/kirim_dari_estate.dart';
 import '../../../core/database/models/kirim_lab.dart';
 import '../../home/providers/home_counts_refresh_provider.dart';
@@ -11,6 +12,7 @@ import '../../sample/screens/full_screen_image_preview_screen.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
+import '../../../widgets/feedback/app_dialog.dart';
 
 class SampelPupukConfirmationScreen extends ConsumerStatefulWidget {
   final SampelPupukFormData formData;
@@ -29,7 +31,9 @@ class SampelPupukConfirmationScreen extends ConsumerStatefulWidget {
 
 class _SampelPupukConfirmationScreenState
     extends ConsumerState<SampelPupukConfirmationScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  KirimDariEstateDao get _kirimDariEstateDao =>
+      ref.read(kirimDariEstateDaoProvider);
+  KirimLabDao get _kirimLabDao => ref.read(kirimLabDaoProvider);
   bool _isSaving = false;
 
   Future<bool> _showBackRetakePhotoDialog() async {
@@ -133,7 +137,7 @@ class _SampelPupukConfirmationScreenState
       switch (widget.formData.activityType) {
         case kKirimDariEstate:
           for (final sample in widget.formData.samples) {
-            await _dbHelper.insertKirimDariEstate(
+            await _kirimDariEstateDao.insert(
               KirimDariEstate(
                 dataSampelPupukId: sample.dataSampelPupukId,
                 kodeSampel: sample.displayKodeSampel,
@@ -148,7 +152,7 @@ class _SampelPupukConfirmationScreenState
           break;
         case kKirimLab:
           for (final sample in widget.formData.samples) {
-            await _dbHelper.insertKirimLab(
+            await _kirimLabDao.insert(
               KirimLab(
                 dataSampelPupukId: sample.dataSampelPupukId,
                 kodeSampel: sample.displayKodeSampel,
@@ -170,25 +174,22 @@ class _SampelPupukConfirmationScreenState
       if (mounted) {
         ref.read(fertilizerCountsRefreshProvider.notifier).state++;
         final count = widget.formData.samples.length;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              count > 1
-                  ? '$count data Sampel Pupuk berhasil disimpan'
-                  : 'Data Sampel Pupuk berhasil disimpan',
-            ),
-            backgroundColor: AppTheme.successColor(context),
-          ),
+        await AppDialog.success(
+          context,
+          title: 'Data tersimpan',
+          message: count > 1
+              ? '$count data Sampel Pupuk berhasil disimpan.'
+              : 'Data Sampel Pupuk berhasil disimpan.',
         );
+        if (!mounted) return;
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal menyimpan: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
+        await AppDialog.error(
+          context,
+          title: 'Penyimpanan gagal',
+          message: 'Data tidak tersimpan: $e',
         );
       }
     } finally {

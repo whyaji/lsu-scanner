@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/legacy.dart';
-import '../../../core/network/api_service.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
+import '../../../core/network/api/upload_api.dart';
+import '../../../core/network/api_providers.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/completed_sample.dart';
 import '../../../core/network/models/upload_models.dart';
@@ -59,17 +60,17 @@ class UploadState {
 }
 
 class UploadNotifier extends StateNotifier<UploadState> {
-  final ApiService _apiService;
-  final DatabaseHelper _dbHelper;
+  final UploadApi _api;
+  final LsuDao _lsuDao;
 
-  UploadNotifier(this._apiService, this._dbHelper) : super(UploadState());
+  UploadNotifier(this._api, this._lsuDao) : super(UploadState());
 
   Future<void> uploadAll() async {
     state = state.copyWith(isUploading: true, error: null, results: []);
 
     try {
       // Get pending samples
-      final samples = await _dbHelper.getPendingUploads();
+      final samples = await _lsuDao.received.getPending();
       if (samples.isEmpty) {
         state = state.copyWith(isUploading: false);
         return;
@@ -88,7 +89,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
         );
       }).toList();
 
-      final batchResponse = await _apiService.batchUpload(uploadItems);
+      final batchResponse = await _api.batchUpload(uploadItems);
 
       if (!batchResponse.success || batchResponse.data == null) {
         state = state.copyWith(
@@ -150,7 +151,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
           }
 
           // Upload photo (foto terima)
-          final photoResponse = await _apiService.uploadPhoto(
+          final photoResponse = await _api.uploadPhoto(
             filePath: photoPath,
             dataLsuId: item.id,
             kode: item.kode,
@@ -162,7 +163,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
 
           if (photoResponse.success) {
             // Update status to uploaded
-            await _dbHelper.updateReceivedSampleStatus(
+            await _lsuDao.received.updateStatus(
               sample.id!,
               AppConstants.statusUploaded,
             );
@@ -175,7 +176,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
           }
         } catch (e) {
           // Update status to error
-          await _dbHelper.updateReceivedSampleStatus(
+          await _lsuDao.received.updateStatus(
             sample.id!,
             AppConstants.statusError,
             errorMessage: e.toString(),
@@ -192,7 +193,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
       // Handle remaining failed items (exclude "Status already received" — those were uploaded above)
       for (final item in otherFailedItems) {
         final sample = samples.firstWhere((s) => s.dataLsuId == item.id);
-        await _dbHelper.updateReceivedSampleStatus(
+        await _lsuDao.received.updateStatus(
           sample.id!,
           AppConstants.statusError,
           errorMessage: item.error,
@@ -217,9 +218,7 @@ class UploadNotifier extends StateNotifier<UploadState> {
 final uploadProvider = StateNotifierProvider<UploadNotifier, UploadState>((
   ref,
 ) {
-  final apiService = ApiService(ApiClient().dio);
-  final dbHelper = DatabaseHelper.instance;
-  return UploadNotifier(apiService, dbHelper);
+  return UploadNotifier(ref.watch(uploadApiProvider), ref.watch(lsuDaoProvider));
 });
 
 // --- Upload Complete (completed_sample) ---
@@ -265,17 +264,17 @@ class UploadCompleteState {
 }
 
 class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
-  final ApiService _apiService;
-  final DatabaseHelper _dbHelper;
+  final UploadApi _api;
+  final LsuDao _lsuDao;
 
-  UploadCompleteNotifier(this._apiService, this._dbHelper)
+  UploadCompleteNotifier(this._api, this._lsuDao)
       : super(UploadCompleteState());
 
   Future<void> uploadAllComplete() async {
     state = state.copyWith(isUploading: true, error: null, results: []);
 
     try {
-      final samples = await _dbHelper.getPendingCompleteUploads();
+      final samples = await _lsuDao.completed.getPending();
       if (samples.isEmpty) {
         state = state.copyWith(isUploading: false);
         return;
@@ -294,7 +293,7 @@ class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
       }).toList();
 
       final batchResponse =
-          await _apiService.batchUploadComplete(uploadItems);
+          await _api.batchUploadComplete(uploadItems);
 
       if (!batchResponse.success || batchResponse.data == null) {
         state = state.copyWith(
@@ -352,7 +351,7 @@ class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
           }
 
           // Upload photo (foto selesai)
-          final photoResponse = await _apiService.uploadPhoto(
+          final photoResponse = await _api.uploadPhoto(
             filePath: photoPath,
             dataLsuId: item.id,
             kode: item.kode,
@@ -361,7 +360,7 @@ class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
           );
 
           if (photoResponse.success) {
-            await _dbHelper.updateCompletedSampleStatus(
+            await _lsuDao.completed.updateStatus(
               sample.id!,
               AppConstants.statusUploaded,
             );
@@ -372,7 +371,7 @@ class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
             );
           }
         } catch (e) {
-          await _dbHelper.updateCompletedSampleStatus(
+          await _lsuDao.completed.updateStatus(
             sample.id!,
             AppConstants.statusError,
             errorMessage: e.toString(),
@@ -391,7 +390,7 @@ class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
 
       for (final item in otherFailedItems) {
         final sample = samples.firstWhere((s) => s.dataLsuId == item.id);
-        await _dbHelper.updateCompletedSampleStatus(
+        await _lsuDao.completed.updateStatus(
           sample.id!,
           AppConstants.statusError,
           errorMessage: item.error,
@@ -418,7 +417,8 @@ class UploadCompleteNotifier extends StateNotifier<UploadCompleteState> {
 
 final uploadCompleteProvider =
     StateNotifierProvider<UploadCompleteNotifier, UploadCompleteState>((ref) {
-  final apiService = ApiService(ApiClient().dio);
-  final dbHelper = DatabaseHelper.instance;
-  return UploadCompleteNotifier(apiService, dbHelper);
+  return UploadCompleteNotifier(
+    ref.watch(uploadApiProvider),
+    ref.watch(lsuDaoProvider),
+  );
 });

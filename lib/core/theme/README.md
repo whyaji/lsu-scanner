@@ -11,19 +11,20 @@
 - **Spacing (8pt grid)**: `lib/core/theme/app_spacing.dart`  
   Use `AppSpacing.md`, `AppSpacing.paddingScreen`, `AppSpacing.gapMd`, etc.
 - **Typography**: Prefer `Theme.of(context).textTheme` and `AppTypography` helpers in `lib/core/theme/app_typography.dart` when needed.
+- **Sizes and radii**: `lib/core/theme/app_sizes.dart` (tap target 48, card 12, field 10, button 12, chip 8, dialog 16).
+- **Semantic colors**: `AppSemanticColors` (`app_semantic_colors.dart`, registered in both themes) for success, info, warning and error. Resolve through `AppNoticeType.resolve(context)`.
+- **New widget set and rules**: `docs/design-system.md` (feedback, buttons, layout, forms, display under `lib/widgets/<group>/`).
 
 ## Reusable UI Components
 
 | Widget                    | Path                                  | Use                                                 |
 | ------------------------- | ------------------------------------- | --------------------------------------------------- |
-| `AppEmptyState`           | `lib/widgets/app_empty_state.dart`    | Empty lists with icon + title (+ optional subtitle) |
-| `AppLoadingState`         | `lib/widgets/app_loading_state.dart`  | Shimmer list placeholder while loading              |
-| `AppErrorState`           | `lib/widgets/app_error_state.dart`    | Error message + optional retry                      |
-| `AppStatCard`             | `lib/widgets/app_stat_card.dart`      | Dashboard stat tiles (e.g. Menunggu / Terunggah)    |
-| `AppSettingsTile`         | `lib/widgets/app_settings_tile.dart`  | Settings row with icon, title, subtitle, tap        |
-| `CustomButton`            | `lib/widgets/custom_button.dart`      | Primary button with optional icon/loading           |
-| `SampleCard`              | `lib/widgets/sample_card.dart`        | Sample list card using theme colors                 |
-| `CustomProgressIndicator` | `lib/widgets/progress_indicator.dart` | Upload progress card                                |
+| `AppEmptyState`           | `lib/widgets/display/app_empty_state.dart`    | Empty lists with icon + title (+ optional message)  |
+| `AppLoadingState`         | `lib/widgets/display/app_loading_state.dart`  | Shimmer list placeholder while loading              |
+| `AppErrorState`           | `lib/widgets/display/app_error_state.dart`    | Error message + optional retry                      |
+| `AppStatCard`             | `lib/widgets/display/app_stat_card.dart`      | Dashboard stat tiles (e.g. Menunggu / Terunggah)    |
+| `AppSettingsTile`         | `lib/widgets/app_settings_tile.dart`          | Settings row with icon, title, subtitle, tap        |
+| `AppButton`               | `lib/widgets/buttons/app_button.dart`         | Primary button with optional icon/loading           |
 
 ## Using the Theme in Screens
 
@@ -43,7 +44,7 @@ lib/
     settings/
       providers/   # theme_provider.dart
       screens/     # settings_screen.dart (theme selector)
-  widgets/         # Shared UI: app_empty_state, app_loading_state, app_stat_card, etc.
+  widgets/         # Shared UI grouped by buttons, display, feedback, forms, layout, scanner
 ```
 
 ## Redesigned Screens (examples)

@@ -5,14 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../main.dart';
-import '../../network/api_client.dart';
-import '../../network/api_service.dart';
+import '../api_providers.dart';
 import '../../services/notification_sound_service.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/notifications/providers/notification_provider.dart';
 import '../../../features/notifications/utils/notification_navigation.dart';
 import '../../../features/regional/providers/regional_provider.dart';
-import '../../database/database_helper.dart';
+import '../../database/database_providers.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -22,12 +23,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class FcmService {
   final Ref _ref;
-  final ApiService _apiService;
   bool _initialized = false;
   bool _tapListenersRegistered = false;
   RemoteMessage? _pendingTapMessage;
 
-  FcmService(this._ref) : _apiService = ApiService(ApiClient().dio);
+  FcmService(this._ref);
 
   Future<void> init() async {
     if (_initialized) return;
@@ -121,9 +121,9 @@ class FcmService {
       }
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
-        final dbHelper = DatabaseHelper.instance;
+        final preferencesDao = _ref.read(preferencesDaoProvider);
         final cacheKey = 'fcm_token_$userId';
-        final cachedToken = await dbHelper.getPreference(cacheKey);
+        final cachedToken = await preferencesDao.get(cacheKey);
 
         if (cachedToken == token) {
           log('FCM Token is already up to date for user $userId.');
@@ -131,10 +131,10 @@ class FcmService {
         }
 
         log('FCM Token: $token');
-        final response = await _apiService.updateFcmToken(token);
+        final response = await _ref.read(authApiProvider).updateFcmToken(token);
         if (response.success) {
           log('FCM Token uploaded successfully.');
-          await dbHelper.setPreference(cacheKey, token);
+          await preferencesDao.set(cacheKey, token);
         } else {
           log('Failed to upload FCM Token: ${response.error?.message}');
         }
@@ -148,10 +148,10 @@ class FcmService {
     if (_tapListenersRegistered) return;
     _tapListenersRegistered = true;
 
-    _ref.listen<AuthState>(authProvider, (_, __) {
+    _ref.listen<AuthState>(authProvider, (previous, next) {
       processPendingNotificationTap();
     });
-    _ref.listen<RegionalState>(regionalProvider, (_, __) {
+    _ref.listen<RegionalState>(regionalProvider, (previous, next) {
       processPendingNotificationTap();
     });
   }
@@ -161,7 +161,10 @@ class FcmService {
     if (!auth.isAuthenticated || auth.isLoading) return false;
 
     final regional = _ref.read(regionalProvider);
-    if (regional.selectedRegional == null) return false;
+    if (_ref.read(regionalRequiredProvider) &&
+        regional.selectedRegional == null) {
+      return false;
+    }
 
     return appNavigatorKey.currentState != null;
   }
@@ -228,67 +231,11 @@ class FcmService {
   }
 
   void _showForegroundBanner(RemoteMessage message) {
-    final context = appNavigatorKey.currentContext;
-    if (context == null) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        backgroundColor: Theme.of(context).cardColor,
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.notifications_active,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.notification?.title ?? 'Notification',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    message.notification?.body ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.color?.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'VIEW',
-          onPressed: () {
-            _handleMessageClick(message);
-          },
-        ),
-      ),
+    AppToast.showGlobal(
+      message.notification?.body ?? 'Ada notifikasi baru.',
+      type: AppNoticeType.info,
+      actionLabel: 'Lihat',
+      onAction: () => _handleMessageClick(message),
     );
   }
 }

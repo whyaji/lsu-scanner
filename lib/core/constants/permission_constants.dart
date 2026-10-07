@@ -9,4 +9,5 @@ abstract final class PermissionConstants {
   static const String pupukMobileKirimLab = 'pupuk:mobile-kirim-lab';
   static const String pupukMobileKirimSertifikat =
       'pupuk:mobile-kirim-sertifikat';
+  static const String pupukMobilePupukLab = 'pupuk:mobile-pupuk-lab';
 }

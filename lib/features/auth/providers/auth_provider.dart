@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/legacy.dart';
-import '../../../core/network/api_service.dart';
-import '../../../core/network/api_client.dart';
+import '../../../core/network/api/auth_api.dart';
+import '../../../core/network/api_providers.dart';
 import '../../../core/network/interceptors/auth_interceptor.dart';
 import '../../../core/network/models/auth_models.dart';
 import '../../../core/storage/secure_storage.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/preferences_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/constants/app_constants.dart';
 
 class AuthState {
@@ -61,11 +62,11 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final ApiService _apiService;
+  final AuthApi _authApi;
   final SecureStorage _storage;
-  final DatabaseHelper _dbHelper;
+  final PreferencesDao _preferences;
 
-  AuthNotifier(this._apiService, this._storage, this._dbHelper)
+  AuthNotifier(this._authApi, this._storage, this._preferences)
     : super(AuthState()) {
     AuthInterceptor.configure(onForceLogout: forceLogoutFromApi);
     _checkAuthStatus();
@@ -73,10 +74,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _clearLocalSession() async {
     await _storage.clearTokens();
-    await _dbHelper.deletePreference('user_data');
-    await _dbHelper.deletePreference('user_id');
-    await _dbHelper.deletePreference(AppConstants.keySelectedRegional);
-    await _dbHelper.deletePreference(AppConstants.keyLastSyncTime);
+    await _preferences.delete('user_data');
+    await _preferences.delete('user_id');
+    await _preferences.delete(AppConstants.keySelectedRegional);
+    await _preferences.delete(AppConstants.keyLastSyncTime);
   }
 
   /// Session invalid / other device logged in. Does not call mobile-logout.
@@ -108,8 +109,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> _persistUser(User user) async {
-    await _dbHelper.setPreference('user_data', jsonEncode(user.toJson()));
-    await _dbHelper.setPreference('user_id', user.userId.toString());
+    await _preferences.set('user_data', jsonEncode(user.toJson()));
+    await _preferences.set('user_id', user.userId.toString());
   }
 
   Future<void> _checkAuthStatus() async {
@@ -121,7 +122,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
 
       User? user;
-      final userDataStr = await _dbHelper.getPreference('user_data');
+      final userDataStr = await _preferences.get('user_data');
       if (userDataStr != null) {
         try {
           final userData = jsonDecode(userDataStr) as Map<String, dynamic>;
@@ -137,7 +138,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           userDataStr != null && !userDataStr.contains('"permissions"');
 
       if (needsRefresh) {
-        final response = await _apiService.getCurrentUser();
+        final response = await _authApi.getCurrentUser();
         final refreshed = response.data;
         if (response.success && refreshed != null) {
           user = refreshed;
@@ -168,7 +169,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     try {
-      final response = await _apiService.login(username, password);
+      final response = await _authApi.login(username, password);
 
       if (response.success && response.data != null) {
         final loginData = response.data!;
@@ -207,7 +208,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     try {
-      await _apiService.logout();
+      await _authApi.logout();
     } catch (e) {
       // Continue clearing local session
     }
@@ -225,8 +226,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final apiService = ApiService(ApiClient().dio);
-  final storage = SecureStorage();
-  final dbHelper = DatabaseHelper.instance;
-  return AuthNotifier(apiService, storage, dbHelper);
+  return AuthNotifier(
+    ref.watch(authApiProvider),
+    SecureStorage(),
+    ref.watch(preferencesDaoProvider),
+  );
 });

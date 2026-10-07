@@ -56,16 +56,18 @@ class CompleteUploadItem {
   }
 }
 
+/// Shared by the LSU and Sampel Pupuk uploads. Pupuk responses carry no
+/// `kode`, so it falls back to an empty string.
 class UploadSuccessItem {
   final int id;
   final String kode;
 
-  UploadSuccessItem({required this.id, required this.kode});
+  UploadSuccessItem({required this.id, this.kode = ''});
 
   factory UploadSuccessItem.fromJson(Map<String, dynamic> json) {
     return UploadSuccessItem(
       id: json['id'] as int,
-      kode: json['kode'] as String,
+      kode: json['kode'] as String? ?? '',
     );
   }
 }
@@ -75,13 +77,13 @@ class UploadFailedItem {
   final String kode;
   final String error;
 
-  UploadFailedItem({required this.id, required this.kode, required this.error});
+  UploadFailedItem({required this.id, this.kode = '', required this.error});
 
   factory UploadFailedItem.fromJson(Map<String, dynamic> json) {
     return UploadFailedItem(
       id: json['id'] as int,
-      kode: json['kode'] as String,
-      error: json['error'] as String,
+      kode: json['kode'] as String? ?? '',
+      error: json['error'] as String? ?? 'Kesalahan tidak diketahui',
     );
   }
 }

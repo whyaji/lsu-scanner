@@ -249,10 +249,23 @@ class User {
   bool get hasPupukMobileKirimSertifikat =>
       hasPermission(PermissionConstants.pupukMobileKirimSertifikat);
 
+  bool get hasPupukMobilePupukLab =>
+      hasPermission(PermissionConstants.pupukMobilePupukLab);
+
   bool get hasAnyPupukMobileAccess =>
       hasPupukMobileKirimEstate ||
       hasPupukMobileKirimLab ||
-      hasPupukMobileKirimSertifikat;
+      hasPupukMobileKirimSertifikat ||
+      hasPupukMobilePupukLab;
+
+  /// Pupuk Lab only: samples come from every regional, so no regional is
+  /// picked or sent. Any other module access (LSU, estate, NT) needs one.
+  bool get isPupukLabOnly =>
+      hasPupukMobilePupukLab &&
+      !hasAnyLsuMobileAccess &&
+      !hasPupukMobileKirimEstate &&
+      !hasPupukMobileKirimLab &&
+      !hasPupukMobileKirimSertifikat;
 
   static List<String> _parseStringList(dynamic value) {
     if (value is! List) return [];

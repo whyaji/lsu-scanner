@@ -6,6 +6,8 @@ import '../../../core/utils/photo_capture_helper.dart';
 import '../../../widgets/camera_view.dart';
 import '../../auth/providers/auth_provider.dart';
 import 'confirmation_screen.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
 
 class PhotoCaptureScreen extends ConsumerStatefulWidget {
   final int dataLsuId;
@@ -140,12 +142,7 @@ class _PhotoCaptureScreenState extends ConsumerState<PhotoCaptureScreen> {
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
+    AppToast.show(context, message, type: AppNoticeType.error);
   }
 
   @override

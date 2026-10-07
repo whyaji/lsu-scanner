@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../widgets/app_alert.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
 
 class AutoDownloadSettingsScreen extends StatefulWidget {
   const AutoDownloadSettingsScreen({super.key});
@@ -36,7 +37,11 @@ class _AutoDownloadSettingsScreenState
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        AppAlerts.error(context, 'Gagal memuat preferensi');
+        AppToast.show(
+          context,
+          'Gagal memuat preferensi.',
+          type: AppNoticeType.error,
+        );
       }
     }
   }
@@ -47,17 +52,22 @@ class _AutoDownloadSettingsScreenState
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('auto_download_enabled', val);
       if (mounted) {
-        AppAlerts.success(
+        AppToast.show(
           context,
           val
               ? 'Auto download foto diaktifkan'
               : 'Auto download foto dinonaktifkan',
+          type: AppNoticeType.success,
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _autoDownloadEnabled = !val); // Revert
-        AppAlerts.error(context, 'Gagal menyimpan preferensi');
+        AppToast.show(
+          context,
+          'Gagal menyimpan preferensi.',
+          type: AppNoticeType.error,
+        );
       }
     }
   }
@@ -78,11 +88,11 @@ class _AutoDownloadSettingsScreenState
                 Container(
                   padding: AppSpacing.paddingSm,
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant,
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: colorScheme.shadow.withOpacity(0.04),
+                        color: colorScheme.shadow.withValues(alpha: 0.04),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -106,10 +116,10 @@ class _AutoDownloadSettingsScreenState
                 Container(
                   padding: AppSpacing.paddingMd,
                   decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant,
+                    color: colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: colorScheme.outline.withOpacity(0.3),
+                      color: colorScheme.outline.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Column(
@@ -178,7 +188,7 @@ class _AutoDownloadSettingsScreenState
           width: double.infinity,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: colorScheme.surface.withOpacity(0.5),
+            color: colorScheme.surface.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(

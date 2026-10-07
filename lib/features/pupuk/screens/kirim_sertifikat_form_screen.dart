@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
@@ -10,10 +11,13 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../../../core/constants/app_constants.dart';
 import '../../../widgets/inline_pdf_preview_panel.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/data_sampel_pupuk_dao.dart';
+import '../../../core/database/daos/kirim_sertifikat_estate_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/data_sampel_pupuk.dart';
 import '../../../core/database/models/kirim_sertifikat_estate.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
+import '../../../widgets/feedback/app_dialog.dart';
 
 const _defaultRekomendasi = 'Pupuk dapat diaplikasi';
 
@@ -24,16 +28,20 @@ class _NoSuratGroup {
   final List<DataSampelPupuk> samples;
 }
 
-class KirimSertifikatFormScreen extends StatefulWidget {
+class KirimSertifikatFormScreen extends ConsumerStatefulWidget {
   const KirimSertifikatFormScreen({super.key});
 
   @override
-  State<KirimSertifikatFormScreen> createState() =>
+  ConsumerState<KirimSertifikatFormScreen> createState() =>
       _KirimSertifikatFormScreenState();
 }
 
-class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
-  final _dbHelper = DatabaseHelper.instance;
+class _KirimSertifikatFormScreenState
+    extends ConsumerState<KirimSertifikatFormScreen> {
+  DataSampelPupukDao get _dataSampelPupukDao =>
+      ref.read(dataSampelPupukDaoProvider);
+  KirimSertifikatEstateDao get _kirimSertifikatEstateDao =>
+      ref.read(kirimSertifikatEstateDaoProvider);
   final _formKey = GlobalKey<FormState>();
 
   bool _loading = true;
@@ -86,10 +94,10 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
 
   Future<void> _loadOptions() async {
     setState(() => _loading = true);
-    final list = await _dbHelper.getEligibleDataSampelPupukKirimSertifikat();
+    final list = await _dataSampelPupukDao.getEligibleKirimSertifikat();
     final byNoSurat = <String, List<DataSampelPupuk>>{};
     for (final item in list) {
-      final noSurat = await _dbHelper.resolveNoSuratForDataSampelPupuk(
+      final noSurat = await _dataSampelPupukDao.resolveNoSurat(
         item.id,
         fromData: item.noSurat,
       );
@@ -238,10 +246,10 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
   Future<void> _save() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon lengkapi semua field yang wajib diisi.'),
-        ),
+      await AppDialog.warning(
+        context,
+        title: 'Form belum lengkap',
+        message: 'Lengkapi semua field wajib sebelum menyimpan.',
       );
       return;
     }
@@ -260,8 +268,8 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
         fileSertifikat: fileSertifikatPath,
         createdAt: nowIso,
       );
-      await _dbHelper.insertKirimSertifikatEstate(row);
-      await _dbHelper.updateDataSampelPupukTanggalKirimSertifikatEstate(
+      await _kirimSertifikatEstateDao.insert(row);
+      await _dataSampelPupukDao.updateTanggalKirimSertifikatEstate(
         sample.id,
         tanggalIso,
         rekomendasi: rekomendasi,
@@ -347,10 +355,10 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
       setState(() => _fileSertifikatPath = pdfPath);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Gagal membuat PDF dari foto. Silakan coba lagi.'),
-        ),
+      await AppDialog.error(
+        context,
+        title: 'PDF tidak dibuat',
+        message: 'Foto belum dapat diubah menjadi PDF. Coba lagi.',
       );
     } finally {
       if (mounted) {
@@ -453,10 +461,10 @@ class _KirimSertifikatFormScreenState extends State<KirimSertifikatFormScreen> {
   Future<void> _confirmAndSave() async {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon lengkapi semua field yang wajib diisi.'),
-        ),
+      await AppDialog.warning(
+        context,
+        title: 'Form belum lengkap',
+        message: 'Lengkapi semua field wajib sebelum menyimpan.',
       );
       return;
     }

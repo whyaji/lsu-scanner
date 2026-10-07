@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
-import '../../../widgets/app_empty_state.dart';
-import '../../../widgets/app_loading_state.dart';
+import '../../../widgets/display/app_empty_state.dart';
+import '../../../widgets/display/app_loading_state.dart';
 import 'received_sample_detail_screen.dart';
 import 'completed_sample_detail_screen.dart';
 
@@ -30,17 +32,17 @@ class _SampleListEntry {
   });
 }
 
-class ReceivedListScreen extends StatefulWidget {
+class ReceivedListScreen extends ConsumerStatefulWidget {
   final bool isPending;
 
   const ReceivedListScreen({super.key, required this.isPending});
 
   @override
-  State<ReceivedListScreen> createState() => _ReceivedListScreenState();
+  ConsumerState<ReceivedListScreen> createState() => _ReceivedListScreenState();
 }
 
-class _ReceivedListScreenState extends State<ReceivedListScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+class _ReceivedListScreenState extends ConsumerState<ReceivedListScreen> {
+  LsuDao get _lsuDao => ref.read(lsuDaoProvider);
   List<_SampleListEntry> _entries = [];
   bool _loading = true;
 
@@ -48,8 +50,8 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
     setState(() => _loading = true);
     final List<_SampleListEntry> combined = [];
     if (widget.isPending) {
-      final received = await _dbHelper.getPendingUploads();
-      final completed = await _dbHelper.getPendingCompleteUploads();
+      final received = await _lsuDao.received.getPending();
+      final completed = await _lsuDao.completed.getPending();
       for (final s in received) {
         if (s.id != null) {
           combined.add(
@@ -83,8 +85,8 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
         }
       }
     } else {
-      final received = await _dbHelper.getUploadedSamples();
-      final allCompleted = await _dbHelper.getAllCompletedSamples();
+      final received = await _lsuDao.received.getUploaded();
+      final allCompleted = await _lsuDao.completed.getAll();
       final completed = allCompleted
           .where((s) => s.status == AppConstants.statusUploaded)
           .toList();
@@ -178,6 +180,7 @@ class _ReceivedListScreenState extends State<ReceivedListScreen> {
                         SizedBox(
                           height: MediaQuery.of(context).size.height * 0.5,
                           child: AppEmptyState(
+                            icon: Icons.science_outlined,
                             title: 'Tidak ada sampel $title',
                           ),
                         ),

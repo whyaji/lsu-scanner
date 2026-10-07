@@ -43,4 +43,23 @@ class AppSpacing {
   static const double sliverGapSm = sm;
   static const double sliverGapMd = md;
   static const double sliverGapLg = lg;
+
+  /// Gap between titled groups on a screen.
+  static const double sectionGap = lg;
+
+  /// Gap between consecutive form fields.
+  static const double fieldGap = md;
+
+  /// Gap between a field label and its control.
+  static const double labelGap = 6;
+
+  /// Width at which screens switch from phone to tablet insets.
+  static const double tabletBreakpoint = 600;
+
+  /// Horizontal and vertical screen inset: 16 on phones, 24 from [tabletBreakpoint].
+  static double screenInset(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= tabletBreakpoint ? lg : md;
+
+  static EdgeInsets screenPaddingOf(BuildContext context) =>
+      EdgeInsets.all(screenInset(context));
 }

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
 import '../../../core/utils/photo_capture_helper.dart';
-import '../../../widgets/app_alert.dart';
+import '../../../widgets/feedback/app_dialog.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
 
 /// Full-screen image preview with details, zoom, share, download, and delete.
 /// Use after taking a photo or when viewing an existing received sample.
@@ -33,7 +35,11 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
       final file = File(path);
       if (!await file.exists()) {
         if (context.mounted) {
-          AppAlerts.error(context, 'File tidak ditemukan untuk dibagikan');
+          await AppDialog.error(
+            context,
+            title: 'File tidak ditemukan',
+            message: 'Foto tidak tersedia untuk dibagikan.',
+          );
         }
         return;
       }
@@ -48,7 +54,11 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
       );
     } catch (e) {
       if (context.mounted) {
-        AppAlerts.error(context, 'Gagal membagikan foto: $e');
+        AppToast.show(
+          context,
+          'Gagal membagikan foto: $e',
+          type: AppNoticeType.error,
+        );
       }
     }
   }
@@ -65,46 +75,39 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
 
       if (targetPath != null) {
         if (context.mounted) {
-          AppAlerts.success(
+          AppToast.show(
             context,
-            'Foto berhasil diunduh ke: Download/SampleTrack/$feature/${p.basename(targetPath)}',
+            'Foto berhasil diunduh ke Download/SampleTrack/$feature/${p.basename(targetPath)}',
+            type: AppNoticeType.success,
           );
         }
       } else {
         if (context.mounted) {
-          AppAlerts.error(context, 'Gagal mengunduh foto');
+          AppToast.show(
+            context,
+            'Gagal mengunduh foto',
+            type: AppNoticeType.error,
+          );
         }
       }
     } catch (e) {
       if (context.mounted) {
-        AppAlerts.error(context, 'Terjadi kesalahan saat mengunduh: $e');
+        AppToast.show(
+          context,
+          'Terjadi kesalahan saat mengunduh: $e',
+          type: AppNoticeType.error,
+        );
       }
     }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Hapus Foto'),
-        content: const Text(
-          'Apakah Anda yakin ingin menghapus foto ini secara permanen?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+    final confirmed = await AppDialog.confirm(
+      context,
+      title: 'Hapus foto?',
+      message: 'Foto akan dihapus dari perangkat secara permanen.',
+      confirmLabel: 'Hapus',
+      tone: AppDialogTone.destructive,
     );
 
     if (confirmed == true && onDelete != null) {
@@ -224,7 +227,7 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.shadow.withOpacity(0.2),
+            color: colorScheme.shadow.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -240,7 +243,7 @@ class FullScreenImagePreviewScreen extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.4),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

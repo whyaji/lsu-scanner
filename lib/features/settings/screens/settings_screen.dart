@@ -9,10 +9,13 @@ import '../../regional/providers/regional_provider.dart';
 import '../../regional/screens/regional_selection_screen.dart';
 import '../../sync/providers/sync_provider.dart';
 import '../providers/theme_provider.dart';
-import '../../../widgets/app_alert.dart';
 import '../../../widgets/app_footer.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
+import '../../../widgets/feedback/app_dialog.dart';
 import 'file_feature_screen.dart';
 import 'auto_download_settings_screen.dart';
+import 'form_completion_settings_screen.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.showBackButton = true});
@@ -34,33 +37,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (!mounted) return;
       switch (outcome) {
         case ManualUpdateOutcome.platformNotSupported:
-          AppAlerts.info(
+          AppToast.show(
             context,
             'Pembaruan dalam aplikasi hanya tersedia di perangkat Android.',
+            type: AppNoticeType.info,
           );
           break;
         case ManualUpdateOutcome.debugBuild:
-          AppAlerts.info(
+          AppToast.show(
             context,
             'Pemeriksaan pembaruan tidak dijalankan pada build pengembangan (debug).',
+            type: AppNoticeType.info,
           );
           break;
         case ManualUpdateOutcome.noUpdateAvailable:
-          AppAlerts.success(
+          AppToast.show(
             context,
             'Aplikasi sudah menggunakan versi terbaru.',
+            type: AppNoticeType.success,
           );
           break;
         case ManualUpdateOutcome.updateFlowStarted:
-          AppAlerts.info(
+          AppToast.show(
             context,
             'Ikuti langkah di layar untuk menyelesaikan pembaruan.',
+            type: AppNoticeType.info,
           );
           break;
         case ManualUpdateOutcome.error:
-          AppAlerts.error(
+          AppToast.show(
             context,
             'Gagal memeriksa pembaruan. Periksa koneksi atau coba lagi nanti.',
+            type: AppNoticeType.error,
           );
           break;
       }
@@ -190,20 +198,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
               ),
-              AppSettingsTile(
-                icon: Icons.location_on_outlined,
-                title: 'Ganti Regional',
-                subtitle: regionalState.selectedRegional != null
-                    ? 'Regional ${regionalState.selectedRegional}'
-                    : 'Belum dipilih',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const RegionalSelectionScreen(),
-                    ),
-                  );
-                },
-              ),
+              if (requiresRegional(user))
+                AppSettingsTile(
+                  icon: Icons.location_on_outlined,
+                  title: 'Ganti Regional',
+                  subtitle: regionalState.selectedRegional != null
+                      ? 'Regional ${regionalState.selectedRegional}'
+                      : 'Belum dipilih',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const RegionalSelectionScreen(),
+                      ),
+                    );
+                  },
+                ),
               AppSpacing.gapLg,
 
               // File & Penyimpanan section
@@ -239,6 +248,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => const FileFeatureScreen(),
+                    ),
+                  );
+                },
+              ),
+              AppSpacing.gapLg,
+
+              // Form section
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: AppSpacing.sm),
+                child: Text(
+                  'Formulir',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              AppSpacing.gapSm,
+              AppSettingsTile(
+                icon: Icons.auto_awesome_outlined,
+                title: 'Pelengkapan Formulir',
+                subtitle: 'Kelola saran email dan nomor WhatsApp',
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const FormCompletionSettingsScreen(),
                     ),
                   );
                 },
@@ -313,22 +349,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Konfirmasi Logout'),
-        content: const Text('Apakah Anda yakin ingin keluar dari akun ini?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Ya, Logout'),
-          ),
-        ],
-      ),
+    final confirmed = await AppDialog.confirm(
+      context,
+      title: 'Keluar dari akun?',
+      message: 'Data lokal yang belum diunggah tetap disimpan di perangkat.',
+      confirmLabel: 'Keluar',
+      tone: AppDialogTone.destructive,
     );
     if (confirmed == true && context.mounted) {
       await ref.read(authProvider.notifier).logout();

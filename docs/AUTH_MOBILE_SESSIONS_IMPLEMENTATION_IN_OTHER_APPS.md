@@ -11,7 +11,7 @@ For backend domain rules (DB schema, admin revoke), see [`AUTH_MOBILE_LOGIN_AND_
 | Layer                 | Responsibility                                                                                                          |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | **`ApiConstants`**    | Paths: `mobile-login`, `mobile-refresh`, `mobile-logout`                                                                |
-| **`ApiService`**      | Login, refresh, logout, sync/upload (with device identity)                                                              |
+| **`AuthApi`**         | Login, refresh, logout (with device identity); sync/upload live in `LsuApi`, `PupukApi`, `UploadApi`                    |
 | **`DeviceIdentity`**  | Stable `platformId` + `User-Agent` per device                                                                           |
 | **`AuthInterceptor`** | Attach Bearer; **401 → refresh + retry**; **refresh failure → force logout**; **409 `SESSION_CONFLICT` → force logout** |
 | **`AuthNotifier`**    | Persist tokens/user; **`forceLogoutFromApi`** clears storage and sets **`shouldNavigateToLogin`**                       |
@@ -37,7 +37,7 @@ Base URL: `ApiConstants.baseUrl` (e.g. `https://api.example.com/api`). Paths bel
 
 **Success:** Standard wrapped or unwrapped success with `accessToken`, `refreshToken`, `expiresIn`, `user`.
 
-**Implementation:** `ApiService.login` → `LoginRequest` in `auth_models.dart`.
+**Implementation:** `AuthApi.login` → `LoginRequest` in `auth_models.dart`.
 
 ---
 
@@ -55,7 +55,7 @@ Base URL: `ApiConstants.baseUrl` (e.g. `https://api.example.com/api`). Paths bel
 
 **Used by:**
 
-- **`ApiService.refreshToken`** (explicit call if needed).
+- **`AuthApi.refreshToken`** (explicit call if needed).
 - **`AuthInterceptor._refreshToken`** on **401** (automatic, no extra app code).
 
 **Implementation:** `MobileRefreshTokenRequest` in `auth_models.dart`.
@@ -73,7 +73,7 @@ Base URL: `ApiConstants.baseUrl` (e.g. `https://api.example.com/api`). Paths bel
 
 Soft-deletes the user’s **active mobile session** on the server so the same account can log in from another device.
 
-**Implementation:** `ApiService.logout` → `MobileLogoutRequest`; **`AuthNotifier.logout`** calls it then clears local storage.
+**Implementation:** `AuthApi.logout` → `MobileLogoutRequest`; **`AuthNotifier.logout`** calls it then clears local storage.
 
 ---
 

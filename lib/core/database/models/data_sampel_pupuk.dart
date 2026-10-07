@@ -54,6 +54,10 @@ class DataSampelPupuk {
   final String? createdAt;
   final String? updatedAt;
 
+  /// User id of the Pupuk Lab receiver (set by the server on Terima Lab).
+  final int? registrasiLabBy;
+  final int? pupukLabTerimaId;
+
   DataSampelPupuk({
     required this.id,
     this.kodeSampel,
@@ -106,6 +110,8 @@ class DataSampelPupuk {
     this.trackingSampelPupuk,
     this.createdAt,
     this.updatedAt,
+    this.registrasiLabBy,
+    this.pupukLabTerimaId,
   });
 
   factory DataSampelPupuk.fromApiJson(Map<String, dynamic> json) {
@@ -164,6 +170,8 @@ class DataSampelPupuk {
           : null,
       createdAt: json['createdAt'] as String?,
       updatedAt: json['updatedAt'] as String?,
+      registrasiLabBy: (json['registrasiLabBy'] as num?)?.toInt(),
+      pupukLabTerimaId: (json['pupukLabTerimaId'] as num?)?.toInt(),
     );
   }
 
@@ -222,6 +230,8 @@ class DataSampelPupuk {
       trackingSampelPupuk: json['tracking_sampel_pupuk'] as String?,
       createdAt: json['created_at'] as String?,
       updatedAt: json['updated_at'] as String?,
+      registrasiLabBy: (json['registrasi_lab_by'] as num?)?.toInt(),
+      pupukLabTerimaId: (json['pupuk_lab_terima_id'] as num?)?.toInt(),
     );
   }
 
@@ -278,6 +288,8 @@ class DataSampelPupuk {
       'tracking_sampel_pupuk': trackingSampelPupuk,
       'created_at': createdAt,
       'updated_at': updatedAt,
+      'registrasi_lab_by': registrasiLabBy,
+      'pupuk_lab_terima_id': pupukLabTerimaId,
     };
   }
 }

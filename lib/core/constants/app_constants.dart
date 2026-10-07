@@ -21,7 +21,6 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'sampletrack.db';
-  static const int databaseVersion = 1;
 
   // Storage Keys
   static const String keyAccessToken = 'access_token';

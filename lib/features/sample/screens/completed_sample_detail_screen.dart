@@ -1,34 +1,36 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/completed_sample.dart';
 import '../../../core/database/models/master_lsu.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import 'full_screen_image_preview_screen.dart';
 
-class CompletedSampleDetailScreen extends StatefulWidget {
+class CompletedSampleDetailScreen extends ConsumerStatefulWidget {
   final int sampleId;
 
   const CompletedSampleDetailScreen({super.key, required this.sampleId});
 
   @override
-  State<CompletedSampleDetailScreen> createState() =>
+  ConsumerState<CompletedSampleDetailScreen> createState() =>
       _CompletedSampleDetailScreenState();
 }
 
 class _CompletedSampleDetailScreenState
-    extends State<CompletedSampleDetailScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+    extends ConsumerState<CompletedSampleDetailScreen> {
+  LsuDao get _lsuDao => ref.read(lsuDaoProvider);
   CompletedSample? _sample;
   MasterLsu? _masterLsu;
   bool _loading = true;
 
   Future<void> _load() async {
-    final sample = await _dbHelper.getCompletedSampleById(widget.sampleId);
+    final sample = await _lsuDao.completed.getById(widget.sampleId);
     MasterLsu? master;
     if (sample != null) {
-      master = await _dbHelper.getMasterLsuById(sample.masterLsuId);
+      master = await _lsuDao.getMasterLsuById(sample.masterLsuId);
     }
     if (mounted) {
       setState(() {
@@ -96,7 +98,7 @@ class _CompletedSampleDetailScreenState
     );
     if (confirmed != true || !mounted) return;
     if (s.id == null) return;
-    await _dbHelper.deleteCompletedSample(s.id!);
+    await _lsuDao.completed.delete(s.id!);
     if (mounted) Navigator.of(context).pop(true);
   }
 

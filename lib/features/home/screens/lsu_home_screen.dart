@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../widgets/app_footer.dart';
-import '../../../widgets/app_stat_card.dart';
+import '../../../widgets/display/app_stat_card.dart';
 import '../../../widgets/app_section_header.dart';
 import '../../../widgets/sync_progress_modal.dart';
 import '../../scanner/screens/qr_scanner_screen.dart';
@@ -34,7 +35,7 @@ class LsuHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+  LsuDao get _lsuDao => ref.read(lsuDaoProvider);
   int _pendingCount = 0;
   int _uploadedCount = 0;
 
@@ -45,10 +46,10 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
   }
 
   Future<void> _loadCounts() async {
-    final pendingReceived = await _dbHelper.getPendingUploads();
-    final pendingComplete = await _dbHelper.getPendingCompleteUploads();
-    final allReceived = await _dbHelper.getAllReceivedSamples();
-    final allCompleted = await _dbHelper.getAllCompletedSamples();
+    final pendingReceived = await _lsuDao.received.getPending();
+    final pendingComplete = await _lsuDao.completed.getPending();
+    final allReceived = await _lsuDao.received.getAll();
+    final allCompleted = await _lsuDao.completed.getAll();
     final uploadedReceived = allReceived
         .where((s) => s.status == AppConstants.statusUploaded)
         .length;
@@ -278,7 +279,6 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                       child: AppStatCard(
                         label: 'Menunggu',
                         value: _pendingCount.toString(),
-                        color: colorScheme.tertiary,
                         icon: Icons.pending,
                         onTap: () {
                           Navigator.of(context)
@@ -297,7 +297,6 @@ class _LsuHomeScreenState extends ConsumerState<LsuHomeScreen> {
                       child: AppStatCard(
                         label: 'Terunggah',
                         value: _uploadedCount.toString(),
-                        color: colorScheme.primary,
                         icon: Icons.cloud_done,
                         onTap: () {
                           Navigator.of(context)

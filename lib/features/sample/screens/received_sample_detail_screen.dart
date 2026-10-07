@@ -1,35 +1,37 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/database/database_helper.dart';
+import '../../../core/database/daos/lsu_dao.dart';
+import '../../../core/database/database_providers.dart';
 import '../../../core/database/models/received_sample.dart';
 import '../../../core/database/models/master_lsu.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_utils.dart' as app_date_utils;
 import 'full_screen_image_preview_screen.dart';
 
-class ReceivedSampleDetailScreen extends StatefulWidget {
+class ReceivedSampleDetailScreen extends ConsumerStatefulWidget {
   final int sampleId;
 
   const ReceivedSampleDetailScreen({super.key, required this.sampleId});
 
   @override
-  State<ReceivedSampleDetailScreen> createState() =>
+  ConsumerState<ReceivedSampleDetailScreen> createState() =>
       _ReceivedSampleDetailScreenState();
 }
 
 class _ReceivedSampleDetailScreenState
-    extends State<ReceivedSampleDetailScreen> {
-  final DatabaseHelper _dbHelper = DatabaseHelper.instance;
+    extends ConsumerState<ReceivedSampleDetailScreen> {
+  LsuDao get _lsuDao => ref.read(lsuDaoProvider);
   ReceivedSample? _sample;
   MasterLsu? _masterLsu;
   bool _loading = true;
 
   Future<void> _load() async {
-    final sample = await _dbHelper.getReceivedSampleById(widget.sampleId);
+    final sample = await _lsuDao.received.getById(widget.sampleId);
     MasterLsu? master;
     if (sample != null) {
-      master = await _dbHelper.getMasterLsuById(sample.masterLsuId);
+      master = await _lsuDao.getMasterLsuById(sample.masterLsuId);
     }
     if (mounted) {
       setState(() {
@@ -100,7 +102,7 @@ class _ReceivedSampleDetailScreenState
     );
     if (confirmed != true || !mounted) return;
     if (s.id == null) return;
-    await _dbHelper.deleteReceivedSample(s.id!);
+    await _lsuDao.received.delete(s.id!);
     if (mounted) Navigator.of(context).pop(true);
   }
 

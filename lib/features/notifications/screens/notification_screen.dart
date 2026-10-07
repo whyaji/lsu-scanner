@@ -6,6 +6,8 @@ import '../providers/notification_provider.dart';
 import '../../../core/network/models/notification_model.dart';
 import '../constants/notification_type_ui.dart';
 import '../utils/notification_navigation.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
+import '../../../widgets/feedback/app_toast.dart';
 
 class NotificationScreen extends ConsumerStatefulWidget {
   const NotificationScreen({super.key});
@@ -71,10 +73,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
             TextButton.icon(
               onPressed: () {
                 ref.read(notificationProvider.notifier).markAllAsRead();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Semua notifikasi ditandai dibaca'),
-                  ),
+                AppToast.show(
+                  context,
+                  'Semua notifikasi ditandai dibaca.',
+                  type: AppNoticeType.success,
                 );
               },
               icon: const Icon(Icons.done_all, size: 18),
@@ -150,13 +152,13 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.05),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.05),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.notifications_none_outlined,
                   size: 80,
-                  color: theme.colorScheme.primary.withOpacity(0.4),
+                  color: theme.colorScheme.primary.withValues(alpha: 0.4),
                 ),
               ),
               const SizedBox(height: 24),
@@ -215,7 +217,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
       },
       child: Container(
         color: isUnread
-            ? theme.colorScheme.primary.withOpacity(0.04)
+            ? theme.colorScheme.primary.withValues(alpha: 0.04)
             : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -228,7 +230,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: typeUi.color.withOpacity(0.1),
+                    color: typeUi.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(typeUi.icon, color: typeUi.color, size: 24),
@@ -291,7 +293,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                       fontSize: 13,
                       color: isUnread
                           ? theme.textTheme.bodyMedium?.color
-                          : theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                          : theme.textTheme.bodyMedium?.color?.withValues(
+                              alpha: 0.7,
+                            ),
                       height: 1.4,
                     ),
                   ),

@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/legacy.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_service.dart';
+import '../../../core/network/api/notification_api.dart';
+import '../../../core/network/api_providers.dart';
 import '../../../core/network/models/notification_model.dart';
 
 class NotificationState {
@@ -32,16 +32,16 @@ class NotificationState {
 }
 
 class NotificationNotifier extends StateNotifier<NotificationState> {
-  final ApiService _apiService;
+  final NotificationApi _api;
 
-  NotificationNotifier(this._apiService) : super(NotificationState());
+  NotificationNotifier(this._api) : super(NotificationState());
 
   Future<void> fetchNotifications({bool silent = false}) async {
     if (!silent) {
       state = state.copyWith(isLoading: true, errorMessage: null);
     }
 
-    final response = await _apiService.getNotifications();
+    final response = await _api.getNotifications();
     if (response.success && response.data != null) {
       state = state.copyWith(
         notifications: response.data!.notifications,
@@ -84,7 +84,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       unreadCount: (state.unreadCount - unreadDiff).clamp(0, 999999),
     );
 
-    final response = await _apiService.markNotificationAsRead(id);
+    final response = await _api.markAsRead(id);
     if (!response.success) {
       // Revert/refresh on failure
       fetchNotifications(silent: true);
@@ -113,7 +113,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
     state = state.copyWith(notifications: updatedList, unreadCount: 0);
 
-    final response = await _apiService.markAllNotificationsAsRead();
+    final response = await _api.markAllAsRead();
     if (!response.success) {
       fetchNotifications(silent: true);
     }
@@ -122,6 +122,5 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
 final notificationProvider =
     StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-      final apiService = ApiService(ApiClient().dio);
-      return NotificationNotifier(apiService);
+      return NotificationNotifier(ref.watch(notificationApiProvider));
     });

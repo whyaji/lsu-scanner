@@ -64,6 +64,7 @@ class ApiConstants {
   static const String areaEstate = '/area/estate';
   static const String uploadSampelPupuk = '/data-sampel-pupuk/upload';
   static const String uploadPhotoPupuk = '/upload/photo-pupuk';
+  static const String uploadPhotoPupukLab = '/upload/photo-pupuk-lab';
   static const String dataSampelPupuk = '/data-sampel-pupuk';
   static const String dataSampelPupukProgressCounts =
       '/data-sampel-pupuk/progress-counts';

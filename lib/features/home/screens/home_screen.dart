@@ -6,6 +6,7 @@ import '../../auth/providers/auth_provider.dart';
 import 'lsu_home_screen.dart';
 import 'fertilizer_home_screen.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../../../widgets/layout/app_card.dart';
 
 import '../../notifications/providers/notification_provider.dart';
 
@@ -160,64 +161,47 @@ class _SampleTypeCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: AppSpacing.paddingLg,
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+    return AppCard(
+      onTap: onTap,
+      semanticLabel: '$title. $subtitle',
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, size: 32, color: color),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+          AppSpacing.gapLg,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
-                child: Icon(icon, size: 32, color: color),
-              ),
-              AppSpacing.gapLg,
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    AppSpacing.gapXs,
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                AppSpacing.gapXs,
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 18,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 18,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ],
       ),
     );
   }

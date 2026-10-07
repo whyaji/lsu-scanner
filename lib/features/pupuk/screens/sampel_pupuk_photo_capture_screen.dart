@@ -7,6 +7,8 @@ import '../../auth/providers/auth_provider.dart';
 import '../constants/pupuk_activity_types.dart';
 import 'sampel_pupuk_activity_form_screen.dart';
 import 'sampel_pupuk_confirmation_screen.dart';
+import '../../../widgets/feedback/app_toast.dart';
+import '../../../widgets/feedback/app_notice_type.dart';
 
 class SampelPupukPhotoCaptureScreen extends ConsumerStatefulWidget {
   final SampelPupukFormData formData;
@@ -135,12 +137,7 @@ class _SampelPupukPhotoCaptureScreenState
 
   void _showError(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Theme.of(context).colorScheme.error,
-      ),
-    );
+    AppToast.show(context, message, type: AppNoticeType.error);
   }
 
   @override
